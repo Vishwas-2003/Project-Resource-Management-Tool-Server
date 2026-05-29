@@ -1,0 +1,60 @@
+﻿################################################################################
+# .NET / Visual Studio
+################################################################################
+
+## Build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Aa]rtifacts/
+
+## Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+## NuGet
+*.nupkg
+*.snupkg
+**/packages/*
+!**/packages/build/
+project.lock.json
+project.fragment.lock.json
+
+## Test / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.coverage
+*.coveragexml
+coverage/
+
+## Logs and caches
+*.log
+*.cache
+
+## Secrets (keep appsettings.json and appsettings.Development.json in repo)
+appsettings.*.local.json
+secrets.json
+**/Properties/launchSettings.local.json
+
+## Publish
+publish/
+*.pubxml.user
+
+## EF tooling (local scaffold artifacts — migrations in src are tracked)
+*.db
+*.db-shm
+*.db-wal
