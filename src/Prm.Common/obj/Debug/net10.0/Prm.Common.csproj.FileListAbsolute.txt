@@ -1,0 +1,11 @@
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\bin\Debug\net10.0\Prm.Common.deps.json
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\bin\Debug\net10.0\Prm.Common.dll
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\bin\Debug\net10.0\Prm.Common.pdb
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.AssemblyInfoInputs.cache
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.AssemblyInfo.cs
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.csproj.CoreCompileInputs.cache
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.dll
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\refint\Prm.Common.dll
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\Prm.Common.pdb
+C:\Users\vishwas.v\source\repos\Project & Resource Management Tool\Server\src\Prm.Common\obj\Debug\net10.0\ref\Prm.Common.dll
