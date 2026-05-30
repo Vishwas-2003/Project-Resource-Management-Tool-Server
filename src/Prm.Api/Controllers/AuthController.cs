@@ -32,4 +32,15 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
                 return Ok(_mapper.Map<LoginResponse>(result));
             },
             treatUnauthorizedAsSessionExpired: true);
+
+    [Authorize]
+    [HttpPost(ApiRoutes.Auth.ChangePassword)]
+    public Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken cancellationToken) =>
+        ExecuteResultAsync(
+            async () =>
+            {
+                var result = await _authService.ChangePasswordAsync(request, cancellationToken);
+                return Ok(_mapper.Map<LoginResponse>(result));
+            },
+            treatUnauthorizedAsSessionExpired: true);
 }

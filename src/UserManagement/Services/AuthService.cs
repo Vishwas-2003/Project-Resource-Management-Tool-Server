@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Prm.Common.Constants;
 using Prm.Common.Models.Auth;
+using Prm.Data.Audit;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
 using UserManagement.Configuration;
@@ -15,6 +16,7 @@ public class AuthService(
     IRefreshTokenRepository _refreshTokenRepository,
     IPasswordHasher<User> _passwordHasher,
     IJwtTokenService _jwtTokenService,
+    ICurrentUserService _currentUserService,
     IMapper _mapper,
     IOptions<JwtOptions> _jwtOptionsAccessor) : IAuthService
 {
@@ -44,6 +46,59 @@ public class AuthService(
         }
 
         return await IssueTokensAsync(storedToken.User, cancellationToken);
+    }
+
+    public async Task<AuthResponse> ChangePasswordAsync(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUserService.GetUserId();
+        if (userId is null)
+        {
+            throw new UnauthorizedAccessException(AppConstants.Auth.UserNotAuthenticated);
+        }
+
+        var user = await _userRepository.GetByIdWithRoleAsync(userId.Value, cancellationToken);
+        if (user is null || !user.IsActive)
+        {
+            throw new UnauthorizedAccessException(AppConstants.Auth.UserNotAuthenticated);
+        }
+
+        if (!user.ForcePasswordChange)
+        {
+            throw new InvalidOperationException(AppConstants.Auth.PasswordChangeNotRequired);
+        }
+
+        if (!string.Equals(request.NewPassword, request.ConfirmPassword, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(AppConstants.Auth.PasswordsDoNotMatch);
+        }
+
+        ValidatePasswordStrength(request.NewPassword);
+
+        if (_passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.NewPassword)
+            != PasswordVerificationResult.Failed)
+        {
+            throw new InvalidOperationException(AppConstants.Auth.NewPasswordMustDiffer);
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
+        user.ForcePasswordChange = false;
+        await _userRepository.SaveChangesAsync(cancellationToken);
+
+        return await IssueTokensAsync(user, cancellationToken);
+    }
+
+    private static void ValidatePasswordStrength(string password)
+    {
+        if (password.Length < 8
+            || !password.Any(char.IsUpper)
+            || !password.Any(char.IsLower)
+            || !password.Any(char.IsDigit)
+            || !password.Any(c => !char.IsLetterOrDigit(c)))
+        {
+            throw new ArgumentException(AppConstants.Auth.PasswordDoesNotMeetRequirements);
+        }
     }
 
     private async Task<AuthResponse> IssueTokensAsync(User user, CancellationToken cancellationToken)

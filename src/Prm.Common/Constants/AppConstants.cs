@@ -34,6 +34,12 @@ public static class AppConstants
     {
         public const string InvalidCredentials = "Invalid username or password.";
         public const string RefreshTokenInvalidOrExpired = "Refresh token is invalid or expired.";
+        public const string UserNotAuthenticated = "You must be logged in to change your password.";
+        public const string PasswordChangeNotRequired = "A password change is not required for this account.";
+        public const string PasswordsDoNotMatch = "New password and confirmation do not match.";
+        public const string PasswordDoesNotMeetRequirements =
+            "Password must be at least 8 characters and include one uppercase letter, one lowercase letter, one number, and one special character.";
+        public const string NewPasswordMustDiffer = "New password must be different from your current password.";
     }
 
     public static class Http
