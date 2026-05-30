@@ -8,7 +8,7 @@ public class TimesheetEntryConfiguration : IEntityTypeConfiguration<TimesheetEnt
 {
     public void Configure(EntityTypeBuilder<TimesheetEntry> builder)
     {
-        builder.HasKey(x => x.EntryId);
+        builder.HasKey(x => x.Id);
         builder.HasOne(x => x.Timesheet)
             .WithMany(x => x.Entries)
             .HasForeignKey(x => x.TimesheetId)

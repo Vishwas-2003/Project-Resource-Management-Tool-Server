@@ -8,7 +8,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
 {
     public void Configure(EntityTypeBuilder<Project> builder)
     {
-        builder.HasKey(x => x.ProjectId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();

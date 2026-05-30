@@ -2,7 +2,7 @@ namespace Prm.Data.Entities;
 
 public class RefreshToken : BaseEntity
 {
-    public int RefreshTokenId { get; set; }
+    public int Id { get; set; }
     public int UserId { get; set; }
     public required string Token { get; set; }
     public DateTime ExpiryDateUtc { get; set; }

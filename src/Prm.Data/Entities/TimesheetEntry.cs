@@ -2,7 +2,7 @@ namespace Prm.Data.Entities;
 
 public class TimesheetEntry : BaseEntity
 {
-    public int EntryId { get; set; }
+    public int Id { get; set; }
     public int TimesheetId { get; set; }
     public int ProjectId { get; set; }
     public int HoursWorked { get; set; }

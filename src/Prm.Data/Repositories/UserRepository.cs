@@ -5,23 +5,25 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class UserRepository(AppDbContext _dbContext) : IUserRepository
+public class UserRepository(AppDbContext dbContext)
+    : CrudBaseRepository<User, int>(dbContext), IUserRepository
 {
-    public Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    public Task<User?> GetByUsername(string username, CancellationToken cancellationToken = default)
     {
         var normalized = username.Trim();
-        return _dbContext.Users
+        return DbSet
             .Include(x => x.Role)
-            .FirstOrDefaultAsync(
-                x => x.Username == normalized,
-                cancellationToken);
+            .FirstOrDefaultAsync(x => x.Username == normalized, cancellationToken);
     }
 
-    public Task<User?> GetByIdWithRoleAsync(int userId, CancellationToken cancellationToken = default) =>
-        _dbContext.Users
+    public Task<User?> GetByIdWithRole(int userId, CancellationToken cancellationToken = default) =>
+        DbSet
             .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.UserId == userId, cancellationToken);
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
-    public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
-        _dbContext.SaveChangesAsync(cancellationToken);
+    public Task<User?> GetByIdWithRoleAndEmployee(int userId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.Role)
+            .Include(x => x.Employee)
+            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 }

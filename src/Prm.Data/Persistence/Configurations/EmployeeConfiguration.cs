@@ -8,10 +8,10 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
 {
     public void Configure(EntityTypeBuilder<Employee> builder)
     {
-        builder.HasKey(x => x.EmployeeId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.Department).HasMaxLength(100).IsRequired();
         builder.Property(x => x.Designation).HasMaxLength(100).IsRequired();
-        builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Status).HasMaxLength(50);
         builder.HasIndex(x => x.UserId).IsUnique();
         builder.HasOne(x => x.User)
             .WithOne(x => x.Employee)

@@ -42,6 +42,30 @@ public static class AppConstants
         public const string NewPasswordMustDiffer = "New password must be different from your current password.";
     }
 
+    public static class Employees
+    {
+        public const string NotFound = "Employee not found.";
+        public const string UserNotFound = "User not found.";
+        public const string UserInactive = "User account is inactive.";
+        public const string InvalidRoleForEmployee =
+            "Only users with the Employee or Manager role can have an employee profile.";
+        public const string ProfileAlreadyExists = "This user already has an employee profile.";
+        public const string AlreadyDeactivated = "Employee is already deactivated.";
+        public const string DeactivatedSuccessfully = "Employee deactivated successfully.";
+    }
+
+    public static class Skills
+    {
+        public const string SkillNotFound = "Skill not found.";
+        public const string EmployeeSkillNotFound = "Employee skill assignment not found.";
+        public const string SkillAlreadyAssigned = "This skill is already assigned to the employee.";
+        public const string InvalidProficiency = "Proficiency must be Beginner, Intermediate, or Advanced.";
+        public const string InvalidCategory = "Category must be Backend, Frontend, DevOps, QA, or Other.";
+        public const string SkillAdded = "Skill added successfully.";
+        public const string SkillUpdated = "Skill proficiency updated successfully.";
+        public const string SkillRemoved = "Skill removed successfully.";
+    }
+
     public static class Http
     {
         public const string JsonContentType = "application/json";

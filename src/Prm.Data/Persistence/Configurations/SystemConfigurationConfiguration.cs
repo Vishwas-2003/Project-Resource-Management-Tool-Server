@@ -8,7 +8,7 @@ public class SystemConfigurationConfiguration : IEntityTypeConfiguration<SystemC
 {
     public void Configure(EntityTypeBuilder<SystemConfiguration> builder)
     {
-        builder.HasKey(x => x.ConfigurationId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.Provider).HasMaxLength(100).IsRequired();
         builder.Property(x => x.ApiKey).HasMaxLength(500).IsRequired();
         builder.HasIndex(x => x.Provider).IsUnique();

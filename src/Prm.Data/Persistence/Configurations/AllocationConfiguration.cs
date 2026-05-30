@@ -8,7 +8,7 @@ public class AllocationConfiguration : IEntityTypeConfiguration<Allocation>
 {
     public void Configure(EntityTypeBuilder<Allocation> builder)
     {
-        builder.HasKey(x => x.AllocationId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.UtilizationPercent).IsRequired();
         builder.HasOne(x => x.Employee)
             .WithMany(x => x.Allocations)

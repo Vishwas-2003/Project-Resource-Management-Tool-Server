@@ -11,7 +11,7 @@ namespace Prm.Api.Infrastructure;
 
 public static class DatabaseInitializer
 {
-    public static async Task InitializeAsync(IServiceProvider services, CancellationToken cancellationToken = default)
+    public static async Task Initialize(IServiceProvider services, CancellationToken cancellationToken = default)
     {
         using var scope = services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();

@@ -32,62 +32,62 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_WhenUserNotFound_ThrowsUnauthorizedAccessException()
+    public async Task Login_WhenUserNotFound_ThrowsUnauthorizedAccessException()
     {
         _userRepository
-            .Setup(x => x.GetByUsernameAsync(TestData.Username, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByUsername(TestData.Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.LoginAsync(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
+            sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
 
         Assert.Equal(AppConstants.Auth.InvalidCredentials, exception.Message);
     }
 
     [Fact]
-    public async Task LoginAsync_WhenUserIsInactive_ThrowsUnauthorizedAccessException()
+    public async Task Login_WhenUserIsInactive_ThrowsUnauthorizedAccessException()
     {
         _userRepository
-            .Setup(x => x.GetByUsernameAsync(TestData.Username, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByUsername(TestData.Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(TestData.CreateUser(isActive: false));
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.LoginAsync(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
+            sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
 
         Assert.Equal(AppConstants.Auth.InvalidCredentials, exception.Message);
     }
 
     [Fact]
-    public async Task LoginAsync_WhenPasswordIsInvalid_ThrowsUnauthorizedAccessException()
+    public async Task Login_WhenPasswordIsInvalid_ThrowsUnauthorizedAccessException()
     {
         var user = TestData.CreateUser();
         user.PasswordHash = _passwordHasher.HashPassword(user, "WrongPassword!");
 
         _userRepository
-            .Setup(x => x.GetByUsernameAsync(TestData.Username, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByUsername(TestData.Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.LoginAsync(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
+            sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
 
         Assert.Equal(AppConstants.Auth.InvalidCredentials, exception.Message);
     }
 
     [Fact]
-    public async Task LoginAsync_WhenCredentialsAreValid_ReturnsAuthResponseAndStoresRefreshToken()
+    public async Task Login_WhenCredentialsAreValid_ReturnsAuthResponseAndStoresRefreshToken()
     {
         var user = TestData.CreateUser();
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(30);
 
         _userRepository
-            .Setup(x => x.GetByUsernameAsync(TestData.Username, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByUsername(TestData.Username, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _jwtTokenService
@@ -96,15 +96,15 @@ public class AuthServiceTests
 
         RefreshToken? savedToken = null;
         _refreshTokenRepository
-            .Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Add(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Callback<RefreshToken, CancellationToken>((token, _) => savedToken = token)
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
 
-        var result = await sut.LoginAsync(new LoginRequest { Username = TestData.Username, Password = TestData.Password });
+        var result = await sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password });
 
-        Assert.Equal(user.UserId, result.User.UserId);
+        Assert.Equal(user.Id, result.User.UserId);
         Assert.Equal(user.Username, result.User.Username);
         Assert.Equal(user.FullName, result.User.FullName);
         Assert.Equal(user.Email, result.User.Email);
@@ -113,76 +113,76 @@ public class AuthServiceTests
         Assert.Equal("new-refresh-token", result.Tokens.RefreshToken);
         Assert.Equal(expiresAtUtc, result.Tokens.AccessTokenExpiresAtUtc);
 
-        _refreshTokenRepository.Verify(x => x.RemoveByUserIdAsync(user.UserId, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokenRepository.Verify(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.RemoveByUserId(user.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.Add(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.NotNull(savedToken);
-        Assert.Equal(user.UserId, savedToken!.UserId);
+        Assert.Equal(user.Id, savedToken!.UserId);
         Assert.Equal("new-refresh-token", savedToken.Token);
         Assert.True(savedToken.ExpiryDateUtc > DateTime.UtcNow);
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenTokenNotFound_ThrowsUnauthorizedAccessException()
+    public async Task Refresh_WhenTokenNotFound_ThrowsUnauthorizedAccessException()
     {
         _refreshTokenRepository
-            .Setup(x => x.GetByTokenWithUserAsync("missing-token", It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByTokenWithUser("missing-token", It.IsAny<CancellationToken>()))
             .ReturnsAsync((RefreshToken?)null);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.RefreshAsync(new RefreshTokenRequest { RefreshToken = "missing-token" }));
+            sut.Refresh(new RefreshTokenRequest { RefreshToken = "missing-token" }));
 
         Assert.Equal(AppConstants.Auth.RefreshTokenInvalidOrExpired, exception.Message);
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenTokenIsExpired_ThrowsUnauthorizedAccessException()
+    public async Task Refresh_WhenTokenIsExpired_ThrowsUnauthorizedAccessException()
     {
         var user = TestData.CreateUser();
         var expiredToken = TestData.CreateRefreshToken(user, expiryDateUtc: DateTime.UtcNow.AddMinutes(-1));
 
         _refreshTokenRepository
-            .Setup(x => x.GetByTokenWithUserAsync(expiredToken.Token, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByTokenWithUser(expiredToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expiredToken);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.RefreshAsync(new RefreshTokenRequest { RefreshToken = expiredToken.Token }));
+            sut.Refresh(new RefreshTokenRequest { RefreshToken = expiredToken.Token }));
 
         Assert.Equal(AppConstants.Auth.RefreshTokenInvalidOrExpired, exception.Message);
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenUserIsInactive_ThrowsUnauthorizedAccessException()
+    public async Task Refresh_WhenUserIsInactive_ThrowsUnauthorizedAccessException()
     {
         var user = TestData.CreateUser(isActive: false);
         var storedToken = TestData.CreateRefreshToken(user);
 
         _refreshTokenRepository
-            .Setup(x => x.GetByTokenWithUserAsync(storedToken.Token, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByTokenWithUser(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.RefreshAsync(new RefreshTokenRequest { RefreshToken = storedToken.Token }));
+            sut.Refresh(new RefreshTokenRequest { RefreshToken = storedToken.Token }));
 
         Assert.Equal(AppConstants.Auth.RefreshTokenInvalidOrExpired, exception.Message);
     }
 
     [Fact]
-    public async Task RefreshAsync_WhenTokenIsValid_ReturnsNewTokensAndReplacesStoredToken()
+    public async Task Refresh_WhenTokenIsValid_ReturnsNewTokensAndReplacesStoredToken()
     {
         var user = TestData.CreateUser();
         var storedToken = TestData.CreateRefreshToken(user);
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(30);
 
         _refreshTokenRepository
-            .Setup(x => x.GetByTokenWithUserAsync(storedToken.Token, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByTokenWithUser(storedToken.Token, It.IsAny<CancellationToken>()))
             .ReturnsAsync(storedToken);
 
         _jwtTokenService
@@ -191,99 +191,99 @@ public class AuthServiceTests
 
         RefreshToken? savedToken = null;
         _refreshTokenRepository
-            .Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Add(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Callback<RefreshToken, CancellationToken>((token, _) => savedToken = token)
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
 
-        var result = await sut.RefreshAsync(new RefreshTokenRequest { RefreshToken = storedToken.Token });
+        var result = await sut.Refresh(new RefreshTokenRequest { RefreshToken = storedToken.Token });
 
-        Assert.Equal(user.UserId, result.User.UserId);
+        Assert.Equal(user.Id, result.User.UserId);
         Assert.Equal("rotated-access-token", result.Tokens.AccessToken);
         Assert.Equal("rotated-refresh-token", result.Tokens.RefreshToken);
 
-        _refreshTokenRepository.Verify(x => x.RemoveByUserIdAsync(user.UserId, It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokenRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.RemoveByUserId(user.Id, It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
 
         Assert.NotNull(savedToken);
         Assert.Equal("rotated-refresh-token", savedToken!.Token);
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_WhenUserIsNotAuthenticated_ThrowsUnauthorizedAccessException()
+    public async Task ChangePassword_WhenUserIsNotAuthenticated_ThrowsUnauthorizedAccessException()
     {
         _currentUserService.Setup(x => x.GetUserId()).Returns((int?)null);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.ChangePasswordAsync(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "NewPass1" }));
+            sut.ChangePassword(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "NewPass1" }));
 
         Assert.Equal(AppConstants.Auth.UserNotAuthenticated, exception.Message);
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_WhenPasswordChangeNotRequired_ThrowsInvalidOperationException()
+    public async Task ChangePassword_WhenPasswordChangeNotRequired_ThrowsInvalidOperationException()
     {
         var user = TestData.CreateUser();
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
 
-        _currentUserService.Setup(x => x.GetUserId()).Returns(user.UserId);
+        _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
         _userRepository
-            .Setup(x => x.GetByIdWithRoleAsync(user.UserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdWithRole(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.ChangePasswordAsync(new ChangePasswordRequest { NewPassword = "ValidPass1!", ConfirmPassword = "ValidPass1!" }));
+            sut.ChangePassword(new ChangePasswordRequest { NewPassword = "ValidPass1!", ConfirmPassword = "ValidPass1!" }));
 
         Assert.Equal(AppConstants.Auth.PasswordChangeNotRequired, exception.Message);
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_WhenPasswordsDoNotMatch_ThrowsArgumentException()
+    public async Task ChangePassword_WhenPasswordsDoNotMatch_ThrowsArgumentException()
     {
         var user = TestData.CreateUser();
         user.ForcePasswordChange = true;
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
 
-        _currentUserService.Setup(x => x.GetUserId()).Returns(user.UserId);
+        _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
         _userRepository
-            .Setup(x => x.GetByIdWithRoleAsync(user.UserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdWithRole(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.ChangePasswordAsync(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "OtherPass1" }));
+            sut.ChangePassword(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "OtherPass1" }));
 
         Assert.Equal(AppConstants.Auth.PasswordsDoNotMatch, exception.Message);
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_WhenPasswordDoesNotMeetRequirements_ThrowsArgumentException()
+    public async Task ChangePassword_WhenPasswordDoesNotMeetRequirements_ThrowsArgumentException()
     {
         var user = TestData.CreateUser();
         user.ForcePasswordChange = true;
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
 
-        _currentUserService.Setup(x => x.GetUserId()).Returns(user.UserId);
+        _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
         _userRepository
-            .Setup(x => x.GetByIdWithRoleAsync(user.UserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdWithRole(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.ChangePasswordAsync(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "NewPass1" }));
+            sut.ChangePassword(new ChangePasswordRequest { NewPassword = "NewPass1", ConfirmPassword = "NewPass1" }));
 
         Assert.Equal(AppConstants.Auth.PasswordDoesNotMeetRequirements, exception.Message);
     }
 
     [Fact]
-    public async Task ChangePasswordAsync_WhenSuccessful_UpdatesPasswordClearsFlagAndReturnsTokens()
+    public async Task ChangePassword_WhenSuccessful_UpdatesPasswordClearsFlagAndReturnsTokens()
     {
         const string newPassword = "NewPass1!";
         var user = TestData.CreateUser();
@@ -291,9 +291,9 @@ public class AuthServiceTests
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(30);
 
-        _currentUserService.Setup(x => x.GetUserId()).Returns(user.UserId);
+        _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
         _userRepository
-            .Setup(x => x.GetByIdWithRoleAsync(user.UserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetByIdWithRole(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
 
         _jwtTokenService
@@ -301,12 +301,12 @@ public class AuthServiceTests
             .Returns(("access-token", expiresAtUtc, "new-refresh-token"));
 
         _refreshTokenRepository
-            .Setup(x => x.AddAsync(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Add(It.IsAny<RefreshToken>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
 
-        var result = await sut.ChangePasswordAsync(
+        var result = await sut.ChangePassword(
             new ChangePasswordRequest { NewPassword = newPassword, ConfirmPassword = newPassword });
 
         Assert.False(user.ForcePasswordChange);
@@ -316,8 +316,8 @@ public class AuthServiceTests
         Assert.Equal("access-token", result.Tokens.AccessToken);
         Assert.Equal("new-refresh-token", result.Tokens.RefreshToken);
 
-        _userRepository.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        _refreshTokenRepository.Verify(x => x.RemoveByUserIdAsync(user.UserId, It.IsAny<CancellationToken>()), Times.Once);
+        _userRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+        _refreshTokenRepository.Verify(x => x.RemoveByUserId(user.Id, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private AuthService CreateSut() =>

@@ -18,7 +18,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
     public Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var result = await _authService.LoginAsync(request, cancellationToken);
+            var result = await _authService.Login(request, cancellationToken);
             return Ok(_mapper.Map<LoginResponse>(result));
         });
 
@@ -28,7 +28,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
         ExecuteResultAsync(
             async () =>
             {
-                var result = await _authService.RefreshAsync(request, cancellationToken);
+                var result = await _authService.Refresh(request, cancellationToken);
                 return Ok(_mapper.Map<LoginResponse>(result));
             },
             treatUnauthorizedAsSessionExpired: true);
@@ -39,7 +39,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
         ExecuteResultAsync(
             async () =>
             {
-                var result = await _authService.ChangePasswordAsync(request, cancellationToken);
+                var result = await _authService.ChangePassword(request, cancellationToken);
                 return Ok(_mapper.Map<LoginResponse>(result));
             },
             treatUnauthorizedAsSessionExpired: true);

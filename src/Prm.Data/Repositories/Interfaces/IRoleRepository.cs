@@ -2,7 +2,6 @@ using Prm.Data.Entities;
 
 namespace Prm.Data.Repositories.Interfaces;
 
-public interface IRoleRepository
+public interface IRoleRepository : ICrudBaseRepository<Role, int>
 {
-    Task<Role?> GetByIdAsync(int roleId, CancellationToken cancellationToken = default);
 }

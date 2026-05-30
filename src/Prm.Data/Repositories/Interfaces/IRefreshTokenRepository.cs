@@ -2,10 +2,8 @@ using Prm.Data.Entities;
 
 namespace Prm.Data.Repositories.Interfaces;
 
-public interface IRefreshTokenRepository
+public interface IRefreshTokenRepository : ICrudBaseRepository<RefreshToken, int>
 {
-    Task<RefreshToken?> GetByTokenWithUserAsync(string token, CancellationToken cancellationToken = default);
-    Task RemoveByUserIdAsync(int userId, CancellationToken cancellationToken = default);
-    Task AddAsync(RefreshToken refreshToken, CancellationToken cancellationToken = default);
-    Task SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<RefreshToken?> GetByTokenWithUser(string token, CancellationToken cancellationToken = default);
+    Task RemoveByUserId(int userId, CancellationToken cancellationToken = default);
 }

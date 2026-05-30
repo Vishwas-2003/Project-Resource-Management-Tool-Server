@@ -2,7 +2,7 @@ namespace Prm.Data.Entities;
 
 public class User : BaseEntity
 {
-    public int UserId { get; set; }
+    public int Id { get; set; }
     public int RoleId { get; set; }
     public required string FullName { get; set; }
     public required string Username { get; set; }

@@ -8,7 +8,7 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
 {
     public void Configure(EntityTypeBuilder<Milestone> builder)
     {
-        builder.HasKey(x => x.MilestoneId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.Title).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
         builder.HasOne(x => x.Project)

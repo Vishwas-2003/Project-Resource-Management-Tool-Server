@@ -26,7 +26,7 @@ internal static class TestData
     {
         var user = new User
         {
-            UserId = 1,
+            Id = 1,
             RoleId = 1,
             FullName = "System Administrator",
             Username = username,
@@ -34,7 +34,7 @@ internal static class TestData
             PasswordHash = string.Empty,
             IsActive = isActive,
             ForcePasswordChange = false,
-            Role = new Role { RoleId = 1, Name = "Admin", CreatedAtUtc = DateTime.UtcNow },
+            Role = new Role { Id = 1, Name = "Admin", CreatedAtUtc = DateTime.UtcNow },
         };
 
         return user;
@@ -43,8 +43,8 @@ internal static class TestData
     internal static RefreshToken CreateRefreshToken(User user, string token = "existing-refresh-token", DateTime? expiryDateUtc = null) =>
         new()
         {
-            RefreshTokenId = 10,
-            UserId = user.UserId,
+            Id = 10,
+            UserId = user.Id,
             Token = token,
             ExpiryDateUtc = expiryDateUtc ?? DateTime.UtcNow.AddDays(1),
             User = user,

@@ -6,6 +6,8 @@ using Prm.Data.Audit;
 using Prm.Data.Entities;
 using Prm.Data.Repositories;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Api.Services;
+using Prm.Api.Services.Interfaces;
 using UserManagement.Configuration;
 using UserManagement.Services;
 using UserManagement.Services.Interfaces;
@@ -17,6 +19,9 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection RegisterRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+        services.AddScoped<ISkillRepository, SkillRepository>();
+        services.AddScoped<IEmployeeSkillRepository, EmployeeSkillRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         return services;
@@ -51,6 +56,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
+        services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<ISkillService, SkillService>();
         return services;
     }
 }

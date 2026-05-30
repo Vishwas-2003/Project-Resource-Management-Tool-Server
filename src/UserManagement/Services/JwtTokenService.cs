@@ -21,9 +21,9 @@ public class JwtTokenService(IOptions<JwtOptions> _jwtOptionsAccessor) : IJwtTok
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+            new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Role, user.Role.Name),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),

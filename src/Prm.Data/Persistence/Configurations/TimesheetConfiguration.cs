@@ -8,7 +8,7 @@ public class TimesheetConfiguration : IEntityTypeConfiguration<Timesheet>
 {
     public void Configure(EntityTypeBuilder<Timesheet> builder)
     {
-        builder.HasKey(x => x.TimesheetId);
+        builder.HasKey(x => x.Id);
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
         builder.HasIndex(x => new { x.EmployeeId, x.WeekStart }).IsUnique();
         builder.HasOne(x => x.Employee)

@@ -12,7 +12,7 @@ builder.Services.RegisterServices(builder.Configuration);
 
 var app = builder.Build();
 
-await DatabaseInitializer.InitializeAsync(app.Services);
+await DatabaseInitializer.Initialize(app.Services);
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

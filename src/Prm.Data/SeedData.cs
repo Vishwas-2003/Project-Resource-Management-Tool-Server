@@ -9,8 +9,8 @@ public static class SeedData
 
     public static readonly Role[] Roles =
     [
-        new() { RoleId = (int)RoleNameEnum.Admin, Name = nameof(RoleNameEnum.Admin), CreatedAtUtc = SeedCreatedAtUtc },
-        new() { RoleId = (int)RoleNameEnum.Manager, Name = nameof(RoleNameEnum.Manager), CreatedAtUtc = SeedCreatedAtUtc },
-        new() { RoleId = (int)RoleNameEnum.Employee, Name = nameof(RoleNameEnum.Employee), CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)RoleNameEnum.Admin, Name = nameof(RoleNameEnum.Admin), CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)RoleNameEnum.Manager, Name = nameof(RoleNameEnum.Manager), CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)RoleNameEnum.Employee, Name = nameof(RoleNameEnum.Employee), CreatedAtUtc = SeedCreatedAtUtc },
     ];
 }

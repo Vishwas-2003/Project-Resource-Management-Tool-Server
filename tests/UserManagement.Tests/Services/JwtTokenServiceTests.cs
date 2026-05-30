@@ -31,7 +31,7 @@ public class JwtTokenServiceTests
 
         Assert.Equal(_jwtOptions.Issuer, jwt.Issuer);
         Assert.Contains(jwt.Audiences, audience => audience == _jwtOptions.Audience);
-        Assert.Equal(user.UserId.ToString(), jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
+        Assert.Equal(user.Id.ToString(), jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.Sub).Value);
         Assert.Equal(user.Username, jwt.Claims.First(c => c.Type == JwtRegisteredClaimNames.UniqueName).Value);
         Assert.Contains(jwt.Claims, c => c.Value == user.Role.Name);
     }

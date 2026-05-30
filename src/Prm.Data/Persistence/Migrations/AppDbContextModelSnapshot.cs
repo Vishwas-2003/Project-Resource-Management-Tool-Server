@@ -24,11 +24,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.ActivityTag", b =>
                 {
-                    b.Property<int>("ActivityTagId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ActivityTagId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -47,7 +47,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("ActivityTagId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -61,11 +61,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Allocation", b =>
                 {
-                    b.Property<int>("AllocationId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AllocationId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -94,7 +94,7 @@ namespace Prm.Data.Persistence.Migrations
                     b.Property<int>("UtilizationPercent")
                         .HasColumnType("int");
 
-                    b.HasKey("AllocationId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -109,11 +109,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Employee", b =>
                 {
-                    b.Property<int>("EmployeeId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EmployeeId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -138,14 +138,13 @@ namespace Prm.Data.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Status")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("EmployeeId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -195,11 +194,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Milestone", b =>
                 {
-                    b.Property<int>("MilestoneId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MilestoneId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -229,7 +228,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.HasKey("MilestoneId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -242,11 +241,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Project", b =>
                 {
-                    b.Property<int>("ProjectId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProjectId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -284,7 +283,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.HasKey("ProjectId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -300,11 +299,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.RefreshToken", b =>
                 {
-                    b.Property<int>("RefreshTokenId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RefreshTokenId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -329,7 +328,7 @@ namespace Prm.Data.Persistence.Migrations
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
-                    b.HasKey("RefreshTokenId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -346,11 +345,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Role", b =>
                 {
-                    b.Property<int>("RoleId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoleId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -369,7 +368,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.HasKey("RoleId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -383,19 +382,19 @@ namespace Prm.Data.Persistence.Migrations
                     b.HasData(
                         new
                         {
-                            RoleId = 1,
+                            Id = 1,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "Admin"
                         },
                         new
                         {
-                            RoleId = 2,
+                            Id = 2,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "Manager"
                         },
                         new
                         {
-                            RoleId = 3,
+                            Id = 3,
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Name = "Employee"
                         });
@@ -403,11 +402,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Skill", b =>
                 {
-                    b.Property<int>("SkillId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SkillId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Category")
                         .IsRequired()
@@ -431,7 +430,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("SkillId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -445,11 +444,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.SystemConfiguration", b =>
                 {
-                    b.Property<int>("ConfigurationId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConfigurationId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("ApiKey")
                         .IsRequired()
@@ -479,7 +478,7 @@ namespace Prm.Data.Persistence.Migrations
                     b.Property<int>("SchedulerInterval")
                         .HasColumnType("int");
 
-                    b.HasKey("ConfigurationId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -493,11 +492,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.Timesheet", b =>
                 {
-                    b.Property<int>("TimesheetId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TimesheetId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -525,7 +524,7 @@ namespace Prm.Data.Persistence.Migrations
                     b.Property<DateOnly>("WeekStart")
                         .HasColumnType("date");
 
-                    b.HasKey("TimesheetId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -579,11 +578,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.TimesheetEntry", b =>
                 {
-                    b.Property<int>("EntryId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EntryId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -606,7 +605,7 @@ namespace Prm.Data.Persistence.Migrations
                     b.Property<int>("TimesheetId")
                         .HasColumnType("int");
 
-                    b.HasKey("EntryId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -621,11 +620,11 @@ namespace Prm.Data.Persistence.Migrations
 
             modelBuilder.Entity("Prm.Data.Entities.User", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -668,7 +667,7 @@ namespace Prm.Data.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("UserId");
+                    b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
