@@ -58,6 +58,7 @@ public class AuthService(
                 UserId = user.UserId,
                 Token = refreshTokenValue,
                 ExpiryDateUtc = DateTime.UtcNow.AddDays(_jwtOptionsAccessor.Value.RefreshTokenDays),
+                CreatedByUserId = user.UserId,
             },
             cancellationToken);
 

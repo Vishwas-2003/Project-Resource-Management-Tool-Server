@@ -34,8 +34,7 @@ internal static class TestData
             PasswordHash = string.Empty,
             IsActive = isActive,
             ForcePasswordChange = false,
-            CreatedAtUtc = DateTime.UtcNow,
-            Role = new Role { RoleId = 1, Name = "Admin" },
+            Role = new Role { RoleId = 1, Name = "Admin", CreatedAtUtc = DateTime.UtcNow },
         };
 
         return user;

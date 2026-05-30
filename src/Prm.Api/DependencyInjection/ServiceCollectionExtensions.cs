@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Prm.Api.Configuration;
+using Prm.Api.Infrastructure;
 using Prm.Common.Constants;
+using Prm.Data.Audit;
 using Prm.Data.Entities;
 using Prm.Data.Repositories;
 using Prm.Data.Repositories.Interfaces;
@@ -42,6 +44,9 @@ public static class ServiceCollectionExtensions
             .AddOptions<BootstrapAdminOptions>()
             .BindConfiguration(AppConstants.Configuration.BootstrapAdminSection)
             .ValidateDataAnnotations();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();

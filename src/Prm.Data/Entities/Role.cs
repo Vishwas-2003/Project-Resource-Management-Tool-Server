@@ -1,6 +1,6 @@
 namespace Prm.Data.Entities;
 
-public class Role
+public class Role : BaseEntity
 {
     public int RoleId { get; set; }
     public required string Name { get; set; }

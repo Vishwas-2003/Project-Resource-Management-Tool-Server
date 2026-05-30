@@ -31,7 +31,6 @@ public static class DatabaseInitializer
                 PasswordHash = string.Empty,
                 IsActive = true,
                 ForcePasswordChange = true,
-                CreatedAtUtc = DateTime.UtcNow,
             };
             adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, bootstrapAdmin.Password);
             await dbContext.Users.AddAsync(adminUser, cancellationToken);
