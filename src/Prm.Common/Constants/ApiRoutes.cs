@@ -26,4 +26,13 @@ public static class ApiRoutes
         public const string Update = "employee/{employeeId:int}/{skillId:int}";
         public const string Remove = "employee/{employeeId:int}/{skillId:int}";
     }
+
+    public static class Users
+    {
+        public const string GetUsers = "get-users";
+        public const string Add = "add";
+        public const string Reactivate = "{userId:int}/reactivate";
+        public const string ResetPassword = "reset-password";
+        public const string Deactivate = "deactivate";
+    }
 }

@@ -66,6 +66,17 @@ public static class AppConstants
         public const string SkillRemoved = "Skill removed successfully.";
     }
 
+    public static class Users
+    {
+        public const string NotFound = "User not found.";
+        public const string LookupRequired = "Either user ID or username must be provided.";
+        public const string UsernameExists = "Username is already in use.";
+        public const string EmailExists = "Email is already in use.";
+        public const string InvalidRole = "Role must be Admin (1), Manager (2), or Employee (3).";
+        public const string AlreadyActive = "User account is already active.";
+        public const string AlreadyInactive = "User account is already inactive.";
+    }
+
     public static class Http
     {
         public const string JsonContentType = "application/json";
