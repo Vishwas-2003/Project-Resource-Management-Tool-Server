@@ -1,4 +1,4 @@
-using Prm.Api.Models.SystemConfigurations;
+using Prm.Common.Models.SystemConfigurations;
 
 namespace Prm.Api.Services.Interfaces;
 

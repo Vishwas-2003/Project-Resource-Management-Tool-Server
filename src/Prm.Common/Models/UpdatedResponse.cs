@@ -1,4 +1,4 @@
-namespace Prm.Api.Models;
+namespace Prm.Common.Models;
 
 public class UpdatedResponse
 {

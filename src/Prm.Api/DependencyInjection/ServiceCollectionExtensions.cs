@@ -34,9 +34,7 @@ public static class ServiceCollectionExtensions
     {
         _ = configuration;
 
-        services.AddAutoMapper(
-            typeof(ServiceCollectionExtensions).Assembly,
-            typeof(Prm.Data.SeedData).Assembly);
+        services.AddAutoMapper(typeof(Prm.Data.SeedData).Assembly);
 
         services
             .AddOptions<JwtOptions>()

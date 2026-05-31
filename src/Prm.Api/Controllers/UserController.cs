@@ -1,12 +1,10 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models;
-using Prm.Api.Models.Users;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models;
 using Prm.Common.Models.Users;
 
 namespace Prm.Api.Controllers;
@@ -14,7 +12,7 @@ namespace Prm.Api.Controllers;
 [Authorize(Roles = nameof(RoleNameEnum.Admin))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class UserController(IUserService _userService, IMapper _mapper) : ApiControllerBase
+public class UserController(IUserService _userService) : ApiControllerBase
 {
     [HttpPost(ApiRoutes.Users.Add)]
     public Task<IActionResult> Add([FromBody] CreateUserRequest request, CancellationToken cancellationToken) =>
@@ -29,7 +27,7 @@ public class UserController(IUserService _userService, IMapper _mapper) : ApiCon
         ExecuteResultAsync(async () =>
         {
             var result = await _userService.GetUsers(cancellationToken);
-            return Ok(_mapper.Map<GetUsersResponse>(result));
+            return Ok(result);
         });
 
     [HttpPost(ApiRoutes.Users.Reactivate)]

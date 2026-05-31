@@ -1,12 +1,10 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models;
-using Prm.Api.Models.Projects;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models;
 using Prm.Common.Models.Projects;
 
 namespace Prm.Api.Controllers;
@@ -14,7 +12,7 @@ namespace Prm.Api.Controllers;
 [Authorize(Roles = nameof(RoleNameEnum.Admin))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class ProjectController(IProjectService _projectService, IMapper _mapper) : ApiControllerBase
+public class ProjectController(IProjectService _projectService) : ApiControllerBase
 {
     [HttpPost(ApiRoutes.Projects.Add)]
     public Task<IActionResult> Add([FromBody] CreateProjectRequest request, CancellationToken cancellationToken) =>
@@ -29,7 +27,7 @@ public class ProjectController(IProjectService _projectService, IMapper _mapper)
         ExecuteResultAsync(async () =>
         {
             var result = await _projectService.GetProjects(cancellationToken);
-            return Ok(_mapper.Map<GetProjectsResponse>(result));
+            return Ok(result);
         });
 
     [HttpPut(ApiRoutes.Projects.Update)]

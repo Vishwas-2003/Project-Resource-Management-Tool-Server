@@ -1,6 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
-using Prm.Api.Models.SystemConfigurations;
+using Prm.Common.Models.SystemConfigurations;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;

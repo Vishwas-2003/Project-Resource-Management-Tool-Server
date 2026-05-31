@@ -1,12 +1,10 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models;
-using Prm.Api.Models.Employees;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models;
 using Prm.Common.Models.Employees;
 
 namespace Prm.Api.Controllers;
@@ -14,14 +12,14 @@ namespace Prm.Api.Controllers;
 [Authorize(Roles = nameof(RoleNameEnum.Admin))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class EmployeeController(IEmployeeService _employeeService, IMapper _mapper) : ApiControllerBase
+public class EmployeeController(IEmployeeService _employeeService) : ApiControllerBase
 {
     [HttpPost(ApiRoutes.Employees.GetEmployees)]
     public Task<IActionResult> GetEmployees([FromBody] EmployeeFilter filter, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
             var result = await _employeeService.GetEmployees(filter, cancellationToken);
-            return Ok(_mapper.Map<GetEmployeesResponse>(result));
+            return Ok(result);
         });
 
     [HttpPost(ApiRoutes.Employees.AddEmployee)]

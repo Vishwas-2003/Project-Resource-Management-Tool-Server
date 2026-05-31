@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models;
 
 namespace Prm.Api.Controllers;
 
@@ -25,8 +25,7 @@ public class SystemConfigurationController(ISystemConfigurationService _systemCo
         });
 
     [HttpGet]
-    public Task<IActionResult> Get(
-        CancellationToken cancellationToken) =>
+    public Task<IActionResult> Get(CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
             var configurations = await _systemConfigurationService.GetAllConfigurations(cancellationToken);

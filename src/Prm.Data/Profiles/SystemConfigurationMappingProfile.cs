@@ -1,12 +1,12 @@
-﻿using AutoMapper;
-using Prm.Api.Models.SystemConfigurations;
+using AutoMapper;
+using Prm.Common.Models.SystemConfigurations;
 using Prm.Data.Entities;
 
-namespace Prm.Api.Profiles;
+namespace Prm.Data.Profiles;
 
-public class SystemConfigurationProfile : Profile
+public class SystemConfigurationMappingProfile : Profile
 {
-    public SystemConfigurationProfile()
+    public SystemConfigurationMappingProfile()
     {
         CreateMap<SystemConfiguration, SystemConfigurationResponse>()
             .ForMember(d => d.Id, o => o.MapFrom(s => s.Id))

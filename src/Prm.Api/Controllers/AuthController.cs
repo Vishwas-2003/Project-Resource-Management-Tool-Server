@@ -1,8 +1,6 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models.Auth;
 using Prm.Common.Constants;
 using Prm.Common.Models.Auth;
 using UserManagement.Services.Interfaces;
@@ -11,7 +9,7 @@ namespace Prm.Api.Controllers;
 
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class AuthController(IAuthService _authService, IMapper _mapper) : ApiControllerBase
+public class AuthController(IAuthService _authService) : ApiControllerBase
 {
     [AllowAnonymous]
     [HttpPost(ApiRoutes.Auth.Login)]
@@ -19,7 +17,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
         ExecuteResultAsync(async () =>
         {
             var result = await _authService.Login(request, cancellationToken);
-            return Ok(_mapper.Map<LoginResponse>(result));
+            return Ok(result);
         });
 
     [AllowAnonymous]
@@ -29,7 +27,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
             async () =>
             {
                 var result = await _authService.Refresh(request, cancellationToken);
-                return Ok(_mapper.Map<LoginResponse>(result));
+                return Ok(result);
             },
             treatUnauthorizedAsSessionExpired: true);
 
@@ -40,7 +38,7 @@ public class AuthController(IAuthService _authService, IMapper _mapper) : ApiCon
             async () =>
             {
                 var result = await _authService.ChangePassword(request, cancellationToken);
-                return Ok(_mapper.Map<LoginResponse>(result));
+                return Ok(result);
             },
             treatUnauthorizedAsSessionExpired: true);
 }

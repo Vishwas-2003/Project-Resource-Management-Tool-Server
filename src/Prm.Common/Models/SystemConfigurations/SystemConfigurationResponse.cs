@@ -1,4 +1,4 @@
-﻿namespace Prm.Api.Models.SystemConfigurations;
+namespace Prm.Common.Models.SystemConfigurations;
 
 public class SystemConfigurationResponse
 {

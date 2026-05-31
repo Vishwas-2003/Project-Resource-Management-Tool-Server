@@ -1,12 +1,10 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Prm.Api.Infrastructure;
-using Prm.Api.Models;
-using Prm.Api.Models.Skills;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models;
 using Prm.Common.Models.Skills;
 
 namespace Prm.Api.Controllers;
@@ -14,14 +12,14 @@ namespace Prm.Api.Controllers;
 [Authorize(Roles = nameof(RoleNameEnum.Admin))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class SkillController(ISkillService _skillService, IMapper _mapper) : ApiControllerBase
+public class SkillController(ISkillService _skillService) : ApiControllerBase
 {
     [HttpGet(ApiRoutes.Skills.GetForEmployee)]
     public Task<IActionResult> GetForEmployee(int employeeId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
             var result = await _skillService.GetForEmployee(employeeId, cancellationToken);
-            return Ok(_mapper.Map<EmployeeSkillsResponse>(result));
+            return Ok(result);
         });
 
     [HttpPost(ApiRoutes.Skills.Add)]
