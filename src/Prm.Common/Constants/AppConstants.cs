@@ -90,6 +90,8 @@ public static class AppConstants
     {
         public const string NotFound = "Milestone not found.";
         public const string InvalidStatus = "Status must be Not Started (1), In Progress (2), or Done (3).";
+        public const string TitleExists = "A milestone with this title already exists for the project.";
+        public const string InvalidDueDate = "Due date must be within the project start and end dates.";
     }
 
     public static class Http

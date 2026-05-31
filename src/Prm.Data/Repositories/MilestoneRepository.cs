@@ -24,4 +24,15 @@ public class MilestoneRepository(AppDbContext dbContext)
         DbSet.FirstOrDefaultAsync(
             x => x.Id == milestoneId && x.ProjectId == projectId,
             cancellationToken);
+
+    public Task<bool> ExistsByTitleForProject(
+        int projectId,
+        string title,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedTitle = title.Trim();
+        return DbSet.AnyAsync(
+            x => x.ProjectId == projectId && x.Title == normalizedTitle,
+            cancellationToken);
+    }
 }

@@ -9,4 +9,8 @@ public interface IMilestoneRepository : ICrudBaseRepository<Milestone, int>
         int milestoneId,
         int projectId,
         CancellationToken cancellationToken = default);
+    Task<bool> ExistsByTitleForProject(
+        int projectId,
+        string title,
+        CancellationToken cancellationToken = default);
 }

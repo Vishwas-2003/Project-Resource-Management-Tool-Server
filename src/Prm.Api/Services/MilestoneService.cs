@@ -37,10 +37,19 @@ public class MilestoneService(
         AddMilestoneRequest request,
         CancellationToken cancellationToken = default)
     {
-        await GetProjectOrThrow(projectId, cancellationToken);
+        var project = await GetProjectOrThrow(projectId, cancellationToken);
+
+        var title = request.Title.Trim();
+        if (await _milestoneRepository.ExistsByTitleForProject(projectId, title, cancellationToken))
+        {
+            throw new InvalidOperationException(AppConstants.Milestones.TitleExists);
+        }
+
+        ValidateDueDateWithinProject(request.DueDate, project);
 
         var milestone = _mapper.Map<Milestone>(request);
         milestone.ProjectId = projectId;
+        milestone.Title = title;
         milestone.Status = MapMilestoneStatus(request.Status);
 
         await _milestoneRepository.Add(milestone, cancellationToken);
@@ -81,6 +90,14 @@ public class MilestoneService(
         }
 
         return project;
+    }
+
+    private static void ValidateDueDateWithinProject(DateOnly dueDate, Project project)
+    {
+        if (dueDate < project.StartDate || dueDate > project.EndDate)
+        {
+            throw new ArgumentException(AppConstants.Milestones.InvalidDueDate);
+        }
     }
 
     private static string MapMilestoneStatus(int status)
