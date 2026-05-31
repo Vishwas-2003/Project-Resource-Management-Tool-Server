@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Prm.Api.Models.SystemConfigurations;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
@@ -17,6 +18,15 @@ public class SystemConfigurationService(
     private readonly IMapper _mapper = mapper;
     private readonly ISystemConfigurationRepository _systemConfigurationRepository = _systemConfigurationRepository;
     private readonly IPasswordHasher<SystemConfiguration> _hasher = _hasher;
+
+    public async Task<IReadOnlyList<SystemConfigurationResponse>> GetAllConfigurations(
+        CancellationToken cancellationToken = default)
+    {
+        var configurations = await _systemConfigurationRepository.GetAll(cancellationToken);
+
+        return _mapper.Map<IReadOnlyList<SystemConfigurationResponse>>(configurations);
+    }
+
     public async Task<bool> Update(
         int configurationId,
         string value,
@@ -26,7 +36,7 @@ public class SystemConfigurationService(
 
         ValidateConfiguration(configurationId, value, configuration);
 
-        if (configuration.ConfigurationType == nameof(ConfigurationOptionEnum.ApiKey))
+        if (configurationId == (int)ConfigurationOptionEnum.ApiKey)
         {
             value = _hasher.HashPassword(configuration, value);
         }
@@ -62,7 +72,7 @@ public class SystemConfigurationService(
             throw new ArgumentException(AppConstants.SystemConfiguration.ValueUnchanged);
         }
 
-        if (configuration.ConfigurationType == nameof(ConfigurationOptionEnum.ApiKey))
+        if (configurationId == (int)ConfigurationOptionEnum.ApiKey)
         {
             if (_hasher.VerifyHashedPassword(configuration, configuration.Value, value)
                 != PasswordVerificationResult.Failed)
