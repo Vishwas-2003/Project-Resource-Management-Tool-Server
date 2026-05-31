@@ -35,4 +35,18 @@ public static class ApiRoutes
         public const string ResetPassword = "reset-password";
         public const string Deactivate = "deactivate";
     }
+
+    public static class Projects
+    {
+        public const string GetProjects = "get-projects";
+        public const string Add = "add";
+        public const string Update = "{projectId:int}";
+    }
+
+    public static class Milestones
+    {
+        public const string GetByProject = "project/{projectId:int}";
+        public const string Add = "project/{projectId:int}";
+        public const string Update = "project/{projectId:int}/{milestoneId:int}";
+    }
 }

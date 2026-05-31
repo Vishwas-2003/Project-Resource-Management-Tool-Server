@@ -77,6 +77,21 @@ public static class AppConstants
         public const string AlreadyInactive = "User account is already inactive.";
     }
 
+    public static class Projects
+    {
+        public const string NotFound = "Project not found.";
+        public const string NameExists = "Project name is already in use.";
+        public const string InvalidStatus = "Status must be Planned (1), Active (2), or On Hold (3).";
+        public const string InvalidDateRange = "End date must be on or after start date.";
+        public const string ManagerNotFound = "Manager not found or is not an active manager.";
+    }
+
+    public static class Milestones
+    {
+        public const string NotFound = "Milestone not found.";
+        public const string InvalidStatus = "Status must be Not Started (1), In Progress (2), or Done (3).";
+    }
+
     public static class Http
     {
         public const string JsonContentType = "application/json";

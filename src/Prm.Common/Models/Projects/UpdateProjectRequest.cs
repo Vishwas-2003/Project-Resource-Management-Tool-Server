@@ -1,0 +1,24 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace Prm.Common.Models.Projects;
+
+public class UpdateProjectRequest
+{
+    [Required]
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(2000)]
+    public string Description { get; set; } = string.Empty;
+
+    public DateOnly StartDate { get; set; }
+
+    public DateOnly EndDate { get; set; }
+
+    [Range(1, 3)]
+    public int Status { get; set; }
+
+    [Range(1, int.MaxValue)]
+    public int ManagerEmployeeId { get; set; }
+}

@@ -52,4 +52,13 @@ public class EmployeeRepository(AppDbContext dbContext)
             .OrderBy(x => x.User.FullName)
             .ToListAsync(cancellationToken);
     }
+
+    public Task<Employee?> GetManagerById(int employeeId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(
+                x => x.Id == employeeId
+                    && x.User.RoleId == (int)RoleNameEnum.Manager
+                    && x.User.IsActive,
+                cancellationToken);
 }
