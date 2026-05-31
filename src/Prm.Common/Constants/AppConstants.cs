@@ -99,4 +99,11 @@ public static class AppConstants
         public const string JsonContentType = "application/json";
         public const string BearerScheme = "Bearer";
     }
+
+    public static class SystemConfiguration
+    {
+        public const string NotFound = "System configuration not found.";
+        public const string InvalidValue = "Invalid value.";
+        public const string ValueUnchanged = "The value is the same as the current value.";
+    }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Prm.Common.Constants;
 using Prm.Common.Models.Api;
+using System.ComponentModel.DataAnnotations;
 
 namespace Prm.Api.Infrastructure;
 
@@ -31,6 +32,7 @@ public static class ControllerExceptionHandler
             KeyNotFoundException notFound => NotFound(notFound.Message),
             DbUpdateConcurrencyException => Conflict(AppConstants.Messages.ConcurrencyConflict),
             DbUpdateException => BadRequest(AppConstants.Messages.DatabaseError),
+            ValidationException => BadRequest(exception.Message),
             _ => null,
         };
 

@@ -49,4 +49,9 @@ public static class ApiRoutes
         public const string Add = "project/{projectId:int}";
         public const string Update = "project/{projectId:int}/{milestoneId:int}";
     }
+
+    public static class SystemConfiguration
+    {
+        public const string Update = "{configurationId:int}";
+    }
 }
