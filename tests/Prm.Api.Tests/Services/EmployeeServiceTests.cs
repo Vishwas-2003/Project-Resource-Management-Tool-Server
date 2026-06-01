@@ -1,0 +1,285 @@
+using AutoMapper;
+using Moq;
+using Prm.Api.Services;
+using Prm.Common.Constants;
+using Prm.Common.Enums;
+using Prm.Common.Models.Employees;
+using Prm.Data.Entities;
+using Prm.Data.Repositories.Interfaces;
+using Prm.Api.Tests.Helpers;
+
+namespace Prm.Api.Tests.Services;
+
+public class EmployeeServiceTests
+{
+    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
+
+    [Fact]
+    public async Task Add_WhenUserNotFound_ThrowsKeyNotFoundException()
+    {
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            sut.Add(new AddEmployeeRequest { UserId = 99, Department = "Eng", Designation = "Dev" }));
+
+        Assert.Equal(AppConstants.Employees.UserNotFound, exception.Message);
+    }
+
+    [Fact]
+    public async Task Add_WhenUserInactive_ThrowsInvalidOperationException()
+    {
+        var user = ApiTestData.CreateUser(isActive: false);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+
+        Assert.Equal(AppConstants.Employees.UserInactive, exception.Message);
+    }
+
+    [Fact]
+    public async Task Add_WhenInvalidRole_ThrowsInvalidOperationException()
+    {
+        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Admin);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+
+        Assert.Equal(AppConstants.Employees.InvalidRoleForEmployee, exception.Message);
+    }
+
+    [Fact]
+    public async Task Add_WhenUserAlreadyHasEmployeeProfile_ThrowsInvalidOperationException()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        var user = ApiTestData.CreateUser(employee: employee);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+
+        Assert.Equal(AppConstants.Employees.ProfileAlreadyExists, exception.Message);
+    }
+
+    [Fact]
+    public async Task Add_WhenProfileExistsInRepository_ThrowsInvalidOperationException()
+    {
+        var user = ApiTestData.CreateUser();
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _employeeRepository
+            .Setup(x => x.ExistsByUserId(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+
+        Assert.Equal(AppConstants.Employees.ProfileAlreadyExists, exception.Message);
+    }
+
+    [Fact]
+    public async Task Add_WhenEmployeeRole_SetsStatusBench()
+    {
+        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Employee);
+        Employee? saved = null;
+
+        SetupSuccessfulAdd(user, e => saved = e);
+
+        var sut = CreateSut();
+        await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" });
+
+        Assert.NotNull(saved);
+        Assert.Equal(EmployeeConstants.StatusBench, saved!.Status);
+    }
+
+    [Fact]
+    public async Task Add_WhenManagerRole_SetsStatusNull()
+    {
+        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Manager);
+        Employee? saved = null;
+
+        SetupSuccessfulAdd(user, e => saved = e);
+
+        var sut = CreateSut();
+        await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Ops", Designation = "Manager" });
+
+        Assert.NotNull(saved);
+        Assert.Null(saved!.Status);
+    }
+
+    [Fact]
+    public async Task Add_WhenSuccessful_ReturnsEmployeeId()
+    {
+        var user = ApiTestData.CreateUser();
+        SetupSuccessfulAdd(user, e => e.Id = 42);
+
+        var sut = CreateSut();
+        var id = await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" });
+
+        Assert.Equal(42, id);
+        _employeeRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Update_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
+    {
+        _employeeRepository
+            .Setup(x => x.GetById(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Employee?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            sut.Update(1, new UpdateEmployeeRequest { Department = "Eng", Designation = "Lead" }));
+
+        Assert.Equal(AppConstants.Employees.NotFound, exception.Message);
+    }
+
+    [Fact]
+    public async Task Update_WhenUserInactive_ThrowsInvalidOperationException()
+    {
+        var employee = ApiTestData.CreateEmployee(userIsActive: false);
+        _employeeRepository
+            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Update(employee.Id, new UpdateEmployeeRequest { Department = "Eng", Designation = "Lead" }));
+
+        Assert.Equal(AppConstants.Employees.AlreadyDeactivated, exception.Message);
+    }
+
+    [Fact]
+    public async Task Update_WhenSuccessful_ReturnsTrue()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        _employeeRepository
+            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var sut = CreateSut();
+        var result = await sut.Update(
+            employee.Id,
+            new UpdateEmployeeRequest { Department = "Product", Designation = "Senior Dev" });
+
+        Assert.True(result);
+        Assert.Equal("Product", employee.Department);
+        Assert.Equal("Senior Dev", employee.Designation);
+        _employeeRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Deactivate_WhenAlreadyDeactivated_ThrowsInvalidOperationException()
+    {
+        var employee = ApiTestData.CreateEmployee(userIsActive: false);
+        _employeeRepository
+            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Deactivate(employee.Id));
+
+        Assert.Equal(AppConstants.Employees.AlreadyDeactivated, exception.Message);
+    }
+
+    [Fact]
+    public async Task Deactivate_WhenEmployeeRole_ClosesAllocationsAndSetsBench()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var employee = ApiTestData.CreateEmployee(roleId: (int)RoleNameEnum.Employee);
+        employee.Allocations.Add(new Allocation
+        {
+            Id = 1,
+            EmployeeId = employee.Id,
+            ProjectId = 1,
+            UtilizationPercent = 50,
+            FromDate = today.AddMonths(-1),
+            ToDate = today.AddMonths(1),
+        });
+
+        _employeeRepository
+            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var sut = CreateSut();
+        var result = await sut.Deactivate(employee.Id);
+
+        Assert.True(result);
+        Assert.False(employee.User.IsActive);
+        Assert.Equal(EmployeeConstants.StatusBench, employee.Status);
+        Assert.Equal(today, employee.Allocations.Single().ToDate);
+    }
+
+    [Fact]
+    public async Task GetEmployees_ReturnsAggregatedCounts()
+    {
+        var employees = new List<Employee>
+        {
+            ApiTestData.CreateEmployee(1, status: EmployeeConstants.StatusBench),
+            ApiTestData.CreateEmployee(2, userId: 2, status: EmployeeConstants.StatusAllocated),
+            ApiTestData.CreateEmployee(3, userId: 3, status: EmployeeConstants.StatusBench),
+        };
+
+        _employeeRepository
+            .Setup(x => x.GetEmployees(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employees);
+
+        var sut = CreateSut();
+        var result = await sut.GetEmployees(new EmployeeFilter());
+
+        Assert.Equal(3, result.Total);
+        Assert.Equal(1, result.Allocated);
+        Assert.Equal(2, result.Bench);
+        Assert.Equal(3, result.Employees.Count);
+    }
+
+    private void SetupSuccessfulAdd(User user, Action<Employee>? onAdd = null)
+    {
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _employeeRepository
+            .Setup(x => x.ExistsByUserId(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _employeeRepository
+            .Setup(x => x.Add(It.IsAny<Employee>(), It.IsAny<CancellationToken>()))
+            .Callback<Employee, CancellationToken>((employee, _) =>
+            {
+                employee.Id = 42;
+                onAdd?.Invoke(employee);
+            })
+            .Returns(Task.CompletedTask);
+        _employeeRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+    }
+
+    private EmployeeService CreateSut() =>
+        new(_employeeRepository.Object, _userRepository.Object, _mapper);
+}

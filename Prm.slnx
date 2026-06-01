@@ -6,6 +6,7 @@
     <Project Path="src/UserManagement/UserManagement.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Prm.Api.Tests/Prm.Api.Tests.csproj" />
     <Project Path="tests/UserManagement.Tests/UserManagement.Tests.csproj" />
   </Folder>
 </Solution>
