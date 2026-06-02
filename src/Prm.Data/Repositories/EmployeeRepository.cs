@@ -61,4 +61,8 @@ public class EmployeeRepository(AppDbContext dbContext)
                     && x.User.RoleId == (int)RoleNameEnum.Manager
                     && x.User.IsActive,
                 cancellationToken);
+
+    public async Task<Employee> GetEmployeeByUserId(int userId, CancellationToken cancellationToken) =>
+        await DbSet
+            .Where(employee => employee.UserId == userId).FirstOrDefaultAsync();
 }

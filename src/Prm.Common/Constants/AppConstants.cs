@@ -33,6 +33,7 @@ public static class AppConstants
     public static class Auth
     {
         public const string InvalidCredentials = "Invalid username or password.";
+        public const string EmployeeProfileNotFound = "Employee profile not found. Contact Admin.";
         public const string RefreshTokenInvalidOrExpired = "Refresh token is invalid or expired.";
         public const string UserNotAuthenticated = "You must be logged in to change your password.";
         public const string PasswordChangeNotRequired = "A password change is not required for this account.";

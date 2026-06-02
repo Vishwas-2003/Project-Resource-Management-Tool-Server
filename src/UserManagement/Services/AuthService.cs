@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Common.Models.Auth;
 using Prm.Data.Audit;
 using Prm.Data.Entities;
@@ -13,6 +14,7 @@ namespace UserManagement.Services;
 
 public class AuthService(
     IUserRepository _userRepository,
+    IEmployeeRepository _employeeRepository,
     IRefreshTokenRepository _refreshTokenRepository,
     IPasswordHasher<User> _passwordHasher,
     IJwtTokenService _jwtTokenService,
@@ -26,6 +28,13 @@ public class AuthService(
         if (user is null || !user.IsActive)
         {
             throw new UnauthorizedAccessException(AppConstants.Auth.InvalidCredentials);
+        }
+
+        var employee = await _employeeRepository.GetEmployeeByUserId(user.Id, cancellationToken);
+
+        if (user.RoleId != (int)RoleNameEnum.Admin && employee is null)
+        {
+            throw new UnauthorizedAccessException(AppConstants.Auth.EmployeeProfileNotFound);
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
