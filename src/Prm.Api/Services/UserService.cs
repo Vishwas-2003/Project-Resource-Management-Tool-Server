@@ -113,6 +113,11 @@ public class UserService(
     {
         var user = await ResolveUserOrThrow(request, cancellationToken);
 
+        if (await _userRepository.IsLastActiveAdmin(user, cancellationToken))
+        {
+            throw new InvalidOperationException(AppConstants.Users.CannotDeactivateLastAdmin);
+        }
+
         if (!user.IsActive)
         {
             throw new InvalidOperationException(AppConstants.Users.AlreadyInactive);

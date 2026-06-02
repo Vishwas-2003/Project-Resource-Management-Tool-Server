@@ -11,4 +11,5 @@ public interface IUserRepository : ICrudBaseRepository<User, int>
     Task<IReadOnlyList<User>> GetUsers(CancellationToken cancellationToken = default);
     Task<bool> ExistsByUsername(string username, CancellationToken cancellationToken = default);
     Task<bool> ExistsByEmail(string email, CancellationToken cancellationToken = default);
+    Task<bool> IsLastActiveAdmin(User user, CancellationToken cancellationToken);
 }

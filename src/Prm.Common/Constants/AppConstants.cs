@@ -76,6 +76,7 @@ public static class AppConstants
         public const string InvalidRole = "Role must be Admin (1), Manager (2), or Employee (3).";
         public const string AlreadyActive = "User account is already active.";
         public const string AlreadyInactive = "User account is already inactive.";
+        public const string CannotDeactivateLastAdmin = "Cannot deactivate last Active admin.";
     }
 
     public static class Projects

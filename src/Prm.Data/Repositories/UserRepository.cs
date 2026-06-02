@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Prm.Common.Enums;
 using Prm.Data.Entities;
 using Prm.Data.Persistence;
 using Prm.Data.Repositories.Interfaces;
@@ -38,4 +39,18 @@ public class UserRepository(AppDbContext dbContext)
 
     public Task<bool> ExistsByEmail(string email, CancellationToken cancellationToken = default) =>
         DbSet.AnyAsync(x => x.Email == email.Trim(), cancellationToken);
+
+    public async Task<bool> IsLastActiveAdmin(User user, CancellationToken cancellationToken)
+    {
+        var admins = await DbSet
+            .Where(user => user.IsActive && user.RoleId == (int)RoleNameEnum.Admin)
+            .ToListAsync();
+        
+        if (admins.Count == 1 && admins.Any(admin => admin.Id == user.Id))
+        {
+            return true;
+        }
+
+        return false;
+    }
 }
