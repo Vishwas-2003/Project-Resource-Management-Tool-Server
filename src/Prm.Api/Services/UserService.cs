@@ -10,18 +10,12 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class UserService(
-    IUserRepository userRepository,
-    IRoleRepository roleRepository,
-    IRefreshTokenRepository refreshTokenRepository,
-    IPasswordHasher<User> passwordHasher,
-    IMapper mapper) : IUserService
+    IUserRepository _userRepository,
+    IRoleRepository _roleRepository,
+    IRefreshTokenRepository _refreshTokenRepository,
+    IPasswordHasher<User> _passwordHasher,
+    IMapper _mapper) : IUserService
 {
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IRoleRepository _roleRepository = roleRepository;
-    private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
-    private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
-    private readonly IMapper _mapper = mapper;
-
     public async Task<int> Add(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
         await ValidateRole(request.RoleId, cancellationToken);

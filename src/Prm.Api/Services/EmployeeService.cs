@@ -10,18 +10,12 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class EmployeeService(
-    IEmployeeRepository employeeRepository,
-    IUserRepository userRepository,
-    IAllocationRepository allocationRepository,
-    ITimesheetRepository timesheetRepository,
-    IMapper mapper) : IEmployeeService
+    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
+    IAllocationRepository _allocationRepository,
+    ITimesheetRepository _timesheetRepository,
+    IMapper _mapper) : IEmployeeService
 {
-    private readonly IEmployeeRepository _employeeRepository = employeeRepository;
-    private readonly IUserRepository _userRepository = userRepository;
-    private readonly IAllocationRepository _allocationRepository = allocationRepository;
-    private readonly ITimesheetRepository _timesheetRepository = timesheetRepository;
-    private readonly IMapper _mapper = mapper;
-
     public async Task<int> Add(AddEmployeeRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByIdWithRoleAndEmployee(request.UserId, cancellationToken);

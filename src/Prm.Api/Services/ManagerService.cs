@@ -8,12 +8,9 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class ManagerService(
-    IEmployeeRepository employeeRepository,
-    IAllocationRepository allocationRepository) : IManagerService
+    IEmployeeRepository _employeeRepository,
+    IAllocationRepository _allocationRepository) : IManagerService
 {
-    private readonly IEmployeeRepository _employeeRepository = employeeRepository;
-    private readonly IAllocationRepository _allocationRepository = allocationRepository;
-
     public async Task<ResourceDashboardResponse> GetResourceDashboard(
         int managerUserId,
         CancellationToken cancellationToken = default)

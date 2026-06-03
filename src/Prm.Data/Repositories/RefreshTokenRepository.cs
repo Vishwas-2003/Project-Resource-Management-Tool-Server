@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class RefreshTokenRepository(AppDbContext dbContext)
-    : CrudBaseRepository<RefreshToken, int>(dbContext), IRefreshTokenRepository
+public class RefreshTokenRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<RefreshToken, int>(_dbContext), IRefreshTokenRepository
 {
     public Task<RefreshToken?> GetByTokenWithUser(string token, CancellationToken cancellationToken = default) =>
         DbSet

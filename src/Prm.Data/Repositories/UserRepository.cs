@@ -6,8 +6,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class UserRepository(AppDbContext dbContext)
-    : CrudBaseRepository<User, int>(dbContext), IUserRepository
+public class UserRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<User, int>(_dbContext), IUserRepository
 {
     public Task<User?> GetByUsername(string username, CancellationToken cancellationToken = default)
     {

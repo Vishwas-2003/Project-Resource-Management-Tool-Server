@@ -7,8 +7,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class EmployeeRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Employee, int>(dbContext), IEmployeeRepository
+public class EmployeeRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Employee, int>(_dbContext), IEmployeeRepository
 {
     public override Task<Employee?> GetById(int employeeId, CancellationToken cancellationToken = default) =>
         DbSet

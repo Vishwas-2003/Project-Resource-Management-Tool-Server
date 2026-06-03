@@ -4,5 +4,5 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class RoleRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Role, int>(dbContext), IRoleRepository;
+public class RoleRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Role, int>(_dbContext), IRoleRepository;

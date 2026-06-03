@@ -13,12 +13,8 @@ namespace Prm.Api.Services;
 public class SystemConfigurationService(
     ISystemConfigurationRepository _systemConfigurationRepository,
     IPasswordHasher<SystemConfiguration> _hasher,
-    IMapper mapper) : ISystemConfigurationService
+    IMapper _mapper) : ISystemConfigurationService
 {
-    private readonly IMapper _mapper = mapper;
-    private readonly ISystemConfigurationRepository _systemConfigurationRepository = _systemConfigurationRepository;
-    private readonly IPasswordHasher<SystemConfiguration> _hasher = _hasher;
-
     public async Task<IReadOnlyList<SystemConfigurationResponse>> GetAllConfigurations(
         CancellationToken cancellationToken = default)
     {

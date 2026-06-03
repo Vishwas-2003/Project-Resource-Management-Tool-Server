@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class SkillRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Skill, int>(dbContext), ISkillRepository
+public class SkillRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Skill, int>(_dbContext), ISkillRepository
 {
     public Task<Skill?> GetByName(string name, CancellationToken cancellationToken = default)
     {

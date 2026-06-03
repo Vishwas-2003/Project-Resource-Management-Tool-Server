@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class EmployeeSkillRepository(AppDbContext dbContext)
-    : CrudBaseRepository<EmployeeSkill, EmployeeSkillKey>(dbContext), IEmployeeSkillRepository
+public class EmployeeSkillRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<EmployeeSkill, EmployeeSkillKey>(_dbContext), IEmployeeSkillRepository
 {
     public override Task<EmployeeSkill?> GetById(EmployeeSkillKey id, CancellationToken cancellationToken = default) =>
         DbSet

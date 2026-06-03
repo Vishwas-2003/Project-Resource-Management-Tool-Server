@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class ProjectRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Project, int>(dbContext), IProjectRepository
+public class ProjectRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Project, int>(_dbContext), IProjectRepository
 {
     public override Task<Project?> GetById(int projectId, CancellationToken cancellationToken = default) =>
         GetByIdWithManager(projectId, cancellationToken);

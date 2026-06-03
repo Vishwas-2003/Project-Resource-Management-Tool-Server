@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class MilestoneRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Milestone, int>(dbContext), IMilestoneRepository
+public class MilestoneRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Milestone, int>(_dbContext), IMilestoneRepository
 {
     public async Task<IReadOnlyList<Milestone>> GetByProjectId(
         int projectId,

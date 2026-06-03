@@ -9,14 +9,10 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class MilestoneService(
-    IProjectRepository projectRepository,
-    IMilestoneRepository milestoneRepository,
-    IMapper mapper) : IMilestoneService
+    IProjectRepository _projectRepository,
+    IMilestoneRepository _milestoneRepository,
+    IMapper _mapper) : IMilestoneService
 {
-    private readonly IProjectRepository _projectRepository = projectRepository;
-    private readonly IMilestoneRepository _milestoneRepository = milestoneRepository;
-    private readonly IMapper _mapper = mapper;
-
     public async Task<ProjectMilestonesResult> GetByProjectId(
         int projectId,
         CancellationToken cancellationToken = default)

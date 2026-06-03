@@ -5,14 +5,14 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public abstract class CrudBaseService<TEntity, TKey, TDto, TCreateRequest, TUpdateRequest>(
-    ICrudBaseRepository<TEntity, TKey> repository,
-    IMapper mapper,
-    string notFoundMessage) : ICrudBaseService<TDto, TKey, TCreateRequest, TUpdateRequest>
+    ICrudBaseRepository<TEntity, TKey> _repository,
+    IMapper _mapper,
+    string _notFoundMessage) : ICrudBaseService<TDto, TKey, TCreateRequest, TUpdateRequest>
     where TEntity : class
 {
-    protected ICrudBaseRepository<TEntity, TKey> Repository { get; } = repository;
-    protected IMapper Mapper { get; } = mapper;
-    protected string NotFoundMessage { get; } = notFoundMessage;
+    protected ICrudBaseRepository<TEntity, TKey> Repository { get; } = _repository;
+    protected IMapper Mapper { get; } = _mapper;
+    protected string NotFoundMessage { get; } = _notFoundMessage;
 
     public virtual async Task<TDto> Get(TKey id, CancellationToken cancellationToken = default)
     {

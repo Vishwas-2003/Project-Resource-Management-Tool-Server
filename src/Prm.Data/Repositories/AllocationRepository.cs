@@ -5,8 +5,8 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class AllocationRepository(AppDbContext dbContext)
-    : CrudBaseRepository<Allocation, int>(dbContext), IAllocationRepository
+public class AllocationRepository(AppDbContext _dbContext)
+    : CrudBaseRepository<Allocation, int>(_dbContext), IAllocationRepository
 {
     public Task<Allocation?> GetByIdWithDetails(int allocationId, CancellationToken cancellationToken = default) =>
         DbSet

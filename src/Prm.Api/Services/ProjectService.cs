@@ -10,18 +10,12 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class ProjectService(
-    IProjectRepository projectRepository,
-    IEmployeeRepository employeeRepository,
-    ITimesheetRepository timesheetRepository,
-    ISystemConfigurationRepository systemConfigurationRepository,
-    IMapper mapper) : IProjectService
+    IProjectRepository _projectRepository,
+    IEmployeeRepository _employeeRepository,
+    ITimesheetRepository _timesheetRepository,
+    ISystemConfigurationRepository _systemConfigurationRepository,
+    IMapper _mapper) : IProjectService
 {
-    private readonly IProjectRepository _projectRepository = projectRepository;
-    private readonly IEmployeeRepository _employeeRepository = employeeRepository;
-    private readonly ITimesheetRepository _timesheetRepository = timesheetRepository;
-    private readonly ISystemConfigurationRepository _systemConfigurationRepository = systemConfigurationRepository;
-    private readonly IMapper _mapper = mapper;
-
     public async Task<int> Add(CreateProjectRequest request, CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.StartDate, request.EndDate);

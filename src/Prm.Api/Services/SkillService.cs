@@ -8,16 +8,11 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class SkillService(
-    IEmployeeRepository employeeRepository,
-    ISkillRepository skillRepository,
-    IEmployeeSkillRepository employeeSkillRepository,
-    IMapper mapper) : ISkillService
+    IEmployeeRepository _employeeRepository,
+    ISkillRepository _skillRepository,
+    IEmployeeSkillRepository _employeeSkillRepository,
+    IMapper _mapper) : ISkillService
 {
-    private readonly IEmployeeRepository _employeeRepository = employeeRepository;
-    private readonly ISkillRepository _skillRepository = skillRepository;
-    private readonly IEmployeeSkillRepository _employeeSkillRepository = employeeSkillRepository;
-    private readonly IMapper _mapper = mapper;
-
     public async Task<EmployeeSkillsResult> GetForEmployee(int employeeId, CancellationToken cancellationToken = default)
     {
         var employee = await GetEmployeeOrThrow(employeeId, cancellationToken);

@@ -4,13 +4,13 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public class TimesheetRepository(AppDbContext dbContext) : ITimesheetRepository
+public class TimesheetRepository(AppDbContext _dbContext) : ITimesheetRepository
 {
     public async Task<IReadOnlyList<string>> GetRecentActivityTagNamesForEmployee(
         int employeeId,
         DateOnly sinceDate,
         CancellationToken cancellationToken = default) =>
-        await dbContext.TimesheetActivityTags
+        await _dbContext.TimesheetActivityTags
             .Where(x =>
                 x.TimesheetEntry.Timesheet.EmployeeId == employeeId
                 && x.TimesheetEntry.Timesheet.WeekStart >= sinceDate)
@@ -25,7 +25,7 @@ public class TimesheetRepository(AppDbContext dbContext) : ITimesheetRepository
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var hours = await dbContext.TimesheetEntries
+        var hours = await _dbContext.TimesheetEntries
             .Where(x =>
                 x.Timesheet.EmployeeId == employeeId
                 && x.ProjectId == projectId

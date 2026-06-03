@@ -4,11 +4,11 @@ using Prm.Data.Repositories.Interfaces;
 
 namespace Prm.Data.Repositories;
 
-public abstract class CrudBaseRepository<TEntity, TKey>(AppDbContext dbContext) : ICrudBaseRepository<TEntity, TKey>
+public abstract class CrudBaseRepository<TEntity, TKey>(AppDbContext _dbContext) : ICrudBaseRepository<TEntity, TKey>
     where TEntity : class
 {
-    protected AppDbContext DbContext { get; } = dbContext;
-    protected DbSet<TEntity> DbSet { get; } = dbContext.Set<TEntity>();
+    protected AppDbContext DbContext { get; } = _dbContext;
+    protected DbSet<TEntity> DbSet { get; } = _dbContext.Set<TEntity>();
 
     public virtual Task<TEntity?> GetById(TKey id, CancellationToken cancellationToken = default) =>
         DbSet.FindAsync([id!], cancellationToken).AsTask();

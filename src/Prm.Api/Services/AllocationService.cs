@@ -8,14 +8,10 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class AllocationService(
-    IAllocationRepository allocationRepository,
-    IEmployeeRepository employeeRepository,
-    IProjectRepository projectRepository) : IAllocationService
+    IAllocationRepository _allocationRepository,
+    IEmployeeRepository _employeeRepository,
+    IProjectRepository _projectRepository) : IAllocationService
 {
-    private readonly IAllocationRepository _allocationRepository = allocationRepository;
-    private readonly IEmployeeRepository _employeeRepository = employeeRepository;
-    private readonly IProjectRepository _projectRepository = projectRepository;
-
     public async Task<AllocationCreatedResponse> Create(
         CreateAllocationRequest request,
         int managerEmployeeId,

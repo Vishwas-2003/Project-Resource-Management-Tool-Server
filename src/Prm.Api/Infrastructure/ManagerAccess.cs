@@ -6,12 +6,12 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Infrastructure;
 
 public sealed class ManagerAccess(
-    ICurrentUserService currentUserService,
-    IEmployeeRepository employeeRepository)
+    ICurrentUserService _currentUserService,
+    IEmployeeRepository _employeeRepository)
 {
     public int GetCurrentUserId()
     {
-        var userId = currentUserService.GetUserId();
+        var userId = _currentUserService.GetUserId();
         if (!userId.HasValue)
         {
             throw new UnauthorizedAccessException(AppConstants.Auth.UserNotAuthenticated);
@@ -23,7 +23,7 @@ public sealed class ManagerAccess(
     public async Task<int> GetCurrentManagerEmployeeId(CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
-        var employee = await employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
+        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
         if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Manager)
         {
             throw new KeyNotFoundException(AppConstants.Manager.ProfileNotFound);
