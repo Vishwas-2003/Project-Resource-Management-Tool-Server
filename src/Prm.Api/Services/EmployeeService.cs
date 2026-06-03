@@ -3,6 +3,7 @@ using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
 using Prm.Common.Models.Employees;
+using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
 
@@ -11,10 +12,14 @@ namespace Prm.Api.Services;
 public class EmployeeService(
     IEmployeeRepository employeeRepository,
     IUserRepository userRepository,
+    IAllocationRepository allocationRepository,
+    ITimesheetRepository timesheetRepository,
     IMapper mapper) : IEmployeeService
 {
     private readonly IEmployeeRepository _employeeRepository = employeeRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly IAllocationRepository _allocationRepository = allocationRepository;
+    private readonly ITimesheetRepository _timesheetRepository = timesheetRepository;
     private readonly IMapper _mapper = mapper;
 
     public async Task<int> Add(AddEmployeeRequest request, CancellationToken cancellationToken = default)
@@ -102,6 +107,88 @@ public class EmployeeService(
 
         return true;
     }
+
+    public async Task<EmployeeDetailResponse> GetDetail(
+        int employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var employee = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
+        var allocations = await _allocationRepository.GetActiveByEmployeeId(employeeId, today, cancellationToken);
+        var sinceDate = today.AddDays(-7 * ManagerConstants.ActivityTagsLookbackWeeks);
+        var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForEmployee(
+            employeeId,
+            sinceDate,
+            cancellationToken);
+
+        return new EmployeeDetailResponse
+        {
+            Id = employee.Id,
+            Name = employee.User.FullName,
+            Department = employee.Department,
+            CurrentStatus = FormatEmployeeStatus(utilization),
+            UtilizationPercent = utilization,
+            ProfileSkills = FormatSkills(employee),
+            ActiveAllocations = allocations
+                .Select(x => new EmployeeAllocationRow
+                {
+                    Project = x.Project.Name,
+                    UtilizationPercent = x.UtilizationPercent,
+                    FromDate = x.FromDate,
+                    ToDate = x.ToDate,
+                })
+                .ToList(),
+            RecentActivityTags = activityTags,
+        };
+    }
+
+    public async Task<EmployeeUtilizationResponse> GetUtilization(
+        int employeeId,
+        CancellationToken cancellationToken = default)
+    {
+        var employee = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
+
+        return new EmployeeUtilizationResponse
+        {
+            EmployeeId = employee.Id,
+            Name = employee.User.FullName,
+            UtilizationPercent = utilization,
+            StatusDescription = utilization == 0
+                ? ManagerConstants.AvailabilityOnBench
+                : $"{utilization}%",
+        };
+    }
+
+    private async Task<Employee> GetResourceEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)
+    {
+        var employee = await _employeeRepository.GetEmployeeDetailById(employeeId, cancellationToken);
+        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Employee)
+        {
+            throw new KeyNotFoundException(AppConstants.Manager.EmployeeNotFound);
+        }
+
+        return employee;
+    }
+
+    private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>
+        _allocationRepository.SumUtilizationForEmployeeInPeriod(
+            employeeId,
+            date,
+            date,
+            cancellationToken: cancellationToken);
+
+    private static string FormatSkills(Employee employee) =>
+        string.Join(", ", employee.EmployeeSkills.Select(x => x.Skill.Name).OrderBy(x => x));
+
+    private static string FormatEmployeeStatus(int utilization) =>
+        utilization > 0
+            ? $"{EmployeeConstants.StatusAllocated} ({utilization}%)"
+            : EmployeeConstants.StatusBench;
 
     private async Task<Employee> GetEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)
     {

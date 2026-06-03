@@ -9,11 +9,13 @@ using Prm.Common.Models.Projects;
 
 namespace Prm.Api.Controllers;
 
-[Authorize(Roles = nameof(RoleNameEnum.Admin))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
-public class ProjectController(IProjectService _projectService) : ApiControllerBase
+public class ProjectController(
+    IProjectService _projectService,
+    ManagerAccess _managerAccess) : ApiControllerBase
 {
+    [Authorize(Roles = nameof(RoleNameEnum.Admin))]
     [HttpPost(ApiRoutes.Projects.Add)]
     public Task<IActionResult> Add([FromBody] CreateProjectRequest request, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
@@ -22,6 +24,7 @@ public class ProjectController(IProjectService _projectService) : ApiControllerB
             return StatusCode(StatusCodes.Status201Created, new CreatedIdResponse { Id = id });
         });
 
+    [Authorize(Roles = nameof(RoleNameEnum.Admin))]
     [HttpPost(ApiRoutes.Projects.GetProjects)]
     public Task<IActionResult> GetProjects(CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
@@ -30,6 +33,7 @@ public class ProjectController(IProjectService _projectService) : ApiControllerB
             return Ok(result);
         });
 
+    [Authorize(Roles = nameof(RoleNameEnum.Admin))]
     [HttpPut(ApiRoutes.Projects.Update)]
     public Task<IActionResult> Update(
         int projectId,
@@ -39,5 +43,25 @@ public class ProjectController(IProjectService _projectService) : ApiControllerB
         {
             var updated = await _projectService.Update(projectId, request, cancellationToken);
             return Ok(new UpdatedResponse { Updated = updated });
+        });
+
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
+    [HttpGet(ApiRoutes.Projects.MyProjects)]
+    public Task<IActionResult> GetMyProjects(CancellationToken cancellationToken) =>
+        ExecuteResultAsync(async () =>
+        {
+            var userId = _managerAccess.GetCurrentUserId();
+            var result = await _projectService.GetMyProjects(userId, cancellationToken);
+            return Ok(result);
+        });
+
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
+    [HttpGet(ApiRoutes.Projects.GetDetail)]
+    public Task<IActionResult> GetDetail(int projectId, CancellationToken cancellationToken) =>
+        ExecuteResultAsync(async () =>
+        {
+            var userId = _managerAccess.GetCurrentUserId();
+            var result = await _projectService.GetProjectDetail(projectId, userId, cancellationToken);
+            return Ok(result);
         });
 }

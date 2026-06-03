@@ -108,4 +108,31 @@ public static class AppConstants
         public const string InvalidValue = "Invalid value.";
         public const string ValueUnchanged = "The value is the same as the current value.";
     }
+
+    public static class Manager
+    {
+        public const string ProfileNotFound = "Manager employee profile not found. Contact Admin.";
+        public const string ProjectNotOwned = "You can only manage allocations on projects you own.";
+        public const string EmployeeNotFound = "Employee not found.";
+        public const string EmployeeNotEligible = "Only active employees can be allocated to projects.";
+    }
+
+    public static class Allocations
+    {
+        public const string NotFound = "Allocation not found.";
+        public const string AlreadyEnded = "Allocation has already ended.";
+        public const string InvalidDateRange = "From date must be before to date.";
+        public const string InvalidUtilization =
+            "Utilization must be between 1 and 100 percent.";
+        public const string ExceedsMaxUtilization =
+            "Total utilisation across overlapping allocations cannot exceed 100%.";
+        public const string OverlappingAllocationOnProject =
+            "Employee already has an overlapping allocation on this project for the selected period.";
+        public const string ProjectNotAllocatable =
+            "Project must be in ACTIVE or PLANNED status to allocate resources.";
+        public const string AllocationDatesOutsideProject =
+            "Allocation dates must be within the project start and end dates.";
+        public const string CreatedSuccessfully = "Allocation created successfully.";
+        public const string EndedSuccessfully = "Allocation ended successfully.";
+    }
 }

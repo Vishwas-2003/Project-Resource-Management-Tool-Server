@@ -62,7 +62,28 @@ public class EmployeeRepository(AppDbContext dbContext)
                     && x.User.IsActive,
                 cancellationToken);
 
-    public async Task<Employee> GetEmployeeByUserId(int userId, CancellationToken cancellationToken) =>
+    public Task<Employee?> GetEmployeeByUserId(int userId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.User)
+            .FirstOrDefaultAsync(employee => employee.UserId == userId, cancellationToken);
+
+    public async Task<IReadOnlyList<Employee>> GetResourcePoolEmployees(
+        CancellationToken cancellationToken = default) =>
         await DbSet
-            .Where(employee => employee.UserId == userId).FirstOrDefaultAsync();
+            .Include(x => x.User)
+            .Include(x => x.EmployeeSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+            .Where(x => x.User.RoleId == (int)RoleNameEnum.Employee && x.User.IsActive)
+            .OrderBy(x => x.User.FullName)
+            .ToListAsync(cancellationToken);
+
+    public Task<Employee?> GetEmployeeDetailById(int employeeId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.User)
+            .Include(x => x.EmployeeSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+                .ThenInclude(x => x.Project)
+            .FirstOrDefaultAsync(x => x.Id == employeeId && x.User.IsActive, cancellationToken);
 }

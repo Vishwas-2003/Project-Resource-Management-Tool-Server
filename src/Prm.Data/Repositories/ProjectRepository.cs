@@ -24,6 +24,28 @@ public class ProjectRepository(AppDbContext dbContext)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
+    public Task<Project?> GetByIdWithDetails(int projectId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.ManagerEmployee)
+                .ThenInclude(x => x.User)
+            .Include(x => x.Milestones)
+            .Include(x => x.Allocations)
+                .ThenInclude(x => x.Employee)
+                    .ThenInclude(x => x.User)
+            .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
+
+    public async Task<IReadOnlyList<Project>> GetByManagerEmployeeId(
+        int managerEmployeeId,
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.Milestones)
+            .Include(x => x.Allocations)
+                .ThenInclude(x => x.Employee)
+                    .ThenInclude(x => x.User)
+            .Where(x => x.ManagerEmployeeId == managerEmployeeId)
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+
     public Task<bool> ExistsByName(string name, CancellationToken cancellationToken = default) =>
         DbSet.AnyAsync(x => x.Name == name.Trim(), cancellationToken);
 

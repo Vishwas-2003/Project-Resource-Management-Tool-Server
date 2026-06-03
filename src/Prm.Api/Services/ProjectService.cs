@@ -2,6 +2,7 @@ using AutoMapper;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models.Manager;
 using Prm.Common.Models.Projects;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -11,10 +12,14 @@ namespace Prm.Api.Services;
 public class ProjectService(
     IProjectRepository projectRepository,
     IEmployeeRepository employeeRepository,
+    ITimesheetRepository timesheetRepository,
+    ISystemConfigurationRepository systemConfigurationRepository,
     IMapper mapper) : IProjectService
 {
     private readonly IProjectRepository _projectRepository = projectRepository;
     private readonly IEmployeeRepository _employeeRepository = employeeRepository;
+    private readonly ITimesheetRepository _timesheetRepository = timesheetRepository;
+    private readonly ISystemConfigurationRepository _systemConfigurationRepository = systemConfigurationRepository;
     private readonly IMapper _mapper = mapper;
 
     public async Task<int> Add(CreateProjectRequest request, CancellationToken cancellationToken = default)
@@ -74,6 +79,212 @@ public class ProjectService(
         await _projectRepository.SaveChanges(cancellationToken);
 
         return true;
+    }
+
+    public async Task<ManagerProjectListResult> GetMyProjects(
+        int managerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var manager = await GetManagerEmployeeOrThrow(managerUserId, cancellationToken);
+        var projects = await _projectRepository.GetByManagerEmployeeId(manager.Id, cancellationToken);
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
+
+        var summaries = new List<ManagerProjectSummary>();
+        for (var index = 0; index < projects.Count; index++)
+        {
+            var project = projects[index];
+            summaries.Add(new ManagerProjectSummary
+            {
+                RowNumber = index + 1,
+                Id = project.Id,
+                Name = project.Name,
+                EndDate = project.EndDate,
+                HealthStatus = await ComputeHealthStatus(project, today, maxWeeklyHours, cancellationToken),
+            });
+        }
+
+        return new ManagerProjectListResult { Projects = summaries };
+    }
+
+    public async Task<ManagerProjectDetailResponse> GetProjectDetail(
+        int projectId,
+        int managerUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var manager = await GetManagerEmployeeOrThrow(managerUserId, cancellationToken);
+        var project = await _projectRepository.GetByIdWithDetails(projectId, cancellationToken);
+        if (project is null)
+        {
+            throw new KeyNotFoundException(AppConstants.Projects.NotFound);
+        }
+
+        if (project.ManagerEmployeeId != manager.Id)
+        {
+            throw new UnauthorizedAccessException(AppConstants.Manager.ProjectNotOwned);
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
+        var health = await ComputeHealthStatus(project, today, maxWeeklyHours, cancellationToken);
+        var riskFlags = await BuildRiskFlags(project, today, maxWeeklyHours, cancellationToken);
+        var activeAllocations = project.Allocations
+            .Where(x => x.FromDate <= today && x.ToDate >= today)
+            .OrderBy(x => x.Employee.User.FullName)
+            .ToList();
+
+        return new ManagerProjectDetailResponse
+        {
+            Id = project.Id,
+            Name = project.Name,
+            HealthStatus = health,
+            RiskFlags = riskFlags,
+            Milestones = project.Milestones
+                .OrderBy(x => x.DueDate)
+                .ThenBy(x => x.Id)
+                .Select((x, index) => new ManagerMilestoneRow
+                {
+                    RowNumber = index + 1,
+                    Title = x.Title,
+                    DueDate = x.DueDate,
+                    Status = x.Status,
+                    IsOverdue = IsMilestoneOverdue(x, today),
+                })
+                .ToList(),
+            AllocatedResources = activeAllocations
+                .Select(x => new ProjectResourceRow
+                {
+                    Name = x.Employee.User.FullName,
+                    UtilizationPercent = x.UtilizationPercent,
+                    FromDate = x.FromDate,
+                    ToDate = x.ToDate,
+                })
+                .ToList(),
+        };
+    }
+
+    private async Task<Employee> GetManagerEmployeeOrThrow(int userId, CancellationToken cancellationToken)
+    {
+        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
+        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Manager)
+        {
+            throw new KeyNotFoundException(AppConstants.Manager.ProfileNotFound);
+        }
+
+        return employee;
+    }
+
+    private async Task<int> GetMaxWeeklyHours(CancellationToken cancellationToken)
+    {
+        var config = await _systemConfigurationRepository.GetById(
+            (int)ConfigurationOptionEnum.MaxWeeklyHours,
+            cancellationToken);
+
+        if (config is null || !int.TryParse(config.Value, out var hours) || hours <= 0)
+        {
+            return ManagerConstants.DefaultMaxWeeklyHours;
+        }
+
+        return hours;
+    }
+
+    private async Task<string> ComputeHealthStatus(
+        Project project,
+        DateOnly today,
+        int maxWeeklyHours,
+        CancellationToken cancellationToken)
+    {
+        var riskFlags = await BuildRiskFlags(project, today, maxWeeklyHours, cancellationToken);
+        var failures = riskFlags.Count(x => x.Outcome == ManagerConstants.RiskFlagFail);
+
+        if (failures >= ManagerConstants.RiskFlagCountForProjectUnderRisk)
+        {
+            return ManagerConstants.HealthAtRisk;
+        }
+
+        if (failures == ManagerConstants.RiskFlagCountForProjectNeedAttention)
+        {
+            return ManagerConstants.HealthAttention;
+        }
+
+        var hasOverdue = project.Milestones.Any(x => IsMilestoneOverdue(x, today));
+        if (hasOverdue)
+        {
+            return ManagerConstants.HealthAttention;
+        }
+
+        return ManagerConstants.HealthOnTrack;
+    }
+
+    private async Task<IReadOnlyList<RiskFlagItem>> BuildRiskFlags(
+        Project project,
+        DateOnly today,
+        int maxWeeklyHours,
+        CancellationToken cancellationToken)
+    {
+        var flags = new List<RiskFlagItem>();
+        var overdueMilestone = project.Milestones
+            .Where(x => IsMilestoneOverdue(x, today))
+            .OrderBy(x => x.DueDate)
+            .FirstOrDefault();
+
+        if (overdueMilestone is not null)
+        {
+            var daysOverdue = today.DayNumber - overdueMilestone.DueDate.DayNumber;
+            flags.Add(new RiskFlagItem
+            {
+                Outcome = ManagerConstants.RiskFlagFail,
+                Message = $"{overdueMilestone.Title} milestone is {daysOverdue} days overdue",
+            });
+        }
+
+        var lastWeekStart = GetWeekStart(today).AddDays(-7);
+        var activeAllocations = project.Allocations
+            .Where(x => x.FromDate <= today && x.ToDate >= today)
+            .ToList();
+
+        foreach (var allocation in activeAllocations)
+        {
+            var expectedHours = allocation.UtilizationPercent * maxWeeklyHours / 100;
+            var actualHours = await _timesheetRepository.GetHoursWorkedForEmployeeOnProjectInWeek(
+                allocation.EmployeeId,
+                project.Id,
+                lastWeekStart,
+                cancellationToken);
+
+            if (expectedHours > 0 && actualHours < expectedHours)
+            {
+                flags.Add(new RiskFlagItem
+                {
+                    Outcome = ManagerConstants.RiskFlagFail,
+                    Message =
+                        $"{allocation.Employee.User.FullName} logged only {actualHours} hrs last week (expected {expectedHours} hrs)",
+                });
+                break;
+            }
+        }
+
+        var totalAllocation = activeAllocations.Sum(x => x.UtilizationPercent);
+        var allocationOk = totalAllocation > AllocationConstants.MinTotalUtilizationPercent && totalAllocation <= AllocationConstants.MaxTotalUtilizationPercent;
+        flags.Add(new RiskFlagItem
+        {
+            Outcome = allocationOk ? ManagerConstants.RiskFlagPass : ManagerConstants.RiskFlagFail,
+            Message = allocationOk
+                ? ManagerConstants.ResourcesCorrectlyAllocated
+                : ManagerConstants.ProjectResourcesNeedAttention,
+        });
+
+        return flags;
+    }
+
+    private static bool IsMilestoneOverdue(Milestone milestone, DateOnly today) =>
+        milestone.Status != MilestoneConstants.StatusDone && milestone.DueDate < today;
+
+    private static DateOnly GetWeekStart(DateOnly date)
+    {
+        var dayOfWeek = (int)date.DayOfWeek;
+        var offset = dayOfWeek == 0 ? 6 : dayOfWeek - 1;
+        return date.AddDays(-offset);
     }
 
     private async Task<Project> GetProjectOrThrow(int projectId, CancellationToken cancellationToken)

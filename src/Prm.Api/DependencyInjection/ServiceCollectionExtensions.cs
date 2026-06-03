@@ -27,6 +27,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
+        services.AddScoped<IAllocationRepository, AllocationRepository>();
+        services.AddScoped<ITimesheetRepository, TimesheetRepository>();
         return services;
     }
 
@@ -53,6 +55,7 @@ public static class ServiceCollectionExtensions
 
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ManagerAccess>();
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
         services.AddScoped<IPasswordHasher<SystemConfiguration>, PasswordHasher<SystemConfiguration>>();
@@ -64,6 +67,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IMilestoneService, MilestoneService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
+        services.AddScoped<IAllocationService, AllocationService>();
+        services.AddScoped<IManagerService, ManagerService>();
         return services;
     }
 }

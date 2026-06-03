@@ -17,6 +17,8 @@ public static class ApiRoutes
         public const string GetEmployees = "get-employees";
         public const string AddEmployee = "add";
         public const string Deactivate = "{employeeId:int}/deactivate";
+        public const string GetDetail = "{employeeId:int}";
+        public const string GetUtilization = "{employeeId:int}/utilization";
     }
 
     public static class Skills
@@ -41,6 +43,15 @@ public static class ApiRoutes
         public const string GetProjects = "get-projects";
         public const string Add = "add";
         public const string Update = "{projectId:int}";
+        public const string MyProjects = "my-projects";
+        public const string GetDetail = "{projectId:int}";
+    }
+
+    public static class Allocations
+    {
+        public const string Create = "";
+        public const string End = "{allocationId:int}/end";
+        public const string GetByProject = "project/{projectId:int}";
     }
 
     public static class Milestones
@@ -53,5 +64,10 @@ public static class ApiRoutes
     public static class SystemConfiguration
     {
         public const string Update = "{configurationId:int}";
+    }
+
+    public static class Manager
+    {
+        public const string ResourceDashboard = "resource-dashboard";
     }
 }
