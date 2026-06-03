@@ -54,8 +54,8 @@ public class EmployeeService(
         {
             Employees = summaries,
             Total = summaries.Count,
-            Allocated = summaries.Count(x => x.Status == EmployeeConstants.StatusAllocated),
-            Bench = summaries.Count(x => x.Status == EmployeeConstants.StatusBench),
+            Allocated = summaries.Count(summary => summary.Status == EmployeeConstants.StatusAllocated),
+            Bench = summaries.Count(summary => summary.Status == EmployeeConstants.StatusBench),
         };
     }
 
@@ -88,7 +88,7 @@ public class EmployeeService(
         }
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var activeAllocations = employee.Allocations.Where(x => x.ToDate >= today).ToList();
+        var activeAllocations = employee.Allocations.Where(allocation => allocation.ToDate >= today).ToList();
 
         foreach (var allocation in activeAllocations)
         {
@@ -132,12 +132,12 @@ public class EmployeeService(
             UtilizationPercent = utilization,
             ProfileSkills = FormatSkills(employee),
             ActiveAllocations = allocations
-                .Select(x => new EmployeeAllocationRow
+                .Select(allocation => new EmployeeAllocationRow
                 {
-                    Project = x.Project.Name,
-                    UtilizationPercent = x.UtilizationPercent,
-                    FromDate = x.FromDate,
-                    ToDate = x.ToDate,
+                    Project = allocation.Project.Name,
+                    UtilizationPercent = allocation.UtilizationPercent,
+                    FromDate = allocation.FromDate,
+                    ToDate = allocation.ToDate,
                 })
                 .ToList(),
             RecentActivityTags = activityTags,
@@ -183,7 +183,11 @@ public class EmployeeService(
             cancellationToken: cancellationToken);
 
     private static string FormatSkills(Employee employee) =>
-        string.Join(", ", employee.EmployeeSkills.Select(x => x.Skill.Name).OrderBy(x => x));
+        string.Join(
+            ", ",
+            employee.EmployeeSkills
+                .Select(skillAssignment => skillAssignment.Skill.Name)
+                .OrderBy(skillName => skillName));
 
     private static string FormatEmployeeStatus(int utilization) =>
         utilization > 0

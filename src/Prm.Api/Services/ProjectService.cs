@@ -91,12 +91,13 @@ public class ProjectService(
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
 
         var summaries = new List<ManagerProjectSummary>();
-        for (var index = 0; index < projects.Count; index++)
+        var rowNumber = 0;
+        foreach (var project in projects)
         {
-            var project = projects[index];
+            rowNumber++;
             summaries.Add(new ManagerProjectSummary
             {
-                RowNumber = index + 1,
+                RowNumber = rowNumber,
                 Id = project.Id,
                 Name = project.Name,
                 EndDate = project.EndDate,
@@ -129,8 +130,8 @@ public class ProjectService(
         var health = await ComputeHealthStatus(project, today, maxWeeklyHours, cancellationToken);
         var riskFlags = await BuildRiskFlags(project, today, maxWeeklyHours, cancellationToken);
         var activeAllocations = project.Allocations
-            .Where(x => x.FromDate <= today && x.ToDate >= today)
-            .OrderBy(x => x.Employee.User.FullName)
+            .Where(allocation => allocation.FromDate <= today && allocation.ToDate >= today)
+            .OrderBy(allocation => allocation.Employee.User.FullName)
             .ToList();
 
         return new ManagerProjectDetailResponse
@@ -140,24 +141,24 @@ public class ProjectService(
             HealthStatus = health,
             RiskFlags = riskFlags,
             Milestones = project.Milestones
-                .OrderBy(x => x.DueDate)
-                .ThenBy(x => x.Id)
-                .Select((x, index) => new ManagerMilestoneRow
+                .OrderBy(milestone => milestone.DueDate)
+                .ThenBy(milestone => milestone.Id)
+                .Select((milestone, rowIndex) => new ManagerMilestoneRow
                 {
-                    RowNumber = index + 1,
-                    Title = x.Title,
-                    DueDate = x.DueDate,
-                    Status = x.Status,
-                    IsOverdue = IsMilestoneOverdue(x, today),
+                    RowNumber = rowIndex + 1,
+                    Title = milestone.Title,
+                    DueDate = milestone.DueDate,
+                    Status = milestone.Status,
+                    IsOverdue = IsMilestoneOverdue(milestone, today),
                 })
                 .ToList(),
             AllocatedResources = activeAllocations
-                .Select(x => new ProjectResourceRow
+                .Select(allocation => new ProjectResourceRow
                 {
-                    Name = x.Employee.User.FullName,
-                    UtilizationPercent = x.UtilizationPercent,
-                    FromDate = x.FromDate,
-                    ToDate = x.ToDate,
+                    Name = allocation.Employee.User.FullName,
+                    UtilizationPercent = allocation.UtilizationPercent,
+                    FromDate = allocation.FromDate,
+                    ToDate = allocation.ToDate,
                 })
                 .ToList(),
         };
@@ -195,7 +196,7 @@ public class ProjectService(
         CancellationToken cancellationToken)
     {
         var riskFlags = await BuildRiskFlags(project, today, maxWeeklyHours, cancellationToken);
-        var failures = riskFlags.Count(x => x.Outcome == ManagerConstants.RiskFlagFail);
+        var failures = riskFlags.Count(flag => flag.Outcome == ManagerConstants.RiskFlagFail);
 
         if (failures >= ManagerConstants.RiskFlagCountForProjectUnderRisk)
         {
@@ -207,7 +208,7 @@ public class ProjectService(
             return ManagerConstants.HealthAttention;
         }
 
-        var hasOverdue = project.Milestones.Any(x => IsMilestoneOverdue(x, today));
+        var hasOverdue = project.Milestones.Any(milestone => IsMilestoneOverdue(milestone, today));
         if (hasOverdue)
         {
             return ManagerConstants.HealthAttention;
@@ -224,8 +225,8 @@ public class ProjectService(
     {
         var flags = new List<RiskFlagItem>();
         var overdueMilestone = project.Milestones
-            .Where(x => IsMilestoneOverdue(x, today))
-            .OrderBy(x => x.DueDate)
+            .Where(milestone => IsMilestoneOverdue(milestone, today))
+            .OrderBy(milestone => milestone.DueDate)
             .FirstOrDefault();
 
         if (overdueMilestone is not null)
@@ -240,7 +241,7 @@ public class ProjectService(
 
         var lastWeekStart = GetWeekStart(today).AddDays(-7);
         var activeAllocations = project.Allocations
-            .Where(x => x.FromDate <= today && x.ToDate >= today)
+            .Where(allocation => allocation.FromDate <= today && allocation.ToDate >= today)
             .ToList();
 
         foreach (var allocation in activeAllocations)

@@ -68,8 +68,8 @@ public class UserService(
         {
             Users = summaries,
             Total = summaries.Count,
-            Active = summaries.Count(x => x.Status == UserConstants.StatusActive),
-            Inactive = summaries.Count(x => x.Status == UserConstants.StatusInactive),
+            Active = summaries.Count(summary => summary.Status == UserConstants.StatusActive),
+            Inactive = summaries.Count(summary => summary.Status == UserConstants.StatusInactive),
         };
     }
 
@@ -186,7 +186,7 @@ public class UserService(
             || !password.Any(char.IsUpper)
             || !password.Any(char.IsLower)
             || !password.Any(char.IsDigit)
-            || !password.Any(c => !char.IsLetterOrDigit(c)))
+            || !password.Any(character => !char.IsLetterOrDigit(character)))
         {
             throw new ArgumentException(AppConstants.Auth.PasswordDoesNotMeetRequirements);
         }

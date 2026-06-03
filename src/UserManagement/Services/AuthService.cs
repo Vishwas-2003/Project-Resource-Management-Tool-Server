@@ -105,7 +105,7 @@ public class AuthService(
             || !password.Any(char.IsUpper)
             || !password.Any(char.IsLower)
             || !password.Any(char.IsDigit)
-            || !password.Any(c => !char.IsLetterOrDigit(c)))
+            || !password.Any(character => !char.IsLetterOrDigit(character)))
         {
             throw new ArgumentException(AppConstants.Auth.PasswordDoesNotMeetRequirements);
         }

@@ -94,7 +94,11 @@ public class ManagerService(
             cancellationToken: cancellationToken);
 
     private static string FormatSkills(Employee employee) =>
-        string.Join(", ", employee.EmployeeSkills.Select(x => x.Skill.Name).OrderBy(x => x));
+        string.Join(
+            ", ",
+            employee.EmployeeSkills
+                .Select(skillAssignment => skillAssignment.Skill.Name)
+                .OrderBy(skillName => skillName));
 
     private static string FormatAvailability(int utilization)
     {

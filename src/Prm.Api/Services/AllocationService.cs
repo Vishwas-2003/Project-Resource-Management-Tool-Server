@@ -118,14 +118,14 @@ public class AllocationService(
             ProjectId = project.Id,
             ProjectName = project.Name,
             Allocations = allocations
-                .Select((x, index) => new ProjectAllocationRow
+                .Select((allocation, rowIndex) => new ProjectAllocationRow
                 {
-                    AllocationId = x.Id,
-                    RowNumber = index + 1,
-                    EmployeeName = x.Employee.User.FullName,
-                    UtilizationPercent = x.UtilizationPercent,
-                    FromDate = x.FromDate,
-                    ToDate = x.ToDate,
+                    AllocationId = allocation.Id,
+                    RowNumber = rowIndex + 1,
+                    EmployeeName = allocation.Employee.User.FullName,
+                    UtilizationPercent = allocation.UtilizationPercent,
+                    FromDate = allocation.FromDate,
+                    ToDate = allocation.ToDate,
                 })
                 .ToList(),
         };
