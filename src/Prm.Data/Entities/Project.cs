@@ -4,6 +4,7 @@ public class Project : BaseEntity
 {
     public int Id { get; set; }
     public int ManagerUserId { get; set; }
+    public int TotalStoryPoints { get; set; }
     public required string Name { get; set; }
     public required string Description { get; set; }
     public DateOnly StartDate { get; set; }

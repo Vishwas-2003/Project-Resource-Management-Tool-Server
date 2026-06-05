@@ -31,6 +31,7 @@ public class ProjectService(
         project.Name = name;
         project.Status = MapProjectStatus(request.Status);
         project.ManagerUserId = request.ManagerUserId;
+        project.TotalStoryPoints = request.TotalStoryPoints;
 
         await _projectRepository.Add(project, cancellationToken);
         await _projectRepository.SaveChanges(cancellationToken);
@@ -45,6 +46,16 @@ public class ProjectService(
         for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
         {
             summaries[rowIndex].RowNumber = rowIndex + 1;
+        }
+
+        var projectsById = projects.ToDictionary(x => x.Id);
+        foreach (var summary in summaries)
+        {
+            var project = projectsById[summary.Id];
+            summary.TotalStoryPoints = project.TotalStoryPoints;
+            summary.StoryPointsDone = project.Milestones
+                .Where(m => m.Status == MilestoneConstants.StatusDone)
+                .Sum(m => m.StoryPoints);
         }
 
         return new ProjectListResult
@@ -73,6 +84,7 @@ public class ProjectService(
         project.Name = name;
         project.Status = MapProjectStatus(request.Status);
         project.ManagerUserId = request.ManagerUserId;
+        project.TotalStoryPoints = request.TotalStoryPoints;
 
         _projectRepository.Update(project);
         await _projectRepository.SaveChanges(cancellationToken);

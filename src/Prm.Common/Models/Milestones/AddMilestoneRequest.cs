@@ -11,6 +11,9 @@ public class AddMilestoneRequest
 
     public DateOnly DueDate { get; set; }
 
+    [Range(0, int.MaxValue)]
+    public int StoryPoints { get; set; }
+
     [Range(1, 3)]
     public int Status { get; set; } = (int)MilestoneStatusEnum.NotStarted;
 }

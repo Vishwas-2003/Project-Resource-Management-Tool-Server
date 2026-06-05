@@ -21,4 +21,7 @@ public class UpdateProjectRequest
 
     [Range(1, int.MaxValue)]
     public int ManagerUserId { get; set; }
+
+    [Range(0, int.MaxValue)]
+    public int TotalStoryPoints { get; set; }
 }

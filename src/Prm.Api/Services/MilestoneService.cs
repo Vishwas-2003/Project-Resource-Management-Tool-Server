@@ -31,6 +31,13 @@ public class MilestoneService(
             ProjectId = project.Id,
             ProjectName = project.Name,
             Milestones = summaries,
+            TotalStoryPoints = summaries.Sum(x => x.StoryPoints),
+            CompletedStoryPoints = summaries
+                .Where(x => x.Status == MilestoneConstants.StatusDone)
+                .Sum(x => x.StoryPoints),
+            RemainingStoryPoints = summaries
+                .Where(x => x.Status != MilestoneConstants.StatusDone)
+                .Sum(x => x.StoryPoints),
         };
     }
 

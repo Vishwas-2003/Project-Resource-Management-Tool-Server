@@ -11,6 +11,7 @@ public class MilestoneConfiguration : IEntityTypeConfiguration<Milestone>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Title).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
+        builder.Property(x => x.StoryPoints).IsRequired();
         builder.HasOne(x => x.Project)
             .WithMany(x => x.Milestones)
             .HasForeignKey(x => x.ProjectId)

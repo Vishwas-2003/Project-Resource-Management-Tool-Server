@@ -14,11 +14,13 @@ public class ProjectRepository(AppDbContext _dbContext)
     public Task<Project?> GetByIdWithManager(int projectId, CancellationToken cancellationToken = default) =>
         DbSet
             .Include(x => x.ManagerUser)
+            .Include(x => x.Milestones)
             .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
 
     public async Task<IReadOnlyList<Project>> GetAllWithManager(CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(x => x.ManagerUser)
+            .Include(x => x.Milestones)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
