@@ -56,6 +56,8 @@ public class MilestoneService(
 
         ValidateDueDateWithinProject(request.DueDate, project);
 
+        ValidateStoryPointsWithinProject(request.StoryPoints, project);
+
         var milestone = _mapper.Map<Milestone>(request);
         milestone.ProjectId = projectId;
         milestone.Title = title;
@@ -81,6 +83,9 @@ public class MilestoneService(
             throw new KeyNotFoundException(AppConstants.Milestones.NotFound);
         }
 
+        var project = await GetProjectOrThrow(projectId, cancellationToken);
+        ValidateStoryPointsWithinProjectForUpdate(request.StoryPoints, project, milestoneId);
+
         _mapper.Map(request, milestone);
         milestone.Status = MapMilestoneStatus(request.Status);
 
@@ -99,6 +104,33 @@ public class MilestoneService(
         }
 
         return project;
+    }
+
+    private static void ValidateStoryPointsWithinProject(
+        int milestoneStoryPoints,
+        Project project)
+    {
+        var used = project.Milestones.Sum(m => m.StoryPoints);
+        var newTotal = used + milestoneStoryPoints;
+        if (newTotal > project.TotalStoryPoints)
+        {
+            throw new InvalidOperationException(AppConstants.Milestones.StoryPointsExceedProjectTotal);
+        }
+    }
+
+    private static void ValidateStoryPointsWithinProjectForUpdate(
+        int milestoneStoryPoints,
+        Project project,
+        int milestoneId)
+    {
+        var usedWithoutThis = project.Milestones
+            .Where(m => m.Id != milestoneId)
+            .Sum(m => m.StoryPoints);
+        var newTotal = usedWithoutThis + milestoneStoryPoints;
+        if (newTotal > project.TotalStoryPoints)
+        {
+            throw new InvalidOperationException(AppConstants.Milestones.StoryPointsExceedProjectTotal);
+        }
     }
 
     private static void ValidateDueDateWithinProject(DateOnly dueDate, Project project)

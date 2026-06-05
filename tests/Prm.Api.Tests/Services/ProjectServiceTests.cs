@@ -195,6 +195,7 @@ public class ProjectServiceTests
             EndDate = End,
             Status = status,
             ManagerUserId = 10,
+            TotalStoryPoints = 120,
         };
 
     private static UpdateProjectRequest CreateUpdateRequest(string name = "Updated") =>
@@ -206,6 +207,7 @@ public class ProjectServiceTests
             EndDate = End,
             Status = (int)ProjectStatusEnum.Active,
             ManagerUserId = 10,
+            TotalStoryPoints = 120,
         };
 
     private ProjectService CreateSut() =>

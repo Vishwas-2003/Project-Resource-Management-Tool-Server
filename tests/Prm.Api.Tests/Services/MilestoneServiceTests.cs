@@ -153,6 +153,34 @@ public class MilestoneServiceTests
     }
 
     [Fact]
+    public async Task Add_WhenStoryPointsExceedProjectTotal_ThrowsInvalidOperationException()
+    {
+        var project = ApiTestData.CreateProject();
+        project.TotalStoryPoints = 5;
+
+        _projectRepository
+            .Setup(x => x.GetById(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+
+        _milestoneRepository
+            .Setup(x => x.ExistsByTitleForProject(project.Id, It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Add(project.Id, new AddMilestoneRequest
+            {
+                Title = "Too Big",
+                DueDate = new DateOnly(2026, 6, 1),
+                StoryPoints = 6,
+                Status = (int)MilestoneStatusEnum.NotStarted,
+            }));
+
+        Assert.Equal(AppConstants.Milestones.StoryPointsExceedProjectTotal, exception.Message);
+    }
+
+    [Fact]
     public async Task Update_WhenMilestoneNotFound_ThrowsKeyNotFoundException()
     {
         var project = ApiTestData.CreateProject();
@@ -190,6 +218,38 @@ public class MilestoneServiceTests
             sut.Update(project.Id, milestone.Id, new UpdateMilestoneRequest { Status = 99 }));
 
         Assert.Equal(AppConstants.Milestones.InvalidStatus, exception.Message);
+    }
+
+    [Fact]
+    public async Task Update_WhenStoryPointsExceedProjectTotal_ThrowsInvalidOperationException()
+    {
+        var project = ApiTestData.CreateProject();
+        project.TotalStoryPoints = 5;
+
+        var milestone = ApiTestData.CreateMilestone(id: 1, projectId: project.Id, title: "M1");
+        milestone.StoryPoints = 3;
+        project.Milestones = new List<Milestone> { milestone };
+
+        _projectRepository
+            .Setup(x => x.GetById(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+
+        _milestoneRepository
+            .Setup(x => x.GetByIdAndProjectId(milestone.Id, project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(milestone);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Update(project.Id, milestone.Id, new UpdateMilestoneRequest
+            {
+                Title = "M1",
+                DueDate = milestone.DueDate,
+                StoryPoints = 6,
+                Status = (int)MilestoneStatusEnum.NotStarted,
+            }));
+
+        Assert.Equal(AppConstants.Milestones.StoryPointsExceedProjectTotal, exception.Message);
     }
 
     private MilestoneService CreateSut() =>
