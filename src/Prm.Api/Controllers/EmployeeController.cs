@@ -52,7 +52,7 @@ public class EmployeeController(IEmployeeService _employeeService) : ApiControll
             return Ok(new UpdatedResponse { Updated = updated });
         });
 
-    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
+    [Authorize(Roles = $"{nameof(RoleNameEnum.Admin)},{nameof(RoleNameEnum.Manager)}")]
     [HttpGet(ApiRoutes.Employees.GetDetail)]
     public Task<IActionResult> GetDetail(int employeeId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
