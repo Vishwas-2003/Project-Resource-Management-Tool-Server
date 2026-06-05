@@ -2,6 +2,7 @@ namespace Prm.Common.Models.Projects;
 
 public class ProjectSummary
 {
+    public int RowNumber { get; set; }
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Manager { get; set; } = string.Empty;

@@ -41,10 +41,15 @@ public class ProjectService(
     public async Task<ProjectListResult> GetProjects(CancellationToken cancellationToken = default)
     {
         var projects = await _projectRepository.GetAllWithManager(cancellationToken);
+        var summaries = _mapper.Map<List<ProjectSummary>>(projects);
+        for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
+        {
+            summaries[rowIndex].RowNumber = rowIndex + 1;
+        }
 
         return new ProjectListResult
         {
-            Projects = _mapper.Map<IReadOnlyList<ProjectSummary>>(projects),
+            Projects = summaries,
         };
     }
 

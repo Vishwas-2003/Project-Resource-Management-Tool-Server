@@ -18,11 +18,17 @@ public class SkillService(
         var employee = await GetEmployeeOrThrow(employeeId, cancellationToken);
         var employeeSkills = await _employeeSkillRepository.GetByEmployeeId(employeeId, cancellationToken);
 
+        var skills = _mapper.Map<List<EmployeeSkillItem>>(employeeSkills);
+        for (var rowIndex = 0; rowIndex < skills.Count; rowIndex++)
+        {
+            skills[rowIndex].RowNumber = rowIndex + 1;
+        }
+
         return new EmployeeSkillsResult
         {
             EmployeeId = employee.Id,
             FullName = employee.User.FullName,
-            Skills = _mapper.Map<IReadOnlyList<EmployeeSkillItem>>(employeeSkills),
+            Skills = skills,
         };
     }
 

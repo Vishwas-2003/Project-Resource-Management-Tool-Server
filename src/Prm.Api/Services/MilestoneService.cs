@@ -20,11 +20,17 @@ public class MilestoneService(
         var project = await GetProjectOrThrow(projectId, cancellationToken);
         var milestones = await _milestoneRepository.GetByProjectId(projectId, cancellationToken);
 
+        var summaries = _mapper.Map<List<MilestoneSummary>>(milestones);
+        for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
+        {
+            summaries[rowIndex].RowNumber = rowIndex + 1;
+        }
+
         return new ProjectMilestonesResult
         {
             ProjectId = project.Id,
             ProjectName = project.Name,
-            Milestones = _mapper.Map<IReadOnlyList<MilestoneSummary>>(milestones),
+            Milestones = summaries,
         };
     }
 

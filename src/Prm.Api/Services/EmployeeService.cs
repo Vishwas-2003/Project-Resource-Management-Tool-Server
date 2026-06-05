@@ -42,7 +42,11 @@ public class EmployeeService(
         CancellationToken cancellationToken = default)
     {
         var employees = await _employeeRepository.GetEmployees(filter, cancellationToken);
-        var summaries = _mapper.Map<IReadOnlyList<EmployeeSummary>>(employees);
+        var summaries = _mapper.Map<List<EmployeeSummary>>(employees);
+        for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
+        {
+            summaries[rowIndex].RowNumber = rowIndex + 1;
+        }
 
         return new EmployeeListResult
         {

@@ -24,14 +24,17 @@ public class ManagerService(
         var active = new List<ActiveEmployeeRow>();
         var overUtilised = 0;
         var partial = 0;
+        var rowNumber = 0;
 
         foreach (var employee in employees)
         {
             var utilization = await GetUtilizationOnDate(employee.Id, today, cancellationToken);
             if (utilization <= 0)
             {
+                rowNumber++;
                 bench.Add(new BenchEmployeeRow
                 {
+                    RowNumber = rowNumber,
                     Id = employee.Id,
                     Name = employee.User.FullName,
                     Department = employee.Department,
@@ -49,8 +52,10 @@ public class ManagerService(
                 partial++;
             }
 
+            rowNumber++;
             active.Add(new ActiveEmployeeRow
             {
+                RowNumber = rowNumber,
                 Id = employee.Id,
                 Name = employee.User.FullName,
                 AllocationPercent = utilization,

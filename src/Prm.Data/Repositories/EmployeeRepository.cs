@@ -49,7 +49,7 @@ public class EmployeeRepository(AppDbContext _dbContext)
         }
 
         return await query
-            .OrderBy(x => x.User.FullName)
+            .OrderBy(x => x.User.Id)
             .ToListAsync(cancellationToken);
     }
 

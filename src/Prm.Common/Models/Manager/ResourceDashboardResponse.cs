@@ -10,6 +10,7 @@ public class ResourceDashboardResponse
 
 public class BenchEmployeeRow
 {
+    public int RowNumber { get; set; }
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Department { get; set; } = string.Empty;
@@ -18,6 +19,7 @@ public class BenchEmployeeRow
 
 public class ActiveEmployeeRow
 {
+    public int RowNumber { get; set; }
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public int AllocationPercent { get; set; }
