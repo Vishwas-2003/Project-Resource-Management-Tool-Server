@@ -53,6 +53,7 @@ public static class ApiRoutes
         public const string Create = "";
         public const string End = "{allocationId:int}/end";
         public const string GetByProject = "project/{projectId:int}";
+        public const string GetActive = "active";
     }
 
     public static class Milestones

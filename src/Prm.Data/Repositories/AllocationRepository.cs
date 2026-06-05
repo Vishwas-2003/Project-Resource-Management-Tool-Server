@@ -16,6 +16,19 @@ public class AllocationRepository(AppDbContext _dbContext)
                 .ThenInclude(x => x.ManagerUser)
             .FirstOrDefaultAsync(x => x.Id == allocationId, cancellationToken);
 
+    public async Task<IReadOnlyList<Allocation>> GetActiveAllocations(
+        DateOnly asOfDate,
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.Employee)
+                .ThenInclude(x => x.User)
+            .Include(x => x.Project)
+            .Where(x => x.FromDate <= asOfDate && x.ToDate >= asOfDate)
+            .OrderBy(x => x.Employee.User.FullName)
+            .ThenBy(x => x.Project.Name)
+            .ThenBy(x => x.FromDate)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Allocation>> GetActiveByEmployeeId(
         int employeeId,
         DateOnly asOfDate,

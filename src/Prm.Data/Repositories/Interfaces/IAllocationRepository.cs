@@ -6,6 +6,10 @@ public interface IAllocationRepository : ICrudBaseRepository<Allocation, int>
 {
     Task<Allocation?> GetByIdWithDetails(int allocationId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Allocation>> GetActiveAllocations(
+        DateOnly asOfDate,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Allocation>> GetActiveByEmployeeId(
         int employeeId,
         DateOnly asOfDate,

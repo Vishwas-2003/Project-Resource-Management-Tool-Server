@@ -8,13 +8,22 @@ using Prm.Common.Models.Manager;
 
 namespace Prm.Api.Controllers;
 
-[Authorize(Roles = nameof(RoleNameEnum.Manager))]
 [ApiController]
 [Route(ApiRoutes.BaseApi)]
 public class AllocationController(
     IAllocationService _allocationService,
     ManagerAccess _managerAccess) : ApiControllerBase
 {
+    [Authorize(Roles = nameof(RoleNameEnum.Admin))]
+    [HttpGet(ApiRoutes.Allocations.GetActive)]
+    public Task<IActionResult> GetActive([FromQuery] string? filter, CancellationToken cancellationToken) =>
+        ExecuteResultAsync(async () =>
+        {
+            var result = await _allocationService.GetActiveAllocations(filter, cancellationToken);
+            return Ok(result);
+        });
+
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
     [HttpPost(ApiRoutes.Allocations.Create)]
     public Task<IActionResult> Create(
         [FromBody] CreateAllocationRequest request,
@@ -26,6 +35,7 @@ public class AllocationController(
             return StatusCode(StatusCodes.Status201Created, result);
         });
 
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
     [HttpPost(ApiRoutes.Allocations.End)]
     public Task<IActionResult> End(int allocationId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
@@ -35,6 +45,7 @@ public class AllocationController(
             return Ok(result);
         });
 
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
     [HttpGet(ApiRoutes.Allocations.GetByProject)]
     public Task<IActionResult> GetByProject(int projectId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>

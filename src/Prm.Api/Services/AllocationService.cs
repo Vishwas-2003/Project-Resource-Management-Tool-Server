@@ -1,6 +1,7 @@
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
+using Prm.Common.Models.Allocations;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -12,6 +13,54 @@ public class AllocationService(
     IEmployeeRepository _employeeRepository,
     IProjectRepository _projectRepository) : IAllocationService
 {
+    public async Task<ActiveAllocationsResponse> GetActiveAllocations(
+        string? filter,
+        CancellationToken cancellationToken = default)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var allocations = await _allocationRepository.GetActiveAllocations(today, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(filter))
+        {
+            var query = filter.Trim();
+
+            var employeeMatches = allocations
+                .Where(x => x.Employee.User.FullName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (employeeMatches.Count > 0)
+            {
+                allocations = employeeMatches;
+            }
+            else
+            {
+                var projectMatches = allocations
+                    .Where(x => x.Project.Name.Contains(query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (projectMatches.Count > 0)
+                {
+                    allocations = projectMatches;
+                }
+                else
+                {
+                    throw new ArgumentException(AppConstants.Allocations.InvalidFilter);
+                }
+            }
+        }
+
+        return new ActiveAllocationsResponse
+        {
+            TotalActiveAllocations = allocations.Count,
+            Allocations = allocations.Select(x => new ActiveAllocationRow
+            {
+                EmployeeName = x.Employee.User.FullName,
+                ProjectName = x.Project.Name,
+                UtilizationPercent = x.UtilizationPercent,
+                FromDate = x.FromDate,
+                ToDate = x.ToDate,
+            }).ToList(),
+        };
+    }
+
     public async Task<AllocationCreatedResponse> Create(
         CreateAllocationRequest request,
         int managerUserId,

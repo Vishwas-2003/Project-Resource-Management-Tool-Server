@@ -1,9 +1,14 @@
 using Prm.Common.Models.Manager;
+using Prm.Common.Models.Allocations;
 
 namespace Prm.Api.Services.Interfaces;
 
 public interface IAllocationService
 {
+    Task<ActiveAllocationsResponse> GetActiveAllocations(
+        string? filter,
+        CancellationToken cancellationToken = default);
+
     Task<AllocationCreatedResponse> Create(
         CreateAllocationRequest request,
         int managerUserId,

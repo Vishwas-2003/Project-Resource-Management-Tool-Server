@@ -136,6 +136,7 @@ public static class AppConstants
         public const string InvalidDateRange = "From date must be before to date.";
         public const string InvalidUtilization =
             "Utilization must be between 1 and 100 percent.";
+        public const string InvalidFilter = "Invalid input. Enter an employee name or a project name.";
         public const string ExceedsMaxUtilization =
             "Total utilisation across overlapping allocations cannot exceed 100%.";
         public const string OverlappingAllocationOnProject =
