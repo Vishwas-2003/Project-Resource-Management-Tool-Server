@@ -13,7 +13,9 @@ namespace Prm.Api.Tests.Services;
 public class ProjectServiceTests
 {
     private readonly Mock<IProjectRepository> _projectRepository = new();
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<ITimesheetRepository> _timesheetRepository = new();
+    private readonly Mock<ISystemConfigurationRepository> _systemConfigurationRepository = new();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     private static readonly DateOnly Start = new(2026, 1, 1);
@@ -32,7 +34,7 @@ public class ProjectServiceTests
                 StartDate = End,
                 EndDate = Start,
                 Status = (int)ProjectStatusEnum.Planned,
-                ManagerEmployeeId = 10,
+                ManagerUserId = 10,
             }));
 
         Assert.Equal(AppConstants.Projects.InvalidDateRange, exception.Message);
@@ -41,9 +43,9 @@ public class ProjectServiceTests
     [Fact]
     public async Task Add_WhenManagerNotFound_ThrowsKeyNotFoundException()
     {
-        _employeeRepository
-            .Setup(x => x.GetManagerById(10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Employee?)null);
+        _userRepository
+            .Setup(x => x.GetActiveManagerById(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
 
         var sut = CreateSut();
 
@@ -179,9 +181,9 @@ public class ProjectServiceTests
 
     private void SetupValidManager()
     {
-        _employeeRepository
-            .Setup(x => x.GetManagerById(10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApiTestData.CreateManager());
+        _userRepository
+            .Setup(x => x.GetActiveManagerById(10, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ApiTestData.CreateUser(id: 10, roleId: (int)RoleNameEnum.Manager, username: "manager"));
     }
 
     private static CreateProjectRequest CreateValidRequest(string name = "New Project", int status = (int)ProjectStatusEnum.Planned) =>
@@ -192,7 +194,7 @@ public class ProjectServiceTests
             StartDate = Start,
             EndDate = End,
             Status = status,
-            ManagerEmployeeId = 10,
+            ManagerUserId = 10,
         };
 
     private static UpdateProjectRequest CreateUpdateRequest(string name = "Updated") =>
@@ -203,9 +205,14 @@ public class ProjectServiceTests
             StartDate = Start,
             EndDate = End,
             Status = (int)ProjectStatusEnum.Active,
-            ManagerEmployeeId = 10,
+            ManagerUserId = 10,
         };
 
     private ProjectService CreateSut() =>
-        new(_projectRepository.Object, _employeeRepository.Object, _mapper);
+        new(
+            _projectRepository.Object,
+            _userRepository.Object,
+            _timesheetRepository.Object,
+            _systemConfigurationRepository.Object,
+            _mapper);
 }

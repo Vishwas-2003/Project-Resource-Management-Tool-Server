@@ -16,25 +16,69 @@ public class EmployeeService(
     ITimesheetRepository _timesheetRepository,
     IMapper _mapper) : IEmployeeService
 {
-    public async Task<int> Add(AddEmployeeRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> AssignManager(
+        AssignManagerRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var user = await _userRepository.GetByIdWithRoleAndEmployee(request.UserId, cancellationToken);
-        ValidateUserForEmployeeProfile(user);
-
-        if (await _employeeRepository.ExistsByUserId(request.UserId, cancellationToken))
+        var department = request.Department.Trim();
+        var designation = request.Designation.Trim();
+        if (string.IsNullOrWhiteSpace(department) || string.IsNullOrWhiteSpace(designation))
         {
-            throw new InvalidOperationException(AppConstants.Employees.ProfileAlreadyExists);
+            throw new ArgumentException(AppConstants.Employees.DepartmentAndDesignationRequired);
         }
 
-        var employee = _mapper.Map<Employee>(request);
-        employee.Status = user!.RoleId == (int)RoleNameEnum.Manager
-            ? null
-            : EmployeeConstants.StatusBench;
+        var employeeUser = await _userRepository.GetByIdWithRoleAndEmployee(
+            request.EmployeeUserId,
+            cancellationToken);
+        if (employeeUser is null)
+        {
+            throw new KeyNotFoundException(AppConstants.Employees.UserNotFound);
+        }
 
-        await _employeeRepository.Add(employee, cancellationToken);
+        if (!employeeUser.IsActive)
+        {
+            throw new InvalidOperationException(AppConstants.Employees.UserInactive);
+        }
+
+        if (employeeUser.RoleId != (int)RoleNameEnum.Employee)
+        {
+            throw new InvalidOperationException(AppConstants.Employees.InvalidRoleForManagerAssignment);
+        }
+
+        var managerUser = await _userRepository.GetByIdWithRoleAndEmployee(
+            request.ManagerUserId,
+            cancellationToken);
+        if (managerUser is null
+            || !managerUser.IsActive
+            || managerUser.RoleId != (int)RoleNameEnum.Manager)
+        {
+            throw new InvalidOperationException(AppConstants.Employees.InvalidManagerUser);
+        }
+
+        var employee = employeeUser.Employee;
+        if (employee is null)
+        {
+            employee = new Employee
+            {
+                UserId = employeeUser.Id,
+                Department = department,
+                Designation = designation,
+                ManagerUserId = managerUser.Id,
+                Status = EmployeeConstants.StatusBench,
+            };
+            await _employeeRepository.Add(employee, cancellationToken);
+        }
+        else
+        {
+            employee.ManagerUserId = managerUser.Id;
+            employee.Department = department;
+            employee.Designation = designation;
+            _employeeRepository.Update(employee);
+        }
+
         await _employeeRepository.SaveChanges(cancellationToken);
 
-        return employee.Id;
+        return true;
     }
 
     public async Task<EmployeeListResult> GetEmployees(
@@ -203,26 +247,4 @@ public class EmployeeService(
         return employee;
     }
 
-    private static void ValidateUserForEmployeeProfile(User? user)
-    {
-        if (user is null)
-        {
-            throw new KeyNotFoundException(AppConstants.Employees.UserNotFound);
-        }
-
-        if (!user.IsActive)
-        {
-            throw new InvalidOperationException(AppConstants.Employees.UserInactive);
-        }
-
-        if (user.RoleId is not (int)RoleNameEnum.Employee and not (int)RoleNameEnum.Manager)
-        {
-            throw new InvalidOperationException(AppConstants.Employees.InvalidRoleForEmployee);
-        }
-
-        if (user.Employee is not null)
-        {
-            throw new InvalidOperationException(AppConstants.Employees.ProfileAlreadyExists);
-        }
-    }
 }

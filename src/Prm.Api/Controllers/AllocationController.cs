@@ -21,8 +21,8 @@ public class AllocationController(
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var managerEmployeeId = await _managerAccess.GetCurrentManagerEmployeeId(cancellationToken);
-            var result = await _allocationService.Create(request, managerEmployeeId, cancellationToken);
+            var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
+            var result = await _allocationService.Create(request, managerUserId, cancellationToken);
             return StatusCode(StatusCodes.Status201Created, result);
         });
 
@@ -30,8 +30,8 @@ public class AllocationController(
     public Task<IActionResult> End(int allocationId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var managerEmployeeId = await _managerAccess.GetCurrentManagerEmployeeId(cancellationToken);
-            var result = await _allocationService.End(allocationId, managerEmployeeId, cancellationToken);
+            var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
+            var result = await _allocationService.End(allocationId, managerUserId, cancellationToken);
             return Ok(result);
         });
 
@@ -39,10 +39,10 @@ public class AllocationController(
     public Task<IActionResult> GetByProject(int projectId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var managerEmployeeId = await _managerAccess.GetCurrentManagerEmployeeId(cancellationToken);
+            var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
             var result = await _allocationService.GetByProjectId(
                 projectId,
-                managerEmployeeId,
+                managerUserId,
                 cancellationToken);
             return Ok(result);
         });

@@ -16,6 +16,7 @@ public static class ApiRoutes
         public const string Update = "{employeeId:int}";
         public const string GetEmployees = "get-employees";
         public const string AddEmployee = "add";
+        public const string AssignManager = "assign-manager";
         public const string Deactivate = "{employeeId:int}/deactivate";
         public const string GetDetail = "{employeeId:int}";
         public const string GetUtilization = "{employeeId:int}/utilization";

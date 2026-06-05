@@ -11,7 +11,7 @@ namespace Prm.Api.Services;
 
 public class ProjectService(
     IProjectRepository _projectRepository,
-    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
     ITimesheetRepository _timesheetRepository,
     ISystemConfigurationRepository _systemConfigurationRepository,
     IMapper _mapper) : IProjectService
@@ -19,7 +19,7 @@ public class ProjectService(
     public async Task<int> Add(CreateProjectRequest request, CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.StartDate, request.EndDate);
-        await ValidateManager(request.ManagerEmployeeId, cancellationToken);
+        await ValidateManager(request.ManagerUserId, cancellationToken);
 
         var name = request.Name.Trim();
         if (await _projectRepository.ExistsByName(name, cancellationToken))
@@ -30,7 +30,7 @@ public class ProjectService(
         var project = _mapper.Map<Project>(request);
         project.Name = name;
         project.Status = MapProjectStatus(request.Status);
-        project.ManagerEmployeeId = request.ManagerEmployeeId;
+        project.ManagerUserId = request.ManagerUserId;
 
         await _projectRepository.Add(project, cancellationToken);
         await _projectRepository.SaveChanges(cancellationToken);
@@ -59,7 +59,7 @@ public class ProjectService(
         CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.StartDate, request.EndDate);
-        await ValidateManager(request.ManagerEmployeeId, cancellationToken);
+        await ValidateManager(request.ManagerUserId, cancellationToken);
 
         var project = await GetProjectOrThrow(projectId, cancellationToken);
 
@@ -72,7 +72,7 @@ public class ProjectService(
         _mapper.Map(request, project);
         project.Name = name;
         project.Status = MapProjectStatus(request.Status);
-        project.ManagerEmployeeId = request.ManagerEmployeeId;
+        project.ManagerUserId = request.ManagerUserId;
 
         _projectRepository.Update(project);
         await _projectRepository.SaveChanges(cancellationToken);
@@ -84,8 +84,8 @@ public class ProjectService(
         int managerUserId,
         CancellationToken cancellationToken = default)
     {
-        var manager = await GetManagerEmployeeOrThrow(managerUserId, cancellationToken);
-        var projects = await _projectRepository.GetByManagerEmployeeId(manager.Id, cancellationToken);
+        await EnsureManagerUserOrThrow(managerUserId, cancellationToken);
+        var projects = await _projectRepository.GetByManagerUserId(managerUserId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
 
@@ -112,14 +112,14 @@ public class ProjectService(
         int managerUserId,
         CancellationToken cancellationToken = default)
     {
-        var manager = await GetManagerEmployeeOrThrow(managerUserId, cancellationToken);
+        await EnsureManagerUserOrThrow(managerUserId, cancellationToken);
         var project = await _projectRepository.GetByIdWithDetails(projectId, cancellationToken);
         if (project is null)
         {
             throw new KeyNotFoundException(AppConstants.Projects.NotFound);
         }
 
-        if (project.ManagerEmployeeId != manager.Id)
+        if (project.ManagerUserId != managerUserId)
         {
             throw new UnauthorizedAccessException(AppConstants.Manager.ProjectNotOwned);
         }
@@ -163,15 +163,13 @@ public class ProjectService(
         };
     }
 
-    private async Task<Employee> GetManagerEmployeeOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task EnsureManagerUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
-        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Manager)
+        var manager = await _userRepository.GetActiveManagerById(userId, cancellationToken);
+        if (manager is null)
         {
             throw new KeyNotFoundException(AppConstants.Manager.ProfileNotFound);
         }
-
-        return employee;
     }
 
     private async Task<int> GetMaxWeeklyHours(CancellationToken cancellationToken)
@@ -298,9 +296,9 @@ public class ProjectService(
         return project;
     }
 
-    private async Task ValidateManager(int managerEmployeeId, CancellationToken cancellationToken)
+    private async Task ValidateManager(int managerUserId, CancellationToken cancellationToken)
     {
-        var manager = await _employeeRepository.GetManagerById(managerEmployeeId, cancellationToken);
+        var manager = await _userRepository.GetActiveManagerById(managerUserId, cancellationToken);
         if (manager is null)
         {
             throw new KeyNotFoundException(AppConstants.Projects.ManagerNotFound);

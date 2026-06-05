@@ -14,13 +14,13 @@ public class AllocationService(
 {
     public async Task<AllocationCreatedResponse> Create(
         CreateAllocationRequest request,
-        int managerEmployeeId,
+        int managerUserId,
         CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.FromDate, request.ToDate);
         ValidateUtilizationPercent(request.UtilizationPercent);
 
-        var project = await GetOwnedProjectOrThrow(request.ProjectId, managerEmployeeId, cancellationToken);
+        var project = await GetOwnedProjectOrThrow(request.ProjectId, managerUserId, cancellationToken);
         EnsureProjectAllowsAllocation(project);
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
@@ -50,8 +50,8 @@ public class AllocationService(
         };
 
         await _allocationRepository.Add(allocation, cancellationToken);
-        await UpdateEmployeeStatus(request.EmployeeId, cancellationToken);
         await _allocationRepository.SaveChanges(cancellationToken);
+        await UpdateEmployeeStatus(request.EmployeeId, cancellationToken);
 
         return new AllocationCreatedResponse
         {
@@ -66,7 +66,7 @@ public class AllocationService(
 
     public async Task<AllocationEndedResponse> End(
         int allocationId,
-        int managerEmployeeId,
+        int managerUserId,
         CancellationToken cancellationToken = default)
     {
         var allocation = await _allocationRepository.GetByIdWithDetails(allocationId, cancellationToken);
@@ -75,7 +75,7 @@ public class AllocationService(
             throw new KeyNotFoundException(AppConstants.Allocations.NotFound);
         }
 
-        if (allocation.Project.ManagerEmployeeId != managerEmployeeId)
+        if (allocation.Project.ManagerUserId != managerUserId)
         {
             throw new UnauthorizedAccessException(AppConstants.Manager.ProjectNotOwned);
         }
@@ -88,8 +88,8 @@ public class AllocationService(
 
         allocation.ToDate = today;
         _allocationRepository.Update(allocation);
-        await UpdateEmployeeStatus(allocation.EmployeeId, cancellationToken);
         await _allocationRepository.SaveChanges(cancellationToken);
+        await UpdateEmployeeStatus(allocation.EmployeeId, cancellationToken);
 
         return new AllocationEndedResponse
         {
@@ -102,10 +102,10 @@ public class AllocationService(
 
     public async Task<ProjectAllocationsResponse> GetByProjectId(
         int projectId,
-        int managerEmployeeId,
+        int managerUserId,
         CancellationToken cancellationToken = default)
     {
-        var project = await GetOwnedProjectOrThrow(projectId, managerEmployeeId, cancellationToken);
+        var project = await GetOwnedProjectOrThrow(projectId, managerUserId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var allocations = await _allocationRepository.GetActiveByProjectId(projectId, today, cancellationToken);
 
@@ -142,7 +142,7 @@ public class AllocationService(
 
     private async Task<Project> GetOwnedProjectOrThrow(
         int projectId,
-        int managerEmployeeId,
+        int managerUserId,
         CancellationToken cancellationToken)
     {
         var project = await _projectRepository.GetByIdWithManager(projectId, cancellationToken);
@@ -151,7 +151,7 @@ public class AllocationService(
             throw new KeyNotFoundException(AppConstants.Projects.NotFound);
         }
 
-        if (project.ManagerEmployeeId != managerEmployeeId)
+        if (project.ManagerUserId != managerUserId)
         {
             throw new UnauthorizedAccessException(AppConstants.Manager.ProjectNotOwned);
         }
@@ -252,5 +252,6 @@ public class AllocationService(
             : EmployeeConstants.StatusBench;
 
         _employeeRepository.Update(employee);
+        await _employeeRepository.SaveChanges();
     }
 }

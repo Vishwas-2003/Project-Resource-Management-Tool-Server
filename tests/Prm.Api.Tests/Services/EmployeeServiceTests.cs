@@ -14,10 +14,12 @@ public class EmployeeServiceTests
 {
     private readonly Mock<IEmployeeRepository> _employeeRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IAllocationRepository> _allocationRepository = new();
+    private readonly Mock<ITimesheetRepository> _timesheetRepository = new();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     [Fact]
-    public async Task Add_WhenUserNotFound_ThrowsKeyNotFoundException()
+    public async Task AssignManager_WhenEmployeeUserNotFound_ThrowsKeyNotFoundException()
     {
         _userRepository
             .Setup(x => x.GetByIdWithRoleAndEmployee(99, It.IsAny<CancellationToken>()))
@@ -26,13 +28,13 @@ public class EmployeeServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            sut.Add(new AddEmployeeRequest { UserId = 99, Department = "Eng", Designation = "Dev" }));
+            sut.AssignManager(CreateAssignManagerRequest(employeeUserId: 99, managerUserId: 2)));
 
         Assert.Equal(AppConstants.Employees.UserNotFound, exception.Message);
     }
 
     [Fact]
-    public async Task Add_WhenUserInactive_ThrowsInvalidOperationException()
+    public async Task AssignManager_WhenEmployeeUserInactive_ThrowsInvalidOperationException()
     {
         var user = ApiTestData.CreateUser(isActive: false);
         _userRepository
@@ -42,29 +44,13 @@ public class EmployeeServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+            sut.AssignManager(CreateAssignManagerRequest(employeeUserId: user.Id, managerUserId: 2)));
 
         Assert.Equal(AppConstants.Employees.UserInactive, exception.Message);
     }
 
     [Fact]
-    public async Task Add_WhenInvalidRole_ThrowsInvalidOperationException()
-    {
-        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Admin);
-        _userRepository
-            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var sut = CreateSut();
-
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
-
-        Assert.Equal(AppConstants.Employees.InvalidRoleForEmployee, exception.Message);
-    }
-
-    [Fact]
-    public async Task Add_WhenUserAlreadyHasEmployeeProfile_ThrowsInvalidOperationException()
+    public async Task AssignManager_WhenDepartmentOrDesignationMissing_ThrowsArgumentException()
     {
         var employee = ApiTestData.CreateEmployee();
         var user = ApiTestData.CreateUser(employee: employee);
@@ -74,73 +60,136 @@ public class EmployeeServiceTests
 
         var sut = CreateSut();
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.AssignManager(CreateAssignManagerRequest(
+                employeeUserId: user.Id,
+                managerUserId: 2,
+                department: " ",
+                designation: "Dev")));
 
-        Assert.Equal(AppConstants.Employees.ProfileAlreadyExists, exception.Message);
+        Assert.Equal(AppConstants.Employees.DepartmentAndDesignationRequired, exception.Message);
     }
 
     [Fact]
-    public async Task Add_WhenProfileExistsInRepository_ThrowsInvalidOperationException()
+    public async Task AssignManager_WhenInvalidEmployeeRole_ThrowsInvalidOperationException()
     {
-        var user = ApiTestData.CreateUser();
+        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Manager);
         _userRepository
             .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
-        _employeeRepository
-            .Setup(x => x.ExistsByUserId(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" }));
+            sut.AssignManager(CreateAssignManagerRequest(employeeUserId: user.Id, managerUserId: 2)));
 
-        Assert.Equal(AppConstants.Employees.ProfileAlreadyExists, exception.Message);
+        Assert.Equal(AppConstants.Employees.InvalidRoleForManagerAssignment, exception.Message);
     }
 
     [Fact]
-    public async Task Add_WhenEmployeeRole_SetsStatusBench()
+    public async Task AssignManager_WhenInvalidManagerUser_ThrowsInvalidOperationException()
     {
-        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Employee);
+        var employee = ApiTestData.CreateEmployee();
+        var user = ApiTestData.CreateUser(employee: employee);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.AssignManager(CreateAssignManagerRequest(employeeUserId: user.Id, managerUserId: 2)));
+
+        Assert.Equal(AppConstants.Employees.InvalidManagerUser, exception.Message);
+    }
+
+    [Fact]
+    public async Task AssignManager_WhenProfileMissing_CreatesEmployeeProfile()
+    {
+        var employeeUser = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Employee);
+        var managerUser = ApiTestData.CreateUser(
+            id: 5,
+            roleId: (int)RoleNameEnum.Manager);
         Employee? saved = null;
 
-        SetupSuccessfulAdd(user, e => saved = e);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(employeeUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employeeUser);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(managerUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(managerUser);
+        _employeeRepository
+            .Setup(x => x.Add(It.IsAny<Employee>(), It.IsAny<CancellationToken>()))
+            .Callback<Employee, CancellationToken>((employee, _) => saved = employee)
+            .Returns(Task.CompletedTask);
+        _employeeRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
-        await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" });
+        var result = await sut.AssignManager(CreateAssignManagerRequest(
+            employeeUserId: employeeUser.Id,
+            managerUserId: managerUser.Id,
+            department: "Frontend",
+            designation: "UI Developer"));
 
+        Assert.True(result);
         Assert.NotNull(saved);
-        Assert.Equal(EmployeeConstants.StatusBench, saved!.Status);
+        Assert.Equal(employeeUser.Id, saved!.UserId);
+        Assert.Equal(managerUser.Id, saved.ManagerUserId);
+        Assert.Equal("Frontend", saved.Department);
+        Assert.Equal("UI Developer", saved.Designation);
+        Assert.Equal(EmployeeConstants.StatusBench, saved.Status);
+        _employeeRepository.Verify(x => x.Update(It.IsAny<Employee>()), Times.Never);
     }
 
     [Fact]
-    public async Task Add_WhenManagerRole_SetsStatusNull()
+    public async Task AssignManager_WhenSuccessful_SetsManagerUserIdAndProfile()
     {
-        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Manager);
-        Employee? saved = null;
+        var employee = ApiTestData.CreateEmployee();
+        var employeeUser = ApiTestData.CreateUser(employee: employee);
+        var managerUser = ApiTestData.CreateUser(
+            id: 5,
+            roleId: (int)RoleNameEnum.Manager);
 
-        SetupSuccessfulAdd(user, e => saved = e);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(employeeUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employeeUser);
+        _userRepository
+            .Setup(x => x.GetByIdWithRoleAndEmployee(managerUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(managerUser);
+        _employeeRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
-        await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Ops", Designation = "Manager" });
+        var result = await sut.AssignManager(CreateAssignManagerRequest(
+            employeeUserId: employeeUser.Id,
+            managerUserId: managerUser.Id,
+            department: "Backend",
+            designation: "Senior Developer"));
 
-        Assert.NotNull(saved);
-        Assert.Null(saved!.Status);
+        Assert.True(result);
+        Assert.Equal(managerUser.Id, employee.ManagerUserId);
+        Assert.Equal("Backend", employee.Department);
+        Assert.Equal("Senior Developer", employee.Designation);
     }
 
-    [Fact]
-    public async Task Add_WhenSuccessful_ReturnsEmployeeId()
-    {
-        var user = ApiTestData.CreateUser();
-        SetupSuccessfulAdd(user, e => e.Id = 42);
-
-        var sut = CreateSut();
-        var id = await sut.Add(new AddEmployeeRequest { UserId = user.Id, Department = "Eng", Designation = "Dev" });
-
-        Assert.Equal(42, id);
-        _employeeRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
-    }
+    private static AssignManagerRequest CreateAssignManagerRequest(
+        int employeeUserId,
+        int managerUserId,
+        string department = "Engineering",
+        string designation = "Developer") =>
+        new()
+        {
+            EmployeeUserId = employeeUserId,
+            ManagerUserId = managerUserId,
+            Department = department,
+            Designation = designation,
+        };
 
     [Fact]
     public async Task Update_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
@@ -259,27 +308,11 @@ public class EmployeeServiceTests
         Assert.Equal(3, result.Employees.Count);
     }
 
-    private void SetupSuccessfulAdd(User user, Action<Employee>? onAdd = null)
-    {
-        _userRepository
-            .Setup(x => x.GetByIdWithRoleAndEmployee(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-        _employeeRepository
-            .Setup(x => x.ExistsByUserId(user.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        _employeeRepository
-            .Setup(x => x.Add(It.IsAny<Employee>(), It.IsAny<CancellationToken>()))
-            .Callback<Employee, CancellationToken>((employee, _) =>
-            {
-                employee.Id = 42;
-                onAdd?.Invoke(employee);
-            })
-            .Returns(Task.CompletedTask);
-        _employeeRepository
-            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
-    }
-
     private EmployeeService CreateSut() =>
-        new(_employeeRepository.Object, _userRepository.Object, _mapper);
+        new(
+            _employeeRepository.Object,
+            _userRepository.Object,
+            _allocationRepository.Object,
+            _timesheetRepository.Object,
+            _mapper);
 }

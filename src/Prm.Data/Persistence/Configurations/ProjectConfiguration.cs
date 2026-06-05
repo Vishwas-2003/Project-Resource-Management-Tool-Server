@@ -13,9 +13,10 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
         builder.HasIndex(x => x.Name).IsUnique();
-        builder.HasOne(x => x.ManagerEmployee)
+        builder.HasIndex(x => x.ManagerUserId);
+        builder.HasOne(x => x.ManagerUser)
             .WithMany(x => x.ManagedProjects)
-            .HasForeignKey(x => x.ManagerEmployeeId)
+            .HasForeignKey(x => x.ManagerUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

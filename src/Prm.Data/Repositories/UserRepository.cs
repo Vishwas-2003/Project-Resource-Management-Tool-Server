@@ -28,6 +28,15 @@ public class UserRepository(AppDbContext _dbContext)
             .Include(x => x.Employee)
             .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
+    public Task<User?> GetActiveManagerById(int userId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.Role)
+            .FirstOrDefaultAsync(
+                x => x.Id == userId
+                    && x.IsActive
+                    && x.RoleId == (int)RoleNameEnum.Manager,
+                cancellationToken);
+
     public async Task<IReadOnlyList<User>> GetUsers(CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(x => x.Role)

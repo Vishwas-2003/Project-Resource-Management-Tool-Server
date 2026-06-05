@@ -13,7 +13,7 @@ public class AllocationRepository(AppDbContext _dbContext)
             .Include(x => x.Employee)
                 .ThenInclude(x => x.User)
             .Include(x => x.Project)
-                .ThenInclude(x => x.ManagerEmployee)
+                .ThenInclude(x => x.ManagerUser)
             .FirstOrDefaultAsync(x => x.Id == allocationId, cancellationToken);
 
     public async Task<IReadOnlyList<Allocation>> GetActiveByEmployeeId(

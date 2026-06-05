@@ -1,5 +1,4 @@
 using Prm.Common.Constants;
-using Prm.Common.Enums;
 using Prm.Data.Audit;
 using Prm.Data.Repositories.Interfaces;
 
@@ -7,7 +6,7 @@ namespace Prm.Api.Infrastructure;
 
 public sealed class ManagerAccess(
     ICurrentUserService _currentUserService,
-    IEmployeeRepository _employeeRepository)
+    IUserRepository _userRepository)
 {
     public int GetCurrentUserId()
     {
@@ -20,15 +19,15 @@ public sealed class ManagerAccess(
         return userId.Value;
     }
 
-    public async Task<int> GetCurrentManagerEmployeeId(CancellationToken cancellationToken = default)
+    public async Task<int> GetCurrentManagerUserId(CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
-        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
-        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Manager)
+        var manager = await _userRepository.GetActiveManagerById(userId, cancellationToken);
+        if (manager is null)
         {
             throw new KeyNotFoundException(AppConstants.Manager.ProfileNotFound);
         }
 
-        return employee.Id;
+        return userId;
     }
 }

@@ -8,6 +8,7 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class ManagerService(
+    IUserRepository _userRepository,
     IEmployeeRepository _employeeRepository,
     IAllocationRepository _allocationRepository) : IManagerService
 {
@@ -15,7 +16,7 @@ public class ManagerService(
         int managerUserId,
         CancellationToken cancellationToken = default)
     {
-        _ = await GetManagerEmployeeOrThrow(managerUserId, cancellationToken);
+        await EnsureManagerUserOrThrow(managerUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var employees = await _employeeRepository.GetResourcePoolEmployees(cancellationToken);
@@ -77,15 +78,13 @@ public class ManagerService(
         };
     }
 
-    private async Task<Employee> GetManagerEmployeeOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task EnsureManagerUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
-        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Manager)
+        var manager = await _userRepository.GetActiveManagerById(userId, cancellationToken);
+        if (manager is null)
         {
             throw new KeyNotFoundException(AppConstants.Manager.ProfileNotFound);
         }
-
-        return employee;
     }
 
     private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>

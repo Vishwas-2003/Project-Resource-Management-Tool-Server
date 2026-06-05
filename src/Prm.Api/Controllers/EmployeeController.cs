@@ -23,12 +23,14 @@ public class EmployeeController(IEmployeeService _employeeService) : ApiControll
         });
 
     [Authorize(Roles = nameof(RoleNameEnum.Admin))]
-    [HttpPost(ApiRoutes.Employees.AddEmployee)]
-    public Task<IActionResult> Add([FromBody] AddEmployeeRequest request, CancellationToken cancellationToken) =>
+    [HttpPost(ApiRoutes.Employees.AssignManager)]
+    public Task<IActionResult> AssignManager(
+        [FromBody] AssignManagerRequest request,
+        CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var id = await _employeeService.Add(request, cancellationToken);
-            return StatusCode(StatusCodes.Status201Created, new CreatedIdResponse { Id = id });
+            var updated = await _employeeService.AssignManager(request, cancellationToken);
+            return Ok(new UpdatedResponse { Updated = updated });
         });
 
     [Authorize(Roles = nameof(RoleNameEnum.Admin))]

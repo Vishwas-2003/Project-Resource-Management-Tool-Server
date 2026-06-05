@@ -32,7 +32,7 @@ public class AuthService(
 
         var employee = await _employeeRepository.GetEmployeeByUserId(user.Id, cancellationToken);
 
-        if (user.RoleId != (int)RoleNameEnum.Admin && employee is null)
+        if ((user.RoleId != (int)RoleNameEnum.Admin && user.RoleId != (int)RoleNameEnum.Manager) && employee is null)
         {
             throw new UnauthorizedAccessException(AppConstants.Auth.EmployeeProfileNotFound);
         }

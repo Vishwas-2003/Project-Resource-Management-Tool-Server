@@ -20,5 +20,5 @@ public class UpdateProjectRequest
     public int Status { get; set; }
 
     [Range(1, int.MaxValue)]
-    public int ManagerEmployeeId { get; set; }
+    public int ManagerUserId { get; set; }
 }

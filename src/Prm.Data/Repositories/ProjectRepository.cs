@@ -13,36 +13,33 @@ public class ProjectRepository(AppDbContext _dbContext)
 
     public Task<Project?> GetByIdWithManager(int projectId, CancellationToken cancellationToken = default) =>
         DbSet
-            .Include(x => x.ManagerEmployee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.ManagerUser)
             .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
 
     public async Task<IReadOnlyList<Project>> GetAllWithManager(CancellationToken cancellationToken = default) =>
         await DbSet
-            .Include(x => x.ManagerEmployee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.ManagerUser)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
 
     public Task<Project?> GetByIdWithDetails(int projectId, CancellationToken cancellationToken = default) =>
         DbSet
-            .Include(x => x.ManagerEmployee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.ManagerUser)
             .Include(x => x.Milestones)
             .Include(x => x.Allocations)
                 .ThenInclude(x => x.Employee)
                     .ThenInclude(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
 
-    public async Task<IReadOnlyList<Project>> GetByManagerEmployeeId(
-        int managerEmployeeId,
+    public async Task<IReadOnlyList<Project>> GetByManagerUserId(
+        int managerUserId,
         CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(x => x.Milestones)
             .Include(x => x.Allocations)
                 .ThenInclude(x => x.Employee)
                     .ThenInclude(x => x.User)
-            .Where(x => x.ManagerEmployeeId == managerEmployeeId)
+            .Where(x => x.ManagerUserId == managerUserId)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);
 

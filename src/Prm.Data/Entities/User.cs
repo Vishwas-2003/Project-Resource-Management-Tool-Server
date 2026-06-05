@@ -13,4 +13,6 @@ public class User : BaseEntity
     public Role Role { get; set; } = null!;
     public RefreshToken? RefreshToken { get; set; }
     public Employee? Employee { get; set; }
+    public ICollection<Employee> ManagedEmployees { get; set; } = new List<Employee>();
+    public ICollection<Project> ManagedProjects { get; set; } = new List<Project>();
 }

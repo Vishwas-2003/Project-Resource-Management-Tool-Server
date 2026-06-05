@@ -49,10 +49,20 @@ public static class AppConstants
         public const string UserNotFound = "User not found.";
         public const string UserInactive = "User account is inactive.";
         public const string InvalidRoleForEmployee =
-            "Only users with the Employee or Manager role can have an employee profile.";
+            "Only users with the Employee role can have an employee profile.";
         public const string ProfileAlreadyExists = "This user already has an employee profile.";
         public const string AlreadyDeactivated = "Employee is already deactivated.";
         public const string DeactivatedSuccessfully = "Employee deactivated successfully.";
+        public const string InvalidRoleForManagerAssignment =
+            "Only users with the Employee role can be assigned to a manager.";
+        public const string InvalidManagerUser =
+            "Manager user must have the Manager role and be active.";
+        public const string ManagerAssigned = "Manager assigned successfully.";
+        public const string DepartmentAndDesignationRequired =
+            "Department and designation are required when assigning a manager.";
+        public const string DefaultDepartment = "Unassigned";
+        public const string DefaultEmployeeDesignation = "Employee";
+        public const string DefaultManagerDesignation = "Manager";
     }
 
     public static class Skills
@@ -111,7 +121,7 @@ public static class AppConstants
 
     public static class Manager
     {
-        public const string ProfileNotFound = "Manager employee profile not found. Contact Admin.";
+        public const string ProfileNotFound = "Manager user not found or is not active.";
         public const string ProjectNotOwned = "You can only manage allocations on projects you own.";
         public const string EmployeeNotFound = "Employee not found.";
         public const string EmployeeNotEligible = "Only active employees can be allocated to projects.";

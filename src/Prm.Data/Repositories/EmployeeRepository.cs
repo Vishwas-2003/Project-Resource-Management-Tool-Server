@@ -53,15 +53,6 @@ public class EmployeeRepository(AppDbContext _dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public Task<Employee?> GetManagerById(int employeeId, CancellationToken cancellationToken = default) =>
-        DbSet
-            .Include(x => x.User)
-            .FirstOrDefaultAsync(
-                x => x.Id == employeeId
-                    && x.User.RoleId == (int)RoleNameEnum.Manager
-                    && x.User.IsActive,
-                cancellationToken);
-
     public Task<Employee?> GetEmployeeByUserId(int userId, CancellationToken cancellationToken = default) =>
         DbSet
             .Include(x => x.User)
@@ -75,6 +66,21 @@ public class EmployeeRepository(AppDbContext _dbContext)
                 .ThenInclude(x => x.Skill)
             .Include(x => x.Allocations)
             .Where(x => x.User.RoleId == (int)RoleNameEnum.Employee && x.User.IsActive)
+            .OrderBy(x => x.User.FullName)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<Employee>> GetEmployeesByManagerUserId(
+        int managerUserId,
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.User)
+            .Include(x => x.EmployeeSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+            .Where(x =>
+                x.ManagerUserId == managerUserId
+                && x.User.RoleId == (int)RoleNameEnum.Employee
+                && x.User.IsActive)
             .OrderBy(x => x.User.FullName)
             .ToListAsync(cancellationToken);
 

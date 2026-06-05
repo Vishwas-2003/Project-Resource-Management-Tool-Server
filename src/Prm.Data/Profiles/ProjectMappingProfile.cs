@@ -9,12 +9,12 @@ public class ProjectMappingProfile : Profile
     public ProjectMappingProfile()
     {
         CreateMap<Project, ProjectSummary>()
-            .ForMember(d => d.Manager, o => o.MapFrom(s => s.ManagerEmployee.User.FullName));
+            .ForMember(d => d.Manager, o => o.MapFrom(s => s.ManagerUser.FullName));
 
         CreateMap<CreateProjectRequest, Project>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.Status, o => o.Ignore())
-            .ForMember(d => d.ManagerEmployee, o => o.Ignore())
+            .ForMember(d => d.ManagerUser, o => o.Ignore())
             .ForMember(d => d.Milestones, o => o.Ignore())
             .ForMember(d => d.Allocations, o => o.Ignore())
             .ForMember(d => d.TimesheetEntries, o => o.Ignore())
@@ -29,7 +29,7 @@ public class ProjectMappingProfile : Profile
         CreateMap<UpdateProjectRequest, Project>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.Status, o => o.Ignore())
-            .ForMember(d => d.ManagerEmployee, o => o.Ignore())
+            .ForMember(d => d.ManagerUser, o => o.Ignore())
             .ForMember(d => d.Milestones, o => o.Ignore())
             .ForMember(d => d.Allocations, o => o.Ignore())
             .ForMember(d => d.TimesheetEntries, o => o.Ignore())
