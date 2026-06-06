@@ -67,7 +67,10 @@ public class AllocationRepository(AppDbContext _dbContext)
             query = query.Where(x => x.Id != excludeAllocationId.Value);
         }
 
-        return await query.ToListAsync(cancellationToken);
+        return await query
+            .Include(x => x.Project)
+            .OrderBy(x => x.Project.Name)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<int> SumUtilizationForEmployeeInPeriod(

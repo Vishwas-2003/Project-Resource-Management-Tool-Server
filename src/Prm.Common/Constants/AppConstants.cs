@@ -148,4 +148,22 @@ public static class AppConstants
         public const string CreatedSuccessfully = "Allocation created successfully.";
         public const string EndedSuccessfully = "Allocation ended successfully.";
     }
+
+    public static class Timesheets
+    {
+        public const string EmployeeNotFound = "Employee profile not found.";
+        public const string AlreadySubmitted = "A timesheet for this week has already been submitted.";
+        public const string FutureWeekNotAllowed = "You cannot submit a timesheet for a future week.";
+        public const string InvalidWeekStart = "Week start must be a Monday.";
+        public const string ProjectNotAllocated = "You can only log hours for projects you are allocated to during that week.";
+        public const string HoursExceedAllocation = "Hours for a project cannot exceed the expected hours for your allocation.";
+        public const string TotalHoursExceedMax = "Total hours cannot exceed the configured maximum weekly hours.";
+        public const string NoEntries = "At least one timesheet entry is required.";
+        public const string DuplicateProjectInEntries = "Each project can only appear once in a timesheet submission.";
+        public const string ActivityTagsRequired = "At least one activity tag is required for each entry with hours.";
+        public const string InvalidActivityTag = "One or more activity tags are invalid.";
+        public const string NotFound = "Timesheet not found for the selected week.";
+        public const string EmployeeNotOnTeam = "This employee is not on your team.";
+        public const string SubmittedSuccessfully = "Timesheet submitted successfully.";
+    }
 }

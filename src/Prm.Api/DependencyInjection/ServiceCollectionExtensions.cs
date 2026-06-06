@@ -68,6 +68,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IMilestoneService, MilestoneService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
         services.AddScoped<IAllocationService, AllocationService>();
+        services.AddScoped<ITimesheetService, TimesheetService>();
         services.AddScoped<IManagerService, ManagerService>();
         return services;
     }

@@ -72,4 +72,17 @@ public static class ApiRoutes
     {
         public const string ResourceDashboard = "resource-dashboard";
     }
+
+    public static class Timesheets
+    {
+        public const string ActivityTags = "activity-tags";
+        public const string Reminder = "reminder";
+        public const string WeekAllocations = "week-allocations";
+        public const string Submit = "submit";
+        public const string MyTimesheets = "my-timesheets";
+        public const string MyTimesheetDetail = "my-timesheets/{weekStart}";
+        public const string MyAllocations = "my-allocations";
+        public const string Team = "team";
+        public const string TeamEmployeeDetail = "team/{employeeId:int}";
+    }
 }
