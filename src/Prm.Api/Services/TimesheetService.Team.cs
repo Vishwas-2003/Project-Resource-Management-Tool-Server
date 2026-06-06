@@ -1,6 +1,7 @@
 using Prm.Common.Constants;
 using Prm.Common.Models.Timesheets;
 using Prm.Data.Entities;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
@@ -84,10 +85,13 @@ public partial class TimesheetService
             }
 
             var allocations = await _allocationRepository.GetOverlappingForEmployee(
-                employee.Id,
-                normalizedWeekStart,
-                weekEnd,
-                cancellationToken: cancellationToken);
+                new EmployeeAllocationPeriodQuery
+                {
+                    EmployeeId = employee.Id,
+                    FromDate = normalizedWeekStart,
+                    ToDate = weekEnd,
+                },
+                cancellationToken);
 
             if (allocations.Count == 0)
             {
@@ -137,10 +141,13 @@ public partial class TimesheetService
     {
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
         var allocations = await _allocationRepository.GetOverlappingForEmployee(
-            employee.Id,
-            normalizedWeekStart,
-            weekEnd,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employee.Id,
+                FromDate = normalizedWeekStart,
+                ToDate = weekEnd,
+            },
+            cancellationToken);
 
         if (allocations.Count == 0)
         {

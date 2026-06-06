@@ -4,6 +4,7 @@ using Prm.Common.Enums;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
@@ -83,10 +84,13 @@ public class ManagerService(
 
     private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>
         _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            employeeId,
-            date,
-            date,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employeeId,
+                FromDate = date,
+                ToDate = date,
+            },
+            cancellationToken);
 
     private static string FormatSkills(Employee employee) =>
         string.Join(

@@ -16,6 +16,7 @@ public static class ManagerConstants
     public const string ProjectResourcesNeedAttention = "Project resource allocation needs attention";
 
     public const int ActivityTagsLookbackWeeks = 4;
+    public const int PastAllocationsDisplayCount = 5;
     public const int DefaultMaxWeeklyHours = 40;
 
     public const int RiskFlagCountForProjectUnderRisk = 2;

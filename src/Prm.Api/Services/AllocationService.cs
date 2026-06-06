@@ -5,6 +5,7 @@ using Prm.Common.Models.Allocations;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
@@ -252,11 +253,14 @@ public class AllocationService(
         CancellationToken cancellationToken)
     {
         if (await _allocationRepository.HasOverlappingAllocationOnProject(
-                employeeId,
-                projectId,
-                fromDate,
-                toDate,
-                cancellationToken: cancellationToken))
+                new ProjectAllocationOverlapQuery
+                {
+                    EmployeeId = employeeId,
+                    ProjectId = projectId,
+                    FromDate = fromDate,
+                    ToDate = toDate,
+                },
+                cancellationToken))
         {
             throw new InvalidOperationException(AppConstants.Allocations.OverlappingAllocationOnProject);
         }
@@ -270,10 +274,13 @@ public class AllocationService(
         CancellationToken cancellationToken)
     {
         var existing = await _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            employeeId,
-            fromDate,
-            toDate,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employeeId,
+                FromDate = fromDate,
+                ToDate = toDate,
+            },
+            cancellationToken);
 
         if (existing + utilizationPercent > AllocationConstants.MaxTotalUtilizationPercent)
         {
@@ -291,10 +298,13 @@ public class AllocationService(
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var utilization = await _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            employeeId,
-            today,
-            today,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employeeId,
+                FromDate = today,
+                ToDate = today,
+            },
+            cancellationToken);
 
         employee.Status = utilization > 0
             ? EmployeeConstants.StatusAllocated

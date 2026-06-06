@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Prm.Data.Entities;
 using Prm.Data.Persistence;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Data.Repositories;
 
@@ -50,65 +51,60 @@ public class AllocationRepository(AppDbContext _dbContext)
             .OrderBy(x => x.Employee.User.FullName)
             .ToListAsync(cancellationToken);
 
+    public async Task<IReadOnlyList<Allocation>> GetPastByEmployeeId(
+        EmployeePastAllocationsQuery query,
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.Project)
+            .Where(x => x.EmployeeId == query.EmployeeId && x.ToDate < query.AsOfDate)
+            .OrderByDescending(x => x.ToDate)
+            .ThenByDescending(x => x.FromDate)
+            .Take(query.Limit)
+            .ToListAsync(cancellationToken);
+
     public async Task<IReadOnlyList<Allocation>> GetOverlappingForEmployee(
-        int employeeId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        EmployeeAllocationPeriodQuery query,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.Where(x =>
-            x.EmployeeId == employeeId
-            && x.FromDate <= toDate
-            && x.ToDate >= fromDate);
+        var dbQuery = DbSet.Where(x =>
+            x.EmployeeId == query.EmployeeId
+            && x.FromDate <= query.ToDate
+            && x.ToDate >= query.FromDate);
 
-        if (excludeAllocationId.HasValue)
+        if (query.ExcludeAllocationId.HasValue)
         {
-            query = query.Where(x => x.Id != excludeAllocationId.Value);
+            dbQuery = dbQuery.Where(x => x.Id != query.ExcludeAllocationId.Value);
         }
 
-        return await query
+        return await dbQuery
             .Include(x => x.Project)
             .OrderBy(x => x.Project.Name)
             .ToListAsync(cancellationToken);
     }
 
     public async Task<int> SumUtilizationForEmployeeInPeriod(
-        int employeeId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        EmployeeAllocationPeriodQuery query,
         CancellationToken cancellationToken = default)
     {
-        var allocations = await GetOverlappingForEmployee(
-            employeeId,
-            fromDate,
-            toDate,
-            excludeAllocationId,
-            cancellationToken);
-
+        var allocations = await GetOverlappingForEmployee(query, cancellationToken);
         return allocations.Sum(x => x.UtilizationPercent);
     }
 
     public Task<bool> HasOverlappingAllocationOnProject(
-        int employeeId,
-        int projectId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        ProjectAllocationOverlapQuery query,
         CancellationToken cancellationToken = default)
     {
-        var query = DbSet.Where(x =>
-            x.EmployeeId == employeeId
-            && x.ProjectId == projectId
-            && x.FromDate <= toDate
-            && x.ToDate >= fromDate);
+        var dbQuery = DbSet.Where(x =>
+            x.EmployeeId == query.EmployeeId
+            && x.ProjectId == query.ProjectId
+            && x.FromDate <= query.ToDate
+            && x.ToDate >= query.FromDate);
 
-        if (excludeAllocationId.HasValue)
+        if (query.ExcludeAllocationId.HasValue)
         {
-            query = query.Where(x => x.Id != excludeAllocationId.Value);
+            dbQuery = dbQuery.Where(x => x.Id != query.ExcludeAllocationId.Value);
         }
 
-        return query.AnyAsync(cancellationToken);
+        return dbQuery.AnyAsync(cancellationToken);
     }
 }

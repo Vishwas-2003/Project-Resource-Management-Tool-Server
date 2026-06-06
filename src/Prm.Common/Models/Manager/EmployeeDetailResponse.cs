@@ -9,6 +9,7 @@ public class EmployeeDetailResponse
     public int UtilizationPercent { get; set; }
     public string ProfileSkills { get; set; } = string.Empty;
     public IReadOnlyList<EmployeeAllocationRow> ActiveAllocations { get; set; } = [];
+    public IReadOnlyList<EmployeeAllocationRow> PastAllocations { get; set; } = [];
     public IReadOnlyList<string> RecentActivityTags { get; set; } = [];
 }
 

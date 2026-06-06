@@ -1,4 +1,5 @@
 using Prm.Data.Entities;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Data.Repositories.Interfaces;
 
@@ -20,25 +21,19 @@ public interface IAllocationRepository : ICrudBaseRepository<Allocation, int>
         DateOnly asOfDate,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<Allocation>> GetPastByEmployeeId(
+        EmployeePastAllocationsQuery query,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Allocation>> GetOverlappingForEmployee(
-        int employeeId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        EmployeeAllocationPeriodQuery query,
         CancellationToken cancellationToken = default);
 
     Task<int> SumUtilizationForEmployeeInPeriod(
-        int employeeId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        EmployeeAllocationPeriodQuery query,
         CancellationToken cancellationToken = default);
 
     Task<bool> HasOverlappingAllocationOnProject(
-        int employeeId,
-        int projectId,
-        DateOnly fromDate,
-        DateOnly toDate,
-        int? excludeAllocationId = null,
+        ProjectAllocationOverlapQuery query,
         CancellationToken cancellationToken = default);
 }

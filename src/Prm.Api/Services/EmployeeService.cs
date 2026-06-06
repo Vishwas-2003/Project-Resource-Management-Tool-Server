@@ -6,6 +6,7 @@ using Prm.Common.Models.Employees;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
@@ -159,6 +160,14 @@ public class EmployeeService(
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
         var allocations = await _allocationRepository.GetActiveByEmployeeId(employeeId, today, cancellationToken);
+        var pastAllocations = await _allocationRepository.GetPastByEmployeeId(
+            new EmployeePastAllocationsQuery
+            {
+                EmployeeId = employeeId,
+                AsOfDate = today,
+                Limit = ManagerConstants.PastAllocationsDisplayCount,
+            },
+            cancellationToken);
         var sinceDate = today.AddDays(-7 * ManagerConstants.ActivityTagsLookbackWeeks);
         var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForEmployee(
             employeeId,
@@ -173,15 +182,8 @@ public class EmployeeService(
             CurrentStatus = FormatEmployeeStatus(utilization),
             UtilizationPercent = utilization,
             ProfileSkills = FormatSkills(employee),
-            ActiveAllocations = allocations
-                .Select(allocation => new EmployeeAllocationRow
-                {
-                    Project = allocation.Project.Name,
-                    UtilizationPercent = allocation.UtilizationPercent,
-                    FromDate = allocation.FromDate,
-                    ToDate = allocation.ToDate,
-                })
-                .ToList(),
+            ActiveAllocations = MapAllocationRows(allocations),
+            PastAllocations = MapAllocationRows(pastAllocations),
             RecentActivityTags = activityTags,
         };
     }
@@ -219,10 +221,24 @@ public class EmployeeService(
 
     private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>
         _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            employeeId,
-            date,
-            date,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employeeId,
+                FromDate = date,
+                ToDate = date,
+            },
+            cancellationToken);
+
+    private static IReadOnlyList<EmployeeAllocationRow> MapAllocationRows(IEnumerable<Allocation> allocations) =>
+        allocations
+            .Select(allocation => new EmployeeAllocationRow
+            {
+                Project = allocation.Project.Name,
+                UtilizationPercent = allocation.UtilizationPercent,
+                FromDate = allocation.FromDate,
+                ToDate = allocation.ToDate,
+            })
+            .ToList();
 
     private static string FormatSkills(Employee employee) =>
         string.Join(
@@ -233,7 +249,7 @@ public class EmployeeService(
 
     private static string FormatEmployeeStatus(int utilization) =>
         utilization > 0
-            ? $"{EmployeeConstants.StatusAllocated} ({utilization}%)"
+            ? EmployeeConstants.StatusAllocated
             : EmployeeConstants.StatusBench;
 
     private async Task<Employee> GetEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)

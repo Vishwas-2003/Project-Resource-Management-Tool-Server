@@ -3,6 +3,7 @@ using Prm.Common.Enums;
 using Prm.Common.Models.Timesheets;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
@@ -14,10 +15,13 @@ public partial class TimesheetService
         DateOnly weekEnd,
         CancellationToken cancellationToken) =>
         _allocationRepository.GetOverlappingForEmployee(
-            employeeId,
-            weekStart,
-            weekEnd,
-            cancellationToken: cancellationToken);
+            new EmployeeAllocationPeriodQuery
+            {
+                EmployeeId = employeeId,
+                FromDate = weekStart,
+                ToDate = weekEnd,
+            },
+            cancellationToken);
 
     private static IReadOnlyList<TimesheetEntryDetail> MapEntryDetails(IEnumerable<TimesheetEntry> entries) =>
         entries.Select(x => new TimesheetEntryDetail
