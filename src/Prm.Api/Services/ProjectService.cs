@@ -332,6 +332,7 @@ public class ProjectService(
             (int)ProjectStatusEnum.Planned => ProjectConstants.StatusPlanned,
             (int)ProjectStatusEnum.Active => ProjectConstants.StatusActive,
             (int)ProjectStatusEnum.OnHold => ProjectConstants.StatusOnHold,
+            (int)ProjectStatusEnum.Completed => ProjectConstants.StatusCompleted,
             _ => throw new ArgumentException(AppConstants.Projects.InvalidStatus),
         };
     }
