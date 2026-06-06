@@ -23,7 +23,6 @@ public class ManagerService(
 
         var bench = new List<BenchEmployeeRow>();
         var active = new List<ActiveEmployeeRow>();
-        var overUtilised = 0;
         var partial = 0;
         var rowNumber = 0;
 
@@ -44,10 +43,6 @@ public class ManagerService(
                 continue;
             }
 
-            if (utilization > AllocationConstants.MaxTotalUtilizationPercent)
-            {
-                overUtilised++;
-            }
             else if (utilization < AllocationConstants.MaxTotalUtilizationPercent)
             {
                 partial++;
@@ -72,7 +67,6 @@ public class ManagerService(
             Summary = new ResourceDashboardSummary
             {
                 BenchCount = bench.Count,
-                OverUtilisedCount = overUtilised,
                 PartialCount = partial,
             },
         };

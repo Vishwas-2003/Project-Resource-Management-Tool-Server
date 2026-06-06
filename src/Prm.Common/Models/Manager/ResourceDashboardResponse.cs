@@ -29,6 +29,5 @@ public class ActiveEmployeeRow
 public class ResourceDashboardSummary
 {
     public int BenchCount { get; set; }
-    public int OverUtilisedCount { get; set; }
     public int PartialCount { get; set; }
 }
