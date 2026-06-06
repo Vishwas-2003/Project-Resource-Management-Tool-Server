@@ -10,8 +10,10 @@ public class Project : BaseEntity
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
     public required string Status { get; set; }
+    public required string HealthStatus { get; set; }
     public User ManagerUser { get; set; } = null!;
     public ICollection<Milestone> Milestones { get; set; } = new List<Milestone>();
     public ICollection<Allocation> Allocations { get; set; } = new List<Allocation>();
     public ICollection<TimesheetEntry> TimesheetEntries { get; set; } = new List<TimesheetEntry>();
+    public ICollection<ProjectRiskFlag> RiskFlags { get; set; } = new List<ProjectRiskFlag>();
 }

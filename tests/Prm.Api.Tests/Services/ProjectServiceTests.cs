@@ -1,21 +1,20 @@
 using AutoMapper;
 using Moq;
 using Prm.Api.Services;
+using Prm.Api.Tests.Helpers;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
 using Prm.Common.Models.Projects;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
-using Prm.Api.Tests.Helpers;
 
 namespace Prm.Api.Tests.Services;
 
 public class ProjectServiceTests
 {
     private readonly Mock<IProjectRepository> _projectRepository = new();
+    private readonly Mock<IProjectRiskFlagRepository> _projectRiskFlagRepository = new();
     private readonly Mock<IUserRepository> _userRepository = new();
-    private readonly Mock<ITimesheetRepository> _timesheetRepository = new();
-    private readonly Mock<ISystemConfigurationRepository> _systemConfigurationRepository = new();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     private static readonly DateOnly Start = new(2026, 1, 1);
@@ -213,8 +212,7 @@ public class ProjectServiceTests
     private ProjectService CreateSut() =>
         new(
             _projectRepository.Object,
+            _projectRiskFlagRepository.Object,
             _userRepository.Object,
-            _timesheetRepository.Object,
-            _systemConfigurationRepository.Object,
             _mapper);
 }

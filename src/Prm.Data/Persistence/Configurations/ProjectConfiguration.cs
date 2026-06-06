@@ -12,6 +12,7 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
         builder.Property(x => x.Description).HasMaxLength(2000).IsRequired();
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
+        builder.Property(x => x.HealthStatus).HasMaxLength(50).IsRequired();
         builder.Property(x => x.TotalStoryPoints).IsRequired();
         builder.HasIndex(x => x.Name).IsUnique();
         builder.HasIndex(x => x.ManagerUserId);

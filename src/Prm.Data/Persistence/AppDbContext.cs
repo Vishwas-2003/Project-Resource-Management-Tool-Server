@@ -34,6 +34,7 @@ public class AppDbContext : DbContext
     public DbSet<ActivityTag> ActivityTags => Set<ActivityTag>();
     public DbSet<TimesheetActivityTag> TimesheetActivityTags => Set<TimesheetActivityTag>();
     public DbSet<SystemConfiguration> SystemConfigurations => Set<SystemConfiguration>();
+    public DbSet<ProjectRiskFlag> ProjectRiskFlags => Set<ProjectRiskFlag>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

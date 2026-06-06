@@ -2,6 +2,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Moq;
 using Prm.Api.Services;
+using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
 using Prm.Data.Entities;
@@ -14,6 +15,7 @@ namespace Prm.Api.Tests.Services;
 public class SystemConfigurationServiceTests
 {
     private readonly Mock<ISystemConfigurationRepository> _repository = new();
+    private readonly Mock<IHangfireJobScheduler> _hangfireJobScheduler = new();
     private readonly IPasswordHasher<SystemConfiguration> _hasher = new PasswordHasher<SystemConfiguration>();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
@@ -152,5 +154,5 @@ public class SystemConfigurationServiceTests
     }
 
     private SystemConfigurationService CreateSut() =>
-        new(_repository.Object, _hasher, _mapper);
+        new(_repository.Object, _hasher, _mapper, _hangfireJobScheduler.Object);
 }

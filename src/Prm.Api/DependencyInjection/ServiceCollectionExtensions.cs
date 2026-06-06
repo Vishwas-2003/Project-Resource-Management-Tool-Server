@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
+        services.AddScoped<IProjectRiskFlagRepository, ProjectRiskFlagRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
         services.AddScoped<IAllocationRepository, AllocationRepository>();
@@ -65,6 +66,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IProjectService, ProjectService>();
+        services.AddScoped<IProjectHealthService, ProjectHealthService>();
         services.AddScoped<IMilestoneService, MilestoneService>();
         services.AddScoped<ISystemConfigurationService, SystemConfigurationService>();
         services.AddScoped<IAllocationService, AllocationService>();

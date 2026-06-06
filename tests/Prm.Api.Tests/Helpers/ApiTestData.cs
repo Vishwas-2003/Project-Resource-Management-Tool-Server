@@ -77,6 +77,7 @@ internal static class ApiTestData
             StartDate = startDate,
             EndDate = endDate,
             Status = ProjectConstants.StatusPlanned,
+            HealthStatus = ManagerConstants.HealthOnTrack,
             ManagerUserId = 10,
             ManagerUser = CreateUser(id: 10, roleId: (int)RoleNameEnum.Manager, username: "manager"),
         };

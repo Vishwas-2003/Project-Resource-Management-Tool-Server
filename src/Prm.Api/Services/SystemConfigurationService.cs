@@ -13,7 +13,8 @@ namespace Prm.Api.Services;
 public class SystemConfigurationService(
     ISystemConfigurationRepository _systemConfigurationRepository,
     IPasswordHasher<SystemConfiguration> _hasher,
-    IMapper _mapper) : ISystemConfigurationService
+    IMapper _mapper,
+    IHangfireJobScheduler _hangfireJobScheduler) : ISystemConfigurationService
 {
     public async Task<IReadOnlyList<SystemConfigurationResponse>> GetAllConfigurations(
         CancellationToken cancellationToken = default)
@@ -40,6 +41,12 @@ public class SystemConfigurationService(
         configuration.Value = value;
         _systemConfigurationRepository.Update(configuration);
         await _systemConfigurationRepository.SaveChanges(cancellationToken);
+
+        if (configurationId == (int)ConfigurationOptionEnum.SchedulerInterval
+            && int.TryParse(value, out var intervalMinutes))
+        {
+            _hangfireJobScheduler.RescheduleScheduler(intervalMinutes);
+        }
 
         return true;
     }
