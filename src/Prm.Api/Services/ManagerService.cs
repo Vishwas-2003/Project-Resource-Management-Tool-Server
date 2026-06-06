@@ -25,17 +25,14 @@ public class ManagerService(
         var bench = new List<BenchEmployeeRow>();
         var active = new List<ActiveEmployeeRow>();
         var partial = 0;
-        var rowNumber = 0;
 
         foreach (var employee in employees)
         {
             var utilization = await GetUtilizationOnDate(employee.Id, today, cancellationToken);
             if (utilization <= 0)
             {
-                rowNumber++;
                 bench.Add(new BenchEmployeeRow
                 {
-                    RowNumber = rowNumber,
                     Id = employee.Id,
                     Name = employee.User.FullName,
                     Department = employee.Department,
@@ -49,16 +46,16 @@ public class ManagerService(
                 partial++;
             }
 
-            rowNumber++;
             active.Add(new ActiveEmployeeRow
             {
-                RowNumber = rowNumber,
                 Id = employee.Id,
                 Name = employee.User.FullName,
                 AllocationPercent = utilization,
                 Availability = FormatAvailability(utilization),
             });
         }
+
+        AssignRowNumber(bench, active);
 
         return new ResourceDashboardResponse
         {
@@ -71,6 +68,21 @@ public class ManagerService(
                 PartialCount = partial,
             },
         };
+    }
+
+    private void AssignRowNumber(List<BenchEmployeeRow> bench, List<ActiveEmployeeRow> active)
+    {
+        int rowNumber = 1;
+
+        foreach(BenchEmployeeRow employeeRow in bench)
+        {
+            employeeRow.RowNumber = rowNumber++;
+        }
+
+        foreach(ActiveEmployeeRow employeeRow in active)
+        {
+            employeeRow.RowNumber = rowNumber++;
+        }
     }
 
     private async Task EnsureManagerUserOrThrow(int userId, CancellationToken cancellationToken)
