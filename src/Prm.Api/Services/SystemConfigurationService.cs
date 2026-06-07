@@ -12,7 +12,6 @@ namespace Prm.Api.Services;
 
 public class SystemConfigurationService(
     ISystemConfigurationRepository _systemConfigurationRepository,
-    IPasswordHasher<SystemConfiguration> _hasher,
     IMapper _mapper,
     IHangfireJobScheduler _hangfireJobScheduler) : ISystemConfigurationService
 {
@@ -32,11 +31,6 @@ public class SystemConfigurationService(
         var configuration = await GetConfigurationOrThrow(configurationId, cancellationToken);
 
         ValidateConfiguration(configurationId, value, configuration);
-
-        if (configurationId == (int)ConfigurationOptionEnum.ApiKey)
-        {
-            value = _hasher.HashPassword(configuration, value);
-        }
 
         configuration.Value = value;
         _systemConfigurationRepository.Update(configuration);
@@ -73,15 +67,6 @@ public class SystemConfigurationService(
         if (configuration.Value == value)
         {
             throw new ArgumentException(AppConstants.SystemConfiguration.ValueUnchanged);
-        }
-
-        if (configurationId == (int)ConfigurationOptionEnum.ApiKey)
-        {
-            if (_hasher.VerifyHashedPassword(configuration, configuration.Value, value)
-                != PasswordVerificationResult.Failed)
-            {
-                throw new InvalidOperationException(AppConstants.SystemConfiguration.ValueUnchanged);
-            }
         }
 
         if (configurationId == (int)ConfigurationOptionEnum.MaxWeeklyHours || configurationId == (int)ConfigurationOptionEnum.SchedulerInterval)
