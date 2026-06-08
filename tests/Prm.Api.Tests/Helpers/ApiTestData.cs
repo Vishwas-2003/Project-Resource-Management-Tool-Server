@@ -42,9 +42,15 @@ internal static class ApiTestData
         int userId = 1,
         string? status = EmployeeConstants.StatusBench,
         bool userIsActive = true,
-        int roleId = (int)RoleNameEnum.Employee)
+        int roleId = (int)RoleNameEnum.Employee,
+        string? fullName = null)
     {
         var user = CreateUser(userId, roleId, userIsActive);
+        if (fullName is not null)
+        {
+            user.FullName = fullName;
+        }
+
         return new Employee
         {
             Id = id,
@@ -83,14 +89,19 @@ internal static class ApiTestData
         };
     }
 
-    internal static Milestone CreateMilestone(int id = 1, int projectId = 1, string title = "Phase 1") =>
+    internal static Milestone CreateMilestone(
+        int id = 1,
+        int projectId = 1,
+        string title = "Phase 1",
+        DateOnly? dueDate = null,
+        string? status = null) =>
         new()
         {
             Id = id,
             ProjectId = projectId,
             Title = title,
-            DueDate = new DateOnly(2026, 6, 1),
-            Status = MilestoneConstants.StatusNotStarted,
+            DueDate = dueDate ?? new DateOnly(2026, 6, 1),
+            Status = status ?? MilestoneConstants.StatusNotStarted,
         };
 
     internal static SystemConfiguration CreateConfiguration(
@@ -103,4 +114,47 @@ internal static class ApiTestData
             ConfigurationType = configurationType,
             Value = value,
         };
+
+    internal static Allocation CreateAllocation(
+        int id = 1,
+        int employeeId = 1,
+        int projectId = 1,
+        int utilizationPercent = 50,
+        DateOnly? fromDate = null,
+        DateOnly? toDate = null,
+        string employeeName = "Jane Doe",
+        string projectName = "Alpha",
+        int managerUserId = 10,
+        Employee? employee = null,
+        Project? project = null)
+    {
+        employee ??= CreateEmployee(employeeId, employeeId, fullName: employeeName);
+        project ??= CreateProject(projectId, projectName);
+        project.ManagerUserId = managerUserId;
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        return new Allocation
+        {
+            Id = id,
+            EmployeeId = employeeId,
+            ProjectId = projectId,
+            UtilizationPercent = utilizationPercent,
+            FromDate = fromDate ?? today.AddMonths(-1),
+            ToDate = toDate ?? today.AddMonths(1),
+            Employee = employee,
+            Project = project,
+        };
+    }
+
+    internal static ActivityTag CreateActivityTag(int id = 1, string? name = null) =>
+        new()
+        {
+            Id = id,
+            Name = name ?? TimesheetConstants.StandardActivityTagNames[0],
+        };
+
+    internal static IReadOnlyList<ActivityTag> CreateStandardActivityTags() =>
+        TimesheetConstants.StandardActivityTagNames
+            .Select((name, index) => CreateActivityTag(index + 1, name))
+            .ToList();
 }

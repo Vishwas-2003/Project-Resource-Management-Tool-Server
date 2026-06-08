@@ -252,6 +252,41 @@ public class MilestoneServiceTests
         Assert.Equal(AppConstants.Milestones.StoryPointsExceedProjectTotal, exception.Message);
     }
 
+    [Fact]
+    public async Task Update_WhenSuccessful_ReturnsTrue()
+    {
+        var project = ApiTestData.CreateProject();
+        project.TotalStoryPoints = 10;
+        var milestone = ApiTestData.CreateMilestone(id: 1, projectId: project.Id, title: "M1");
+        milestone.StoryPoints = 3;
+        project.Milestones = new List<Milestone> { milestone };
+
+        _projectRepository
+            .Setup(x => x.GetById(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+        _milestoneRepository
+            .Setup(x => x.GetByIdAndProjectId(milestone.Id, project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(milestone);
+        _milestoneRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+        var result = await sut.Update(
+            project.Id,
+            milestone.Id,
+            new UpdateMilestoneRequest
+            {
+                Title = "Updated",
+                DueDate = milestone.DueDate,
+                StoryPoints = 3,
+                Status = (int)MilestoneStatusEnum.InProgress,
+            });
+
+        Assert.True(result);
+        Assert.Equal("Updated", milestone.Title);
+    }
+
     private MilestoneService CreateSut() =>
         new(_projectRepository.Object, _milestoneRepository.Object, _mapper);
 }

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Moq;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Common.Models.Auth;
 using Prm.Data.Audit;
 using Prm.Data.Entities;
@@ -18,6 +19,7 @@ namespace UserManagement.Tests.Services;
 public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _userRepository = new();
+    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository = new();
     private readonly Mock<IJwtTokenService> _jwtTokenService = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
@@ -29,6 +31,10 @@ public class AuthServiceTests
     {
         var mapperConfig = new MapperConfiguration(cfg => cfg.AddProfile<AuthMappingProfile>());
         _mapper = mapperConfig.CreateMapper();
+
+        _employeeRepository
+            .Setup(x => x.GetEmployeeByUserId(It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Employee?)null);
     }
 
     [Fact]
@@ -59,6 +65,35 @@ public class AuthServiceTests
             sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
 
         Assert.Equal(AppConstants.Auth.InvalidCredentials, exception.Message);
+    }
+
+    [Fact]
+    public async Task Login_WhenEmployeeProfileMissingForEmployeeRole_ThrowsUnauthorizedAccessException()
+    {
+        var user = new User
+        {
+            Id = 2,
+            RoleId = (int)RoleNameEnum.Employee,
+            FullName = "Jane Doe",
+            Username = "employee",
+            Email = "employee@prm.local",
+            PasswordHash = string.Empty,
+            IsActive = true,
+            ForcePasswordChange = false,
+            Role = new Role { Id = (int)RoleNameEnum.Employee, Name = "Employee", CreatedAtUtc = DateTime.UtcNow },
+        };
+        user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
+
+        _userRepository
+            .Setup(x => x.GetByUsername("employee", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            sut.Login(new LoginRequest { Username = "employee", Password = TestData.Password }));
+
+        Assert.Equal(AppConstants.Auth.EmployeeProfileNotFound, exception.Message);
     }
 
     [Fact]
@@ -323,6 +358,7 @@ public class AuthServiceTests
     private AuthService CreateSut() =>
         new(
             _userRepository.Object,
+            _employeeRepository.Object,
             _refreshTokenRepository.Object,
             _passwordHasher,
             _jwtTokenService.Object,

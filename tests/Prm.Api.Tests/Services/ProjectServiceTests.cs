@@ -17,6 +17,8 @@ public class ProjectServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
+    private const int ManagerUserId = 10;
+
     private static readonly DateOnly Start = new(2026, 1, 1);
     private static readonly DateOnly End = new(2026, 12, 31);
 
@@ -178,11 +180,135 @@ public class ProjectServiceTests
         Assert.Equal("Alpha", result.Projects[0].Name);
     }
 
+    [Fact]
+    public async Task GetMyProjects_WhenManagerNotFound_ThrowsKeyNotFoundException()
+    {
+        _userRepository
+            .Setup(x => x.GetActiveManagerById(ManagerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            sut.GetMyProjects(ManagerUserId));
+
+        Assert.Equal(AppConstants.Manager.ProfileNotFound, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetMyProjects_ReturnsMappedProjectsWithRowNumbers()
+    {
+        SetupValidManager();
+        var projects = new List<Project>
+        {
+            ApiTestData.CreateProject(id: 1, name: "Alpha"),
+            ApiTestData.CreateProject(id: 2, name: "Beta", start: new DateOnly(2026, 2, 1), end: new DateOnly(2026, 8, 31)),
+        };
+        _projectRepository
+            .Setup(x => x.GetByManagerUserId(ManagerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(projects);
+
+        var sut = CreateSut();
+        var result = await sut.GetMyProjects(ManagerUserId);
+
+        Assert.Equal(2, result.Projects.Count);
+        Assert.Equal(1, result.Projects[0].RowNumber);
+        Assert.Equal("Alpha", result.Projects[0].Name);
+        Assert.Equal(2, result.Projects[1].RowNumber);
+        Assert.Equal("Beta", result.Projects[1].Name);
+    }
+
+    [Fact]
+    public async Task GetProjectDetail_WhenProjectNotFound_ThrowsKeyNotFoundException()
+    {
+        SetupValidManager();
+        _projectRepository
+            .Setup(x => x.GetByIdWithDetails(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Project?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            sut.GetProjectDetail(99, ManagerUserId));
+
+        Assert.Equal(AppConstants.Projects.NotFound, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetProjectDetail_WhenProjectNotOwnedByManager_ThrowsUnauthorizedAccessException()
+    {
+        SetupValidManager();
+        var project = ApiTestData.CreateProject();
+        project.ManagerUserId = 99;
+        _projectRepository
+            .Setup(x => x.GetByIdWithDetails(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            sut.GetProjectDetail(project.Id, ManagerUserId));
+
+        Assert.Equal(AppConstants.Manager.ProjectNotOwned, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetProjectDetail_ReturnsDetailWithMilestonesAndRiskFlags()
+    {
+        SetupValidManager();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var project = ApiTestData.CreateProject();
+        project.Milestones =
+        [
+            ApiTestData.CreateMilestone(id: 1, title: "Phase 1", dueDate: today.AddMonths(1)),
+            ApiTestData.CreateMilestone(id: 2, title: "Phase 2", dueDate: today.AddMonths(2), status: MilestoneConstants.StatusDone),
+        ];
+        var allocatedEmployee = ApiTestData.CreateEmployee(id: 5, userId: 5, fullName: "Bob Smith");
+        project.Allocations =
+        [
+            ApiTestData.CreateAllocation(id: 10, employeeId: 5, projectId: project.Id, employee: allocatedEmployee, project: project),
+        ];
+
+        var riskFlags = new List<ProjectRiskFlag>
+        {
+            new()
+            {
+                Id = 1,
+                ProjectId = project.Id,
+                SortOrder = 1,
+                Outcome = ManagerConstants.RiskFlagFail,
+                Message = "Resource shortfall",
+            },
+        };
+
+        _projectRepository
+            .Setup(x => x.GetByIdWithDetails(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+        _projectRiskFlagRepository
+            .Setup(x => x.GetByProjectId(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(riskFlags);
+
+        var sut = CreateSut();
+        var result = await sut.GetProjectDetail(project.Id, ManagerUserId);
+
+        Assert.Equal(project.Id, result.Id);
+        Assert.Equal(project.Name, result.Name);
+        Assert.Equal(project.HealthStatus, result.HealthStatus);
+        Assert.Equal(2, result.Milestones.Count);
+        Assert.Equal(1, result.Milestones[0].RowNumber);
+        Assert.Equal("Phase 1", result.Milestones[0].Title);
+        Assert.Single(result.RiskFlags);
+        Assert.Equal(ManagerConstants.RiskFlagFail, result.RiskFlags[0].Outcome);
+        Assert.Equal("Resource shortfall", result.RiskFlags[0].Message);
+        Assert.Single(result.AllocatedResources);
+        Assert.Equal("Bob Smith", result.AllocatedResources[0].Name);
+    }
+
     private void SetupValidManager()
     {
         _userRepository
-            .Setup(x => x.GetActiveManagerById(10, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApiTestData.CreateUser(id: 10, roleId: (int)RoleNameEnum.Manager, username: "manager"));
+            .Setup(x => x.GetActiveManagerById(ManagerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(ApiTestData.CreateUser(id: ManagerUserId, roleId: (int)RoleNameEnum.Manager, username: "manager"));
     }
 
     private static CreateProjectRequest CreateValidRequest(string name = "New Project", int status = (int)ProjectStatusEnum.Planned) =>

@@ -6,6 +6,7 @@ using Prm.Common.Enums;
 using Prm.Common.Models.Employees;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 using Prm.Api.Tests.Helpers;
 
 namespace Prm.Api.Tests.Services;
@@ -306,6 +307,129 @@ public class EmployeeServiceTests
         Assert.Equal(1, result.Allocated);
         Assert.Equal(2, result.Bench);
         Assert.Equal(3, result.Employees.Count);
+    }
+
+    [Fact]
+    public async Task GetDetail_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
+    {
+        _employeeRepository
+            .Setup(x => x.GetEmployeeDetailById(99, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Employee?)null);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            sut.GetDetail(99));
+
+        Assert.Equal(AppConstants.Manager.EmployeeNotFound, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetDetail_ReturnsEmployeeDetailWithSkillsAndAllocations()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        employee.EmployeeSkills =
+        [
+            new EmployeeSkill
+            {
+                EmployeeId = employee.Id,
+                SkillId = 1,
+                Proficiency = "Expert",
+                Skill = new Skill { Id = 1, Name = "C#", Category = "Language" },
+            },
+            new EmployeeSkill
+            {
+                EmployeeId = employee.Id,
+                SkillId = 2,
+                Proficiency = "Intermediate",
+                Skill = new Skill { Id = 2, Name = "Azure", Category = "Cloud" },
+            },
+        ];
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var activeAllocation = ApiTestData.CreateAllocation(employeeId: employee.Id, utilizationPercent: 50);
+        var pastAllocation = ApiTestData.CreateAllocation(
+            id: 2,
+            employeeId: employee.Id,
+            utilizationPercent: 100,
+            fromDate: today.AddMonths(-6),
+            toDate: today.AddMonths(-1));
+
+        _employeeRepository
+            .Setup(x => x.GetEmployeeDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+        _allocationRepository
+            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
+                It.Is<EmployeeAllocationPeriodQuery>(query => query.EmployeeId == employee.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(50);
+        _allocationRepository
+            .Setup(x => x.GetActiveByEmployeeId(employee.Id, today, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Allocation> { activeAllocation });
+        _allocationRepository
+            .Setup(x => x.GetPastByEmployeeId(
+                It.Is<EmployeePastAllocationsQuery>(query => query.EmployeeId == employee.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Allocation> { pastAllocation });
+        _timesheetRepository
+            .Setup(x => x.GetRecentActivityTagNamesForEmployee(employee.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string> { "Development" });
+
+        var sut = CreateSut();
+        var result = await sut.GetDetail(employee.Id);
+
+        Assert.Equal(employee.Id, result.Id);
+        Assert.Equal(employee.User.FullName, result.Name);
+        Assert.Equal(EmployeeConstants.StatusAllocated, result.CurrentStatus);
+        Assert.Equal(50, result.UtilizationPercent);
+        Assert.Equal("Azure, C#", result.ProfileSkills);
+        Assert.Single(result.ActiveAllocations);
+        Assert.Equal("Alpha", result.ActiveAllocations[0].Project);
+        Assert.Single(result.PastAllocations);
+        Assert.Equal(100, result.PastAllocations[0].UtilizationPercent);
+        Assert.Single(result.RecentActivityTags);
+        Assert.Equal("Development", result.RecentActivityTags[0]);
+    }
+
+    [Fact]
+    public async Task GetUtilization_ReturnsBenchDescriptionWhenUtilizationIsZero()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        _employeeRepository
+            .Setup(x => x.GetEmployeeDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+        _allocationRepository
+            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
+                It.IsAny<EmployeeAllocationPeriodQuery>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        var sut = CreateSut();
+        var result = await sut.GetUtilization(employee.Id);
+
+        Assert.Equal(employee.Id, result.EmployeeId);
+        Assert.Equal(0, result.UtilizationPercent);
+        Assert.Equal(ManagerConstants.AvailabilityOnBench, result.StatusDescription);
+    }
+
+    [Fact]
+    public async Task GetUtilization_ReturnsPercentWhenAllocated()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        _employeeRepository
+            .Setup(x => x.GetEmployeeDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+        _allocationRepository
+            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
+                It.IsAny<EmployeeAllocationPeriodQuery>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(75);
+
+        var sut = CreateSut();
+        var result = await sut.GetUtilization(employee.Id);
+
+        Assert.Equal(75, result.UtilizationPercent);
+        Assert.Equal("75%", result.StatusDescription);
     }
 
     private EmployeeService CreateSut() =>

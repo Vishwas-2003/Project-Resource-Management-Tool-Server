@@ -173,6 +173,35 @@ public class SkillServiceTests
     }
 
     [Fact]
+    public async Task Update_WhenSuccessful_ReturnsTrue()
+    {
+        var employee = ApiTestData.CreateEmployee();
+        var assignment = new EmployeeSkill
+        {
+            EmployeeId = employee.Id,
+            SkillId = 1,
+            Proficiency = SkillConstants.ProficiencyBeginner,
+            Skill = new Skill { Id = 1, Name = "C#", Category = "Backend" },
+        };
+
+        _employeeSkillRepository
+            .Setup(x => x.GetById(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(assignment);
+        _employeeSkillRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+        var result = await sut.Update(
+            employee.Id,
+            1,
+            new UpdateEmployeeSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced });
+
+        Assert.True(result);
+        Assert.Equal(SkillConstants.ProficiencyAdvanced, assignment.Proficiency);
+    }
+
+    [Fact]
     public async Task Update_WhenAssignmentNotFound_ThrowsKeyNotFoundException()
     {
         _employeeSkillRepository

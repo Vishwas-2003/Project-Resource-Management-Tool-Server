@@ -252,6 +252,54 @@ public class UserServiceTests
     }
 
     [Fact]
+    public async Task Deactivate_WhenLastActiveAdmin_ThrowsInvalidOperationException()
+    {
+        var user = ApiTestData.CreateUser(roleId: (int)RoleNameEnum.Admin);
+        _userRepository
+            .Setup(x => x.GetByIdWithRole(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _userRepository
+            .Setup(x => x.IsLastActiveAdmin(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Deactivate(new UserLookupRequest { UserId = user.Id }));
+
+        Assert.Equal(AppConstants.Users.CannotDeactivateLastAdmin, exception.Message);
+    }
+
+    [Fact]
+    public async Task Deactivate_WhenResolvedByUsername_DeactivatesUser()
+    {
+        var user = ApiTestData.CreateUser(isActive: true);
+        _userRepository
+            .Setup(x => x.GetByUsername(user.Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _userRepository
+            .Setup(x => x.IsLastActiveAdmin(user, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var sut = CreateSut();
+        var result = await sut.Deactivate(new UserLookupRequest { Username = user.Username });
+
+        Assert.True(result);
+        Assert.False(user.IsActive);
+    }
+
+    [Fact]
+    public async Task Deactivate_WhenLookupMissing_ThrowsArgumentException()
+    {
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.Deactivate(new UserLookupRequest()));
+
+        Assert.Equal(AppConstants.Users.LookupRequired, exception.Message);
+    }
+
+    [Fact]
     public async Task Deactivate_WhenSuccessful_ClearsRefreshTokens()
     {
         var user = ApiTestData.CreateUser(isActive: true);

@@ -23,4 +23,8 @@
     <ProjectReference Include="..\UserManagement\UserManagement.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Prm.Api.Tests" />
+  </ItemGroup>
+
 </Project>

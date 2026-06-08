@@ -1,5 +1,4 @@
 using AutoMapper;
-using Microsoft.AspNetCore.Identity;
 using Moq;
 using Prm.Api.Services;
 using Prm.Api.Services.Interfaces;
@@ -16,7 +15,6 @@ public class SystemConfigurationServiceTests
 {
     private readonly Mock<ISystemConfigurationRepository> _repository = new();
     private readonly Mock<IHangfireJobScheduler> _hangfireJobScheduler = new();
-    private readonly IPasswordHasher<SystemConfiguration> _hasher = new PasswordHasher<SystemConfiguration>();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     [Fact]
@@ -111,13 +109,11 @@ public class SystemConfigurationServiceTests
     }
 
     [Fact]
-    public async Task Update_WhenApiKey_StoresHashedValue()
+    public async Task Update_WhenApiKey_StoresPlainValue()
     {
         var configuration = ApiTestData.CreateConfiguration(
             (int)ConfigurationOptionEnum.ApiKey,
-            _hasher.HashPassword(
-                new SystemConfiguration { Id = (int)ConfigurationOptionEnum.ApiKey, ConfigurationType = "ApiKey" },
-                "old-key"),
+            "old-key",
             "ApiKey");
 
         _repository
@@ -128,9 +124,23 @@ public class SystemConfigurationServiceTests
         var result = await sut.Update(configuration.Id, "new-secret-key");
 
         Assert.True(result);
-        Assert.NotEqual("new-secret-key", configuration.Value);
-        Assert.Equal(PasswordVerificationResult.Success,
-            _hasher.VerifyHashedPassword(configuration, configuration.Value, "new-secret-key"));
+        Assert.Equal("new-secret-key", configuration.Value);
+        _repository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Update_WhenSchedulerIntervalValid_ReschedulesHangfire()
+    {
+        var configuration = ApiTestData.CreateConfiguration((int)ConfigurationOptionEnum.SchedulerInterval, "60");
+        _repository
+            .Setup(x => x.GetById(configuration.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(configuration);
+
+        var sut = CreateSut();
+        var result = await sut.Update(configuration.Id, "30");
+
+        Assert.True(result);
+        _hangfireJobScheduler.Verify(x => x.RescheduleScheduler(30), Times.Once);
     }
 
     [Fact]
@@ -154,5 +164,5 @@ public class SystemConfigurationServiceTests
     }
 
     private SystemConfigurationService CreateSut() =>
-        new(_repository.Object, _hasher, _mapper, _hangfireJobScheduler.Object);
+        new(_repository.Object, _mapper, _hangfireJobScheduler.Object);
 }
