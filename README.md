@@ -2,7 +2,7 @@
 
 ASP.NET Core REST API for the **Project & Resource Management (PRM) Tool** — a console client–server system for IT services companies to manage employees, projects, allocations, and timesheets.
 
-This repository contains the backend only. Pair it with the [PRM Client](../Client/) console app and the optional [AiService](../AiService/) Python microservice for AI skill matching and project risk summaries.
+This repository contains the backend only. Pair it with the [PRM Client](../Client/) console app and the [AiService](../AiService/) Python microservice for AI skill matching and project risk summaries.
 
 ## Solution structure
 
