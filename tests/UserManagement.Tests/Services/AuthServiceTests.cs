@@ -59,38 +59,7 @@ public class AuthServiceTests
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             sut.Login(new LoginRequest { Username = TestData.Username, Password = TestData.Password }));
 
-        Assert.Equal(AppConstants.Auth.InvalidCredentials, exception.Message);
-    }
-
-    [Fact]
-    public async Task Login_WhenEmployeeProfileMissingForEmployeeRole_ThrowsUnauthorizedAccessException()
-    {
-        var user = new User
-        {
-            Id = 2,
-            RoleId = (int)RoleNameEnum.Employee,
-            FullName = "Jane Doe",
-            Username = "employee",
-            Email = "employee@prm.local",
-            PasswordHash = string.Empty,
-            IsActive = true,
-            Department = string.Empty,
-            Designation = string.Empty,
-            PasswordExpiryTime = null,
-            Role = new Role { Id = (int)RoleNameEnum.Employee, Name = "Employee", CreatedAtUtc = DateTime.UtcNow },
-        };
-        user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
-
-        _userRepository
-            .Setup(x => x.GetByUsername("employee", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(user);
-
-        var sut = CreateSut();
-
-        var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.Login(new LoginRequest { Username = "employee", Password = TestData.Password }));
-
-        Assert.Equal(AppConstants.Auth.EmployeeProfileNotFound, exception.Message);
+        Assert.Equal(AppConstants.Auth.InactiveUser, exception.Message);
     }
 
     [Fact]

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Prm.Common.Auth;
 using Prm.Common.Constants;
-using Prm.Common.Enums;
 using Prm.Common.Models.Auth;
 using Prm.Data.Audit;
 using Prm.Data.Entities;
@@ -25,14 +24,14 @@ public class AuthService(
     public async Task<AuthResponse> Login(LoginRequest request, CancellationToken cancellationToken = default)
     {
         var user = await _userRepository.GetByUsername(request.Username, cancellationToken);
-        if (user is null || !user.IsActive)
+        if (user is null)
         {
             throw new UnauthorizedAccessException(AppConstants.Auth.InvalidCredentials);
         }
 
-        if (user.RoleId == (int)RoleNameEnum.Employee && string.IsNullOrWhiteSpace(user.Department))
+        if (!user.IsActive)
         {
-            throw new UnauthorizedAccessException(AppConstants.Auth.EmployeeProfileNotFound);
+            throw new UnauthorizedAccessException(AppConstants.Auth.InactiveUser);
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);

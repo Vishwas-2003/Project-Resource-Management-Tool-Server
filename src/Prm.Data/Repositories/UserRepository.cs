@@ -148,13 +148,13 @@ public class UserRepository(AppDbContext _dbContext)
         CancellationToken cancellationToken = default)
     {
         var utcNow = DateTime.UtcNow;
-        var activeHistories = await _dbContext.ResourceStatusHistories
+        var activeHistory = await _dbContext.ResourceStatusHistories
             .Where(history => history.UserId == userId && history.EffectiveToUtc == null)
-            .ToListAsync(cancellationToken);
+            .FirstOrDefaultAsync(cancellationToken);
 
-        foreach (var history in activeHistories)
+        if (activeHistory != null && activeHistory.ResourceStatusTypeId == resourceStatusTypeId)
         {
-            history.EffectiveToUtc = utcNow;
+            return;
         }
 
         await _dbContext.ResourceStatusHistories.AddAsync(
