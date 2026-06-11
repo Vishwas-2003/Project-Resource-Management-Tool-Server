@@ -99,12 +99,12 @@ public partial class TimesheetService
         return tags;
     }
 
-    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetResourceUserOrThrow(int userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetById(userId, cancellationToken);
         if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
-            throw new KeyNotFoundException(AppConstants.Timesheets.EmployeeNotFound);
+            throw new KeyNotFoundException(AppConstants.Timesheets.ResourceNotFound);
         }
 
         return user;

@@ -51,9 +51,9 @@ internal static class ApiTestData
         };
     }
 
-    internal static User CreateEmployeeUser(
+    internal static User CreateResourceUser(
         int id = 1,
-        string? status = EmployeeConstants.StatusBench,
+        string? status = ResourceConstants.StatusBench,
         bool userIsActive = true,
         int roleId = (int)RoleNameEnum.Employee,
         string? fullName = null,
@@ -128,13 +128,13 @@ internal static class ApiTestData
         int utilizationPercent = 50,
         DateOnly? fromDate = null,
         DateOnly? toDate = null,
-        string employeeName = "Jane Doe",
+        string resourceName = "Jane Doe",
         string projectName = "Alpha",
         int managerUserId = 10,
         User? user = null,
         Project? project = null)
     {
-        user ??= CreateEmployeeUser(userId, fullName: employeeName);
+        user ??= CreateResourceUser(userId, fullName: resourceName);
         project ??= CreateProject(projectId, projectName);
         project.ManagerUserId = managerUserId;
 
@@ -166,7 +166,7 @@ internal static class ApiTestData
 
     private static ResourceStatusHistory CreateResourceStatusHistory(int userId, string status)
     {
-        var statusTypeId = status == EmployeeConstants.StatusAllocated
+        var statusTypeId = status == ResourceConstants.StatusAllocated
             ? (int)ResourceStatusTypeEnum.Allocated
             : (int)ResourceStatusTypeEnum.Bench;
 

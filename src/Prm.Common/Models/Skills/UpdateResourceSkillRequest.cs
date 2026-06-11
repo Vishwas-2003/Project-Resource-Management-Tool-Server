@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Prm.Common.Models.Skills;
 
-public class UpdateEmployeeSkillRequest
+public class UpdateResourceSkillRequest
 {
     [Required]
     [MaxLength(50)]

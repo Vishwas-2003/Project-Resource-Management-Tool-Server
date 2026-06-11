@@ -31,7 +31,7 @@ dotnet ef migrations add <MigrationName> --project src/Prm.Data/Prm.Data.csproj 
 Example:
 
 ```powershell
-dotnet ef migrations add AddEmployeeTable --project src/Prm.Data/Prm.Data.csproj --startup-project src/Prm.Api/Prm.Api.csproj --output-dir Persistence/Migrations
+dotnet ef migrations add AddResourceTable --project src/Prm.Data/Prm.Data.csproj --startup-project src/Prm.Api/Prm.Api.csproj --output-dir Persistence/Migrations
 ```
 
 ## Apply migrations to the database

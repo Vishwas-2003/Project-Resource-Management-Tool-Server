@@ -32,7 +32,7 @@ public partial class TimesheetService(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var lastCompletedWeekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(today);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(lastCompletedWeekStart);
@@ -69,7 +69,7 @@ public partial class TimesheetService(
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
         UserAvailabilityHelper.EnsureWeekEligibleForUser(user, normalizedWeekStart);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
@@ -83,7 +83,7 @@ public partial class TimesheetService(
 
         return new WeekAllocationsResponse
         {
-            EmployeeName = user.FullName,
+            ResourceName = user.FullName,
             WeekStart = normalizedWeekStart,
             MaxWeeklyHours = maxWeeklyHours,
             Allocations = allocations.Select(x => new WeekAllocationRow
@@ -96,17 +96,17 @@ public partial class TimesheetService(
         };
     }
 
-    public async Task<EmployeeAllocationsResponse> GetMyAllocations(
+    public async Task<ResourceAllocationsResponse> GetMyAllocations(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var allocations = await _allocationRepository.GetActiveByUserId(user.Id, today, cancellationToken);
 
-        return new EmployeeAllocationsResponse
+        return new ResourceAllocationsResponse
         {
-            Allocations = allocations.Select(x => new EmployeeAllocationItem
+            Allocations = allocations.Select(x => new ResourceAllocationItem
             {
                 ProjectName = x.Project.Name,
                 UtilizationPercent = x.UtilizationPercent,

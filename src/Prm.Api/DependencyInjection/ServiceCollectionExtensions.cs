@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordHasher<SystemConfiguration>, PasswordHasher<SystemConfiguration>>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IAuthService, AuthService>();
-        services.AddScoped<IEmployeeService, EmployeeService>();
+        services.AddScoped<IResourceService, ResourceService>();
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IProjectService, ProjectService>();

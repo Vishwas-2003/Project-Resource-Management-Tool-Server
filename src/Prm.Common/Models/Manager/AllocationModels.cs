@@ -3,7 +3,7 @@ namespace Prm.Common.Models.Manager;
 public class CreateAllocationRequest
 {
     public int ProjectId { get; set; }
-    public int EmployeeUserId { get; set; }
+    public int ResourceUserId { get; set; }
     public int UtilizationPercent { get; set; }
     public DateOnly FromDate { get; set; }
     public DateOnly ToDate { get; set; }
@@ -12,7 +12,7 @@ public class CreateAllocationRequest
 public class AllocationCreatedResponse
 {
     public int AllocationId { get; set; }
-    public string EmployeeName { get; set; } = string.Empty;
+    public string ResourceName { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public int UtilizationPercent { get; set; }
     public DateOnly FromDate { get; set; }
@@ -30,7 +30,7 @@ public class ProjectAllocationRow
 {
     public int AllocationId { get; set; }
     public int RowNumber { get; set; }
-    public string EmployeeName { get; set; } = string.Empty;
+    public string ResourceName { get; set; } = string.Empty;
     public int UtilizationPercent { get; set; }
     public DateOnly FromDate { get; set; }
     public DateOnly ToDate { get; set; }
@@ -39,7 +39,7 @@ public class ProjectAllocationRow
 public class AllocationEndedResponse
 {
     public int AllocationId { get; set; }
-    public string EmployeeName { get; set; } = string.Empty;
+    public string ResourceName { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public DateOnly EndDate { get; set; }
 }

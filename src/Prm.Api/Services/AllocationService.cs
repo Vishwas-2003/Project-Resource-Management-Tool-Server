@@ -25,12 +25,12 @@ public class AllocationService(
         {
             var query = filter.Trim();
 
-            var employeeMatches = allocations
+            var resourceMatches = allocations
                 .Where(x => x.User.FullName.Contains(query, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-            if (employeeMatches.Count > 0)
+            if (resourceMatches.Count > 0)
             {
-                allocations = employeeMatches;
+                allocations = resourceMatches;
             }
             else
             {
@@ -53,7 +53,7 @@ public class AllocationService(
             TotalActiveAllocations = allocations.Count,
             Allocations = allocations.Select(x => new ActiveAllocationRow
             {
-                EmployeeName = x.User.FullName,
+                ResourceName = x.User.FullName,
                 ProjectName = x.Project.Name,
                 UtilizationPercent = x.UtilizationPercent,
                 FromDate = x.FromDate,
@@ -74,18 +74,18 @@ public class AllocationService(
         EnsureProjectAllowsAllocation(project);
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
-        var user = await GetAllocatableUserOrThrow(request.EmployeeUserId, cancellationToken);
+        var user = await GetAllocatableUserOrThrow(request.ResourceUserId, cancellationToken);
         UserAvailabilityHelper.EnsureAllocationDatesEligibleForUser(user, request.FromDate, request.ToDate);
 
         await EnsureNoOverlappingAllocationOnSameProject(
-            request.EmployeeUserId,
+            request.ResourceUserId,
             request.ProjectId,
             request.FromDate,
             request.ToDate,
             cancellationToken);
 
         await EnsureUtilizationWithinLimit(
-            request.EmployeeUserId,
+            request.ResourceUserId,
             request.UtilizationPercent,
             request.FromDate,
             request.ToDate,
@@ -93,7 +93,7 @@ public class AllocationService(
 
         var allocation = new Allocation
         {
-            UserId = request.EmployeeUserId,
+            UserId = request.ResourceUserId,
             ProjectId = request.ProjectId,
             UtilizationPercent = request.UtilizationPercent,
             FromDate = request.FromDate,
@@ -102,12 +102,12 @@ public class AllocationService(
 
         await _allocationRepository.Add(allocation, cancellationToken);
         await _allocationRepository.SaveChanges(cancellationToken);
-        await UpdateUserResourceStatus(request.EmployeeUserId, cancellationToken);
+        await UpdateUserResourceStatus(request.ResourceUserId, cancellationToken);
 
         return new AllocationCreatedResponse
         {
             AllocationId = allocation.Id,
-            EmployeeName = user.FullName,
+            ResourceName = user.FullName,
             ProjectName = project.Name,
             UtilizationPercent = allocation.UtilizationPercent,
             FromDate = allocation.FromDate,
@@ -145,7 +145,7 @@ public class AllocationService(
         return new AllocationEndedResponse
         {
             AllocationId = allocation.Id,
-            EmployeeName = allocation.User.FullName,
+            ResourceName = allocation.User.FullName,
             ProjectName = allocation.Project.Name,
             EndDate = today,
         };
@@ -169,7 +169,7 @@ public class AllocationService(
                 {
                     AllocationId = allocation.Id,
                     RowNumber = rowIndex + 1,
-                    EmployeeName = allocation.User.FullName,
+                    ResourceName = allocation.User.FullName,
                     UtilizationPercent = allocation.UtilizationPercent,
                     FromDate = allocation.FromDate,
                     ToDate = allocation.ToDate,
@@ -182,10 +182,10 @@ public class AllocationService(
         int userId,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken);
+        var user = await _userRepository.GetResourceUserDetailById(userId, cancellationToken);
         if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
-            throw new KeyNotFoundException(AppConstants.Manager.EmployeeNotEligible);
+            throw new KeyNotFoundException(AppConstants.Manager.ResourceNotEligible);
         }
 
         return user;

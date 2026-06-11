@@ -36,7 +36,7 @@ public class WeekAllocationRow
 
 public class WeekAllocationsResponse
 {
-    public string EmployeeName { get; set; } = string.Empty;
+    public string ResourceName { get; set; } = string.Empty;
     public DateOnly WeekStart { get; set; }
     public int MaxWeeklyHours { get; set; }
     public IReadOnlyList<WeekAllocationRow> Allocations { get; set; } = [];
@@ -106,7 +106,7 @@ public class MissingTimesheetReminder
     public DateOnly? WeekStart { get; set; }
 }
 
-public class EmployeeAllocationItem
+public class ResourceAllocationItem
 {
     public string ProjectName { get; set; } = string.Empty;
     public int UtilizationPercent { get; set; }
@@ -115,17 +115,17 @@ public class EmployeeAllocationItem
     public string Status { get; set; } = string.Empty;
 }
 
-public class EmployeeAllocationsResponse
+public class ResourceAllocationsResponse
 {
-    public IReadOnlyList<EmployeeAllocationItem> Allocations { get; set; } = [];
+    public IReadOnlyList<ResourceAllocationItem> Allocations { get; set; } = [];
     public int TotalUtilizationPercent { get; set; }
 }
 
 public class TeamTimesheetRow
 {
     public int RowNumber { get; set; }
-    public int EmployeeUserId { get; set; }
-    public string EmployeeName { get; set; } = string.Empty;
+    public int ResourceUserId { get; set; }
+    public string ResourceName { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public int HoursWorked { get; set; }
     public string Status { get; set; } = string.Empty;
@@ -137,10 +137,10 @@ public class TeamTimesheetsResponse
     public IReadOnlyList<TeamTimesheetRow> Rows { get; set; } = [];
 }
 
-public class EmployeeTimesheetDetailResponse
+public class ResourceTimesheetDetailResponse
 {
-    public int EmployeeUserId { get; set; }
-    public string EmployeeName { get; set; } = string.Empty;
+    public int ResourceUserId { get; set; }
+    public string ResourceName { get; set; } = string.Empty;
     public DateOnly WeekStart { get; set; }
     public int TotalHours { get; set; }
     public string Status { get; set; } = string.Empty;

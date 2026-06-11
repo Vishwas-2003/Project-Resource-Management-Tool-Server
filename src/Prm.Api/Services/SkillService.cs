@@ -13,43 +13,43 @@ public class SkillService(
     IUserSkillRepository _userSkillRepository,
     IMapper _mapper) : ISkillService
 {
-    public async Task<EmployeeSkillsResult> GetForEmployee(int employeeUserId, CancellationToken cancellationToken = default)
+    public async Task<ResourceSkillsResult> GetForResource(int resourceUserId, CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
-        var userSkills = await _userSkillRepository.GetByUserId(employeeUserId, cancellationToken);
+        var user = await GetResourceUserOrThrow(resourceUserId, cancellationToken);
+        var userSkills = await _userSkillRepository.GetByUserId(resourceUserId, cancellationToken);
 
-        var skills = _mapper.Map<List<EmployeeSkillItem>>(userSkills);
+        var skills = _mapper.Map<List<ResourceSkillItem>>(userSkills);
         for (var rowIndex = 0; rowIndex < skills.Count; rowIndex++)
         {
             skills[rowIndex].RowNumber = rowIndex + 1;
         }
 
-        return new EmployeeSkillsResult
+        return new ResourceSkillsResult
         {
-            EmployeeUserId = user.Id,
+            ResourceUserId = user.Id,
             FullName = user.FullName,
             Skills = skills,
         };
     }
 
     public async Task<int> Add(
-        int employeeUserId,
-        AddEmployeeSkillRequest request,
+        int resourceUserId,
+        AddResourceSkillRequest request,
         CancellationToken cancellationToken = default)
     {
-        await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
+        await GetResourceUserOrThrow(resourceUserId, cancellationToken);
         ValidateCategory(request.Category);
         var proficiency = NormalizeProficiency(request.Proficiency);
 
         var skill = await GetOrCreateSkill(request, cancellationToken);
 
-        if (await _userSkillRepository.Exists(employeeUserId, skill.Id, cancellationToken))
+        if (await _userSkillRepository.Exists(resourceUserId, skill.Id, cancellationToken))
         {
             throw new InvalidOperationException(AppConstants.Skills.SkillAlreadyAssigned);
         }
 
         var userSkill = _mapper.Map<UserSkill>(request);
-        userSkill.UserId = employeeUserId;
+        userSkill.UserId = resourceUserId;
         userSkill.SkillId = skill.Id;
         userSkill.Proficiency = proficiency;
 
@@ -60,18 +60,18 @@ public class SkillService(
     }
 
     public async Task<bool> Update(
-        int employeeUserId,
+        int resourceUserId,
         int skillId,
-        UpdateEmployeeSkillRequest request,
+        UpdateResourceSkillRequest request,
         CancellationToken cancellationToken = default)
     {
         request.Proficiency = NormalizeProficiency(request.Proficiency);
-        var key = new UserSkillKey(employeeUserId, skillId);
+        var key = new UserSkillKey(resourceUserId, skillId);
         var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
         if (userSkill is null)
         {
-            throw new KeyNotFoundException(AppConstants.Skills.EmployeeSkillNotFound);
+            throw new KeyNotFoundException(AppConstants.Skills.ResourceSkillNotFound);
         }
 
         _mapper.Map(request, userSkill);
@@ -81,21 +81,21 @@ public class SkillService(
         return true;
     }
 
-    public async Task Remove(int employeeUserId, int skillId, CancellationToken cancellationToken = default)
+    public async Task Remove(int resourceUserId, int skillId, CancellationToken cancellationToken = default)
     {
-        var key = new UserSkillKey(employeeUserId, skillId);
+        var key = new UserSkillKey(resourceUserId, skillId);
         var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
         if (userSkill is null)
         {
-            throw new KeyNotFoundException(AppConstants.Skills.EmployeeSkillNotFound);
+            throw new KeyNotFoundException(AppConstants.Skills.ResourceSkillNotFound);
         }
 
         _userSkillRepository.Remove(userSkill);
         await _userSkillRepository.SaveChanges(cancellationToken);
     }
 
-    private async Task<Skill> GetOrCreateSkill(AddEmployeeSkillRequest request, CancellationToken cancellationToken)
+    private async Task<Skill> GetOrCreateSkill(AddResourceSkillRequest request, CancellationToken cancellationToken)
     {
         var skillName = request.SkillName.Trim();
         var skill = await _skillRepository.GetByName(skillName, cancellationToken);
@@ -117,12 +117,12 @@ public class SkillService(
         return skill;
     }
 
-    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetResourceUserOrThrow(int userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetById(userId, cancellationToken);
         if (user is null)
         {
-            throw new KeyNotFoundException(AppConstants.Employees.NotFound);
+            throw new KeyNotFoundException(AppConstants.Resources.NotFound);
         }
 
         return user;

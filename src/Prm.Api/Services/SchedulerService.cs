@@ -1,7 +1,7 @@
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -21,16 +21,16 @@ public class SchedulerService(
     {
         _logger.LogInformation("Scheduler job started.");
 
-        await UpdateEmployeesStatus(cancellationToken);
+        await UpdateResourcesStatus(cancellationToken);
         await ComputeProjectHealth(cancellationToken);
 
         _logger.LogInformation("Scheduler job completed.");
     }
 
-    private async Task UpdateEmployeesStatus(CancellationToken cancellationToken)
+    private async Task UpdateResourcesStatus(CancellationToken cancellationToken)
     {
-        var users = await _userRepository.GetEmployeeUsers(
-            new EmployeeFilter { IncludeInactive = false },
+        var users = await _userRepository.GetResourceUsers(
+            new ResourceFilter { IncludeInactive = false },
             cancellationToken);
 
         foreach (var user in users)
@@ -39,7 +39,7 @@ public class SchedulerService(
         }
 
         await _userRepository.SaveChanges(cancellationToken);
-        _logger.LogInformation("Updated bench status for {EmployeeCount} employees.", users.Count);
+        _logger.LogInformation("Updated bench status for {ResourceCount} resources.", users.Count);
     }
 
     private async Task ApplyStatus(

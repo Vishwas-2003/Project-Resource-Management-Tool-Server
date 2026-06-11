@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Prm.Common.Models.Employees;
+namespace Prm.Common.Models.Resources;
 
-public class AddEmployeeRequest
+public class AddResourceRequest
 {
     [Range(1, int.MaxValue)]
     public int UserId { get; set; }

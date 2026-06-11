@@ -1,15 +1,15 @@
 using AutoMapper;
 using Prm.Common.Constants;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Data.Entities;
 
 namespace Prm.Data.Profiles;
 
-public class EmployeeMappingProfile : Profile
+public class ResourceMappingProfile : Profile
 {
-    public EmployeeMappingProfile()
+    public ResourceMappingProfile()
     {
-        CreateMap<User, EmployeeSummary>()
+        CreateMap<User, ResourceSummary>()
             .ForMember(d => d.Id, o => o.MapFrom(s => s.Id))
             .ForMember(d => d.FullName, o => o.MapFrom(s => s.FullName))
             .ForMember(d => d.Department, o => o.MapFrom(s => s.Department))
@@ -20,7 +20,7 @@ public class EmployeeMappingProfile : Profile
                     .Select(history => history.ResourceStatusType.Name)
                     .FirstOrDefault()));
 
-        CreateMap<UpdateEmployeeRequest, User>()
+        CreateMap<UpdateResourceRequest, User>()
             .ForMember(d => d.Id, o => o.Ignore())
             .ForMember(d => d.RoleId, o => o.Ignore())
             .ForMember(d => d.FullName, o => o.Ignore())

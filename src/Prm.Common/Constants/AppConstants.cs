@@ -35,7 +35,7 @@ public static class AppConstants
     {
         public const string InvalidCredentials = "Invalid username or password.";
         public const string InactiveUser = "The user is inactive, please contact Admin.";
-        public const string EmployeeProfileNotFound = "Employee profile not found. Contact Admin.";
+        public const string ResourceProfileNotFound = "Employee profile not found. Contact Admin.";
         public const string RefreshTokenInvalidOrExpired = "Refresh token is invalid or expired.";
         public const string UserNotAuthenticated = "You must be logged in to change your password.";
         public const string PasswordChangeNotRequired = "A password change is not required for this account.";
@@ -46,16 +46,16 @@ public static class AppConstants
         public const string NewPasswordMustDiffer = "New password must be different from your current password.";
     }
 
-    public static class Employees
+    public static class Resources
     {
-        public const string NotFound = "Employee not found.";
+        public const string NotFound = "Resource not found.";
         public const string UserNotFound = "User not found.";
         public const string UserInactive = "User account is inactive.";
         public const string InvalidRoleForEmployee =
             "Only users with the Employee role can have an employee profile.";
         public const string ProfileAlreadyExists = "This user already has an employee profile.";
-        public const string AlreadyDeactivated = "Employee is already deactivated.";
-        public const string DeactivatedSuccessfully = "Employee deactivated successfully.";
+        public const string AlreadyDeactivated = "Resource is already deactivated.";
+        public const string DeactivatedSuccessfully = "Resource deactivated successfully.";
         public const string InvalidRoleForManagerAssignment =
             "Only users with the Employee role can be assigned to a manager.";
         public const string InvalidManagerUser =
@@ -64,14 +64,14 @@ public static class AppConstants
         public const string DepartmentAndDesignationRequired =
             "Department and designation are required when assigning a manager.";
         public const string DefaultDepartment = "Unassigned";
-        public const string DefaultEmployeeDesignation = "Employee";
+        public const string DefaultResourceDesignation = "Employee";
         public const string DefaultManagerDesignation = "Manager";
     }
 
     public static class Skills
     {
         public const string SkillNotFound = "Skill not found.";
-        public const string EmployeeSkillNotFound = "Employee skill assignment not found.";
+        public const string ResourceSkillNotFound = "Resource skill assignment not found.";
         public const string SkillAlreadyAssigned = "This skill is already assigned to the employee.";
         public const string InvalidProficiency = "Proficiency must be Beginner, Intermediate, or Advanced.";
         public const string InvalidCategory = "Category must be Backend, Frontend, DevOps, QA, or Other.";
@@ -131,8 +131,8 @@ public static class AppConstants
     {
         public const string ProfileNotFound = "Manager user not found or is not active.";
         public const string ProjectNotOwned = "You can only manage allocations on projects you own.";
-        public const string EmployeeNotFound = "Employee not found.";
-        public const string EmployeeNotEligible = "Only active employees can be allocated to projects.";
+        public const string ResourceNotFound = "Resource not found.";
+        public const string ResourceNotEligible = "Only active employees can be allocated to projects.";
     }
 
     public static class Allocations
@@ -146,12 +146,12 @@ public static class AppConstants
         public const string ExceedsMaxUtilization =
             "Total utilisation across overlapping allocations cannot exceed 100%.";
         public const string OverlappingAllocationOnProject =
-            "Employee already has an overlapping allocation on this project for the selected period.";
+            "Resource already has an overlapping allocation on this project for the selected period.";
         public const string ProjectNotAllocatable =
             "Project must be in ACTIVE or PLANNED status to allocate resources.";
         public const string AllocationDatesOutsideProject =
             "Allocation dates must be within the project start and end dates.";
-        public const string AllocationDatesBeforeEmployeeCreated =
+        public const string AllocationDatesBeforeResourceCreated =
             "Allocation dates cannot be before the employee account was created.";
         public const string CreatedSuccessfully = "Allocation created successfully.";
         public const string EndedSuccessfully = "Allocation ended successfully.";
@@ -159,10 +159,10 @@ public static class AppConstants
 
     public static class Timesheets
     {
-        public const string EmployeeNotFound = "Employee profile not found.";
+        public const string ResourceNotFound = "Employee profile not found.";
         public const string AlreadySubmitted = "A timesheet for this week has already been submitted.";
         public const string FutureWeekNotAllowed = "You cannot submit a timesheet for a future week.";
-        public const string WeekBeforeEmployeeCreated =
+        public const string WeekBeforeResourceCreated =
             "You cannot submit a timesheet for a week before your account was created.";
         public const string InvalidWeekStart = "Week start must be a Monday.";
         public const string ProjectNotAllocated = "You can only log hours for projects you are allocated to during that week.";
@@ -173,7 +173,7 @@ public static class AppConstants
         public const string ActivityTagsRequired = "At least one activity tag is required for each entry with hours.";
         public const string InvalidActivityTag = "One or more activity tags are invalid.";
         public const string NotFound = "Timesheet not found for the selected week.";
-        public const string EmployeeNotOnTeam = "This employee is not on your team.";
+        public const string ResourceNotOnTeam = "This resource is not on your team.";
         public const string SubmittedSuccessfully = "Timesheet submitted successfully.";
     }
 }

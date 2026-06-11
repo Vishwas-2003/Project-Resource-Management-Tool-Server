@@ -3,12 +3,12 @@ namespace Prm.Common.Models.Manager;
 public class ResourceDashboardResponse
 {
     public string PeriodLabel { get; set; } = string.Empty;
-    public IReadOnlyList<BenchEmployeeRow> BenchEmployees { get; set; } = [];
-    public IReadOnlyList<ActiveEmployeeRow> ActiveEmployees { get; set; } = [];
+    public IReadOnlyList<BenchResourceRow> BenchResources { get; set; } = [];
+    public IReadOnlyList<ActiveResourceRow> ActiveResources { get; set; } = [];
     public ResourceDashboardSummary Summary { get; set; } = new();
 }
 
-public class BenchEmployeeRow
+public class BenchResourceRow
 {
     public int RowNumber { get; set; }
     public int Id { get; set; }
@@ -17,7 +17,7 @@ public class BenchEmployeeRow
     public string Skills { get; set; } = string.Empty;
 }
 
-public class ActiveEmployeeRow
+public class ActiveResourceRow
 {
     public int RowNumber { get; set; }
     public int Id { get; set; }

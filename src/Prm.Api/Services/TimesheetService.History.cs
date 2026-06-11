@@ -10,7 +10,7 @@ public partial class TimesheetService
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var summaries = await BuildTimesheetHistorySummaries(user, cancellationToken);
         return ToMyTimesheetsResponse(summaries);
     }
@@ -20,7 +20,7 @@ public partial class TimesheetService
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         return await GetTimesheetDetailForUser(user, weekStart, cancellationToken);
     }
 

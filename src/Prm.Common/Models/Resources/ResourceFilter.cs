@@ -1,6 +1,6 @@
-namespace Prm.Common.Models.Employees;
+namespace Prm.Common.Models.Resources;
 
-public class EmployeeFilter
+public class ResourceFilter
 {
     public string? Status { get; set; }
     public string? Department { get; set; }

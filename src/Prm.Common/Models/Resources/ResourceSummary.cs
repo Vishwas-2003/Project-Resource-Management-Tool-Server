@@ -1,6 +1,6 @@
-namespace Prm.Common.Models.Employees;
+namespace Prm.Common.Models.Resources;
 
-public class EmployeeSummary
+public class ResourceSummary
 {
     public int RowNumber { get; set; }
     public int Id { get; set; }

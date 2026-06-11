@@ -35,7 +35,7 @@ public class ManagerServiceTests
     public async Task GetResourceDashboard_WhenUtilizationZero_ReturnsBenchEmployee()
     {
         SetupValidManager();
-        var user = ApiTestData.CreateEmployeeUser(id: 1, status: EmployeeConstants.StatusBench);
+        var user = ApiTestData.CreateResourceUser(id: 1, status: ResourceConstants.StatusBench);
         _userRepository
             .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { user });
@@ -44,11 +44,11 @@ public class ManagerServiceTests
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
 
-        Assert.Single(result.BenchEmployees);
-        Assert.Empty(result.ActiveEmployees);
-        Assert.Equal(user.Id, result.BenchEmployees[0].Id);
-        Assert.Equal(user.FullName, result.BenchEmployees[0].Name);
-        Assert.Equal(user.Department, result.BenchEmployees[0].Department);
+        Assert.Single(result.BenchResources);
+        Assert.Empty(result.ActiveResources);
+        Assert.Equal(user.Id, result.BenchResources[0].Id);
+        Assert.Equal(user.FullName, result.BenchResources[0].Name);
+        Assert.Equal(user.Department, result.BenchResources[0].Department);
         Assert.Equal(1, result.Summary.BenchCount);
         Assert.Equal(0, result.Summary.PartialCount);
     }
@@ -57,7 +57,7 @@ public class ManagerServiceTests
     public async Task GetResourceDashboard_WhenPartialUtilization_ReturnsActiveEmployeeAndPartialCount()
     {
         SetupValidManager();
-        var user = ApiTestData.CreateEmployeeUser(id: 2, status: EmployeeConstants.StatusAllocated);
+        var user = ApiTestData.CreateResourceUser(id: 2, status: ResourceConstants.StatusAllocated);
         _userRepository
             .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { user });
@@ -66,10 +66,10 @@ public class ManagerServiceTests
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
 
-        Assert.Empty(result.BenchEmployees);
-        Assert.Single(result.ActiveEmployees);
-        Assert.Equal(50, result.ActiveEmployees[0].AllocationPercent);
-        Assert.Equal("50% free", result.ActiveEmployees[0].Availability);
+        Assert.Empty(result.BenchResources);
+        Assert.Single(result.ActiveResources);
+        Assert.Equal(50, result.ActiveResources[0].AllocationPercent);
+        Assert.Equal("50% free", result.ActiveResources[0].Availability);
         Assert.Equal(0, result.Summary.BenchCount);
         Assert.Equal(1, result.Summary.PartialCount);
     }
@@ -79,9 +79,9 @@ public class ManagerServiceTests
     {
         SetupValidManager();
 
-        var benchUser = ApiTestData.CreateEmployeeUser(id: 1, status: EmployeeConstants.StatusBench);
-        var activeUser = ApiTestData.CreateEmployeeUser(id: 2, status: EmployeeConstants.StatusAllocated);
-        var fullUser = ApiTestData.CreateEmployeeUser(id: 3, status: EmployeeConstants.StatusAllocated);
+        var benchUser = ApiTestData.CreateResourceUser(id: 1, status: ResourceConstants.StatusBench);
+        var activeUser = ApiTestData.CreateResourceUser(id: 2, status: ResourceConstants.StatusAllocated);
+        var fullUser = ApiTestData.CreateResourceUser(id: 3, status: ResourceConstants.StatusAllocated);
 
         _userRepository
             .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
@@ -94,10 +94,10 @@ public class ManagerServiceTests
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
 
-        Assert.Equal(1, result.BenchEmployees[0].RowNumber);
-        Assert.Equal(2, result.ActiveEmployees[0].RowNumber);
-        Assert.Equal(3, result.ActiveEmployees[1].RowNumber);
-        Assert.Equal(ManagerConstants.AvailabilityFull, result.ActiveEmployees[1].Availability);
+        Assert.Equal(1, result.BenchResources[0].RowNumber);
+        Assert.Equal(2, result.ActiveResources[0].RowNumber);
+        Assert.Equal(3, result.ActiveResources[1].RowNumber);
+        Assert.Equal(ManagerConstants.AvailabilityFull, result.ActiveResources[1].Availability);
         Assert.Equal(1, result.Summary.PartialCount);
     }
 

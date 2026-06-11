@@ -25,8 +25,8 @@ public class AllocationServiceTests
     {
         var allocations = new List<Allocation>
         {
-            ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(1, resourceName: "Jane Doe", projectName: "Alpha"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, resourceName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -41,12 +41,12 @@ public class AllocationServiceTests
     }
 
     [Fact]
-    public async Task GetActiveAllocations_WhenFilterMatchesEmployeeName_ReturnsEmployeeMatches()
+    public async Task GetActiveAllocations_WhenFilterMatchesResourceName_ReturnsEmployeeMatches()
     {
         var allocations = new List<Allocation>
         {
-            ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(1, resourceName: "Jane Doe", projectName: "Alpha"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, resourceName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -57,7 +57,7 @@ public class AllocationServiceTests
         var result = await sut.GetActiveAllocations("jane");
 
         Assert.Single(result.Allocations);
-        Assert.Equal("Jane Doe", result.Allocations[0].EmployeeName);
+        Assert.Equal("Jane Doe", result.Allocations[0].ResourceName);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class AllocationServiceTests
     {
         var allocations = new List<Allocation>
         {
-            ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(1, resourceName: "Jane Doe", projectName: "Alpha"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, resourceName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -85,7 +85,7 @@ public class AllocationServiceTests
     {
         var allocations = new List<Allocation>
         {
-            ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
+            ApiTestData.CreateAllocation(1, resourceName: "Jane Doe", projectName: "Alpha"),
         };
 
         _allocationRepository
@@ -168,11 +168,11 @@ public class AllocationServiceTests
     }
 
     [Fact]
-    public async Task Create_WhenEmployeeNotEligible_ThrowsKeyNotFoundException()
+    public async Task Create_WhenResourceNotEligible_ThrowsKeyNotFoundException()
     {
         SetupValidProject();
         _userRepository
-            .Setup(x => x.GetEmployeeUserDetailById(1, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUserDetailById(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync((User?)null);
 
         var sut = CreateSut();
@@ -180,21 +180,21 @@ public class AllocationServiceTests
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             sut.Create(CreateValidRequest(), ManagerUserId));
 
-        Assert.Equal(AppConstants.Manager.EmployeeNotEligible, exception.Message);
+        Assert.Equal(AppConstants.Manager.ResourceNotEligible, exception.Message);
     }
 
     [Fact]
     public async Task Create_WhenDatesBeforeEmployeeCreated_ThrowsArgumentException()
     {
         var project = ApiTestData.CreateProject();
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         employee.CreatedAtUtc = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
 
         _projectRepository
             .Setup(x => x.GetByIdWithManager(project.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(project);
         _userRepository
-            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
 
         var sut = CreateSut();
@@ -203,12 +203,12 @@ public class AllocationServiceTests
             sut.Create(
                 CreateValidRequest(
                     projectId: project.Id,
-                    employeeUserId: employee.Id,
+                    resourceUserId: employee.Id,
                     from: new DateOnly(2026, 6, 1),
                     to: new DateOnly(2026, 6, 30)),
                 ManagerUserId));
 
-        Assert.Equal(AppConstants.Allocations.AllocationDatesBeforeEmployeeCreated, exception.Message);
+        Assert.Equal(AppConstants.Allocations.AllocationDatesBeforeResourceCreated, exception.Message);
     }
 
     [Fact]
@@ -254,14 +254,14 @@ public class AllocationServiceTests
     public async Task Create_WhenSuccessful_UpdatesEmployeeStatus()
     {
         var project = ApiTestData.CreateProject();
-        var employee = ApiTestData.CreateEmployeeUser(status: EmployeeConstants.StatusBench);
+        var employee = ApiTestData.CreateResourceUser(status: ResourceConstants.StatusBench);
         Allocation? savedAllocation = null;
 
         _projectRepository
             .Setup(x => x.GetByIdWithManager(project.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(project);
         _userRepository
-            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
         SetupNoOverlap();
         _allocationRepository
@@ -294,11 +294,11 @@ public class AllocationServiceTests
 
         var sut = CreateSut();
         var result = await sut.Create(
-            CreateValidRequest(projectId: project.Id, employeeUserId: employee.Id),
+            CreateValidRequest(projectId: project.Id, resourceUserId: employee.Id),
             ManagerUserId);
 
         Assert.Equal(7, result.AllocationId);
-        Assert.Equal(employee.FullName, result.EmployeeName);
+        Assert.Equal(employee.FullName, result.ResourceName);
         Assert.Equal(project.Name, result.ProjectName);
         Assert.NotNull(savedAllocation);
         Assert.Equal(50, savedAllocation!.UtilizationPercent);
@@ -363,7 +363,7 @@ public class AllocationServiceTests
     public async Task End_WhenSuccessful_SetsEndDateToToday()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var allocation = ApiTestData.CreateAllocation(toDate: today.AddMonths(1));
         allocation.User = employee;
 
@@ -465,9 +465,9 @@ public class AllocationServiceTests
 
     private void SetupValidEmployee()
     {
-        var employee = ApiTestData.CreateEmployeeUser(roleId: (int)RoleNameEnum.Employee);
+        var employee = ApiTestData.CreateResourceUser(roleId: (int)RoleNameEnum.Employee);
         _userRepository
-            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
     }
 
@@ -482,14 +482,14 @@ public class AllocationServiceTests
 
     private static CreateAllocationRequest CreateValidRequest(
         int projectId = 1,
-        int employeeUserId = 1,
+        int resourceUserId = 1,
         int utilizationPercent = 50,
         DateOnly? from = null,
         DateOnly? to = null) =>
         new()
         {
             ProjectId = projectId,
-            EmployeeUserId = employeeUserId,
+            ResourceUserId = resourceUserId,
             UtilizationPercent = utilizationPercent,
             FromDate = from ?? From,
             ToDate = to ?? To,

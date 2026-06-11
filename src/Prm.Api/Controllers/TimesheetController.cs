@@ -100,17 +100,17 @@ public class TimesheetController(
         });
 
     [Authorize(Roles = nameof(RoleNameEnum.Manager))]
-    [HttpGet(ApiRoutes.Timesheets.TeamEmployeeDetail)]
-    public Task<IActionResult> GetEmployeeTimesheetDetail(
-        int employeeUserId,
+    [HttpGet(ApiRoutes.Timesheets.TeamResourceDetail)]
+    public Task<IActionResult> GetResourceTimesheetDetail(
+        int resourceUserId,
         [FromQuery] DateOnly weekStart,
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
             var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
-            var result = await _timesheetService.GetEmployeeTimesheetDetail(
+            var result = await _timesheetService.GetResourceTimesheetDetail(
                 managerUserId,
-                employeeUserId,
+                resourceUserId,
                 weekStart,
                 cancellationToken);
             return Ok(result);

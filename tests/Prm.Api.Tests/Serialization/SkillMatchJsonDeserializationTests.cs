@@ -9,7 +9,7 @@ public class SkillMatchJsonDeserializationTests
     {
         public int Rank { get; set; }
 
-        public int EmployeeUserId { get; set; }
+        public int ResourceUserId { get; set; }
 
         [JsonPropertyName("skills_match")]
         public string SkillsMatch { get; set; } = string.Empty;
@@ -20,12 +20,12 @@ public class SkillMatchJsonDeserializationTests
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     [Fact]
-    public void DeserializeEmployeeUserId_FromCamelCase()
+    public void DeserializeResourceUserId_FromCamelCase()
     {
         const string json = """
             {
               "rank": 1,
-              "employeeUserId": 3,
+              "resourceUserId": 3,
               "name": "Vijay",
               "skills_match": "C# (Advanced), .NET"
             }
@@ -34,7 +34,7 @@ public class SkillMatchJsonDeserializationTests
         var item = JsonSerializer.Deserialize<SkillMatchResultItem>(json, JsonOptions);
 
         Assert.NotNull(item);
-        Assert.Equal(3, item.EmployeeUserId);
+        Assert.Equal(3, item.ResourceUserId);
         Assert.Equal("C# (Advanced), .NET", item.SkillsMatch);
     }
 }

@@ -14,35 +14,35 @@ public class SkillControllerTests
     private readonly Mock<ISkillService> _skillService = new();
 
     [Fact]
-    public async Task GetForEmployee_WhenSkillsExist_ReturnsOk()
+    public async Task GetForResource_WhenSkillsExist_ReturnsOk()
     {
-        var response = new EmployeeSkillsResult
+        var response = new ResourceSkillsResult
         {
-            EmployeeUserId = 1,
-            Skills = [new EmployeeSkillItem { SkillId = 1, SkillName = "C#" }],
+            ResourceUserId = 1,
+            Skills = [new ResourceSkillItem { SkillId = 1, SkillName = "C#" }],
         };
 
         _skillService
-            .Setup(x => x.GetForEmployee(1, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetForResource(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
         var sut = new SkillController(_skillService.Object);
-        var result = await sut.GetForEmployee(1, CancellationToken.None);
+        var result = await sut.GetForResource(1, CancellationToken.None);
 
-        Assert.Single(ControllerTestHelper.AssertOkValue<EmployeeSkillsResult>(result).Skills);
+        Assert.Single(ControllerTestHelper.AssertOkValue<ResourceSkillsResult>(result).Skills);
     }
 
     [Fact]
     public async Task Add_WhenValid_ReturnsCreated()
     {
         _skillService
-            .Setup(x => x.Add(1, It.IsAny<AddEmployeeSkillRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Add(1, It.IsAny<AddResourceSkillRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(5);
 
         var sut = new SkillController(_skillService.Object);
         var result = await sut.Add(
             1,
-            new AddEmployeeSkillRequest { SkillName = "C#", Category = "Backend", Proficiency = "Intermediate" },
+            new AddResourceSkillRequest { SkillName = "C#", Category = "Backend", Proficiency = "Intermediate" },
             CancellationToken.None);
 
         Assert.Equal(5, ControllerTestHelper.AssertCreatedValue<CreatedIdResponse>(result).Id);
@@ -52,14 +52,14 @@ public class SkillControllerTests
     public async Task Update_WhenValid_ReturnsOk()
     {
         _skillService
-            .Setup(x => x.Update(1, 2, It.IsAny<UpdateEmployeeSkillRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.Update(1, 2, It.IsAny<UpdateResourceSkillRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var sut = new SkillController(_skillService.Object);
         var result = await sut.Update(
             1,
             2,
-            new UpdateEmployeeSkillRequest { Proficiency = "Advanced" },
+            new UpdateResourceSkillRequest { Proficiency = "Advanced" },
             CancellationToken.None);
 
         Assert.True(ControllerTestHelper.AssertOkValue<UpdatedResponse>(result).Updated);
@@ -70,7 +70,7 @@ public class SkillControllerTests
     {
         _skillService
             .Setup(x => x.Remove(1, 99, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new KeyNotFoundException(AppConstants.Skills.EmployeeSkillNotFound));
+            .ThrowsAsync(new KeyNotFoundException(AppConstants.Skills.ResourceSkillNotFound));
 
         var sut = new SkillController(_skillService.Object);
         var result = await sut.Remove(1, 99, CancellationToken.None);

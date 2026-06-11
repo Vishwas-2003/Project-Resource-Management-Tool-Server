@@ -11,23 +11,23 @@ public static class ApiRoutes
         public const string ChangePassword = "change-password";
     }
 
-    public static class Employees
+    public static class Resources
     {
-        public const string Update = "{employeeUserId:int}";
-        public const string GetEmployees = "get-employees";
-        public const string AddEmployee = "add";
+        public const string Update = "{resourceUserId:int}";
+        public const string GetResources = "get-resources";
+        public const string AddResource = "add";
         public const string AssignManager = "assign-manager";
-        public const string Deactivate = "{employeeUserId:int}/deactivate";
-        public const string GetDetail = "{employeeUserId:int}";
-        public const string GetUtilization = "{employeeUserId:int}/utilization";
+        public const string Deactivate = "{resourceUserId:int}/deactivate";
+        public const string GetDetail = "{resourceUserId:int}";
+        public const string GetUtilization = "{resourceUserId:int}/utilization";
     }
 
     public static class Skills
     {
-        public const string GetForEmployee = "employee/{employeeUserId:int}";
-        public const string Add = "employee/{employeeUserId:int}";
-        public const string Update = "employee/{employeeUserId:int}/{skillId:int}";
-        public const string Remove = "employee/{employeeUserId:int}/{skillId:int}";
+        public const string GetForResource = "resource/{resourceUserId:int}";
+        public const string Add = "resource/{resourceUserId:int}";
+        public const string Update = "resource/{resourceUserId:int}/{skillId:int}";
+        public const string Remove = "resource/{resourceUserId:int}/{skillId:int}";
     }
 
     public static class Users
@@ -83,6 +83,6 @@ public static class ApiRoutes
         public const string MyTimesheetDetail = "my-timesheets/{weekStart}";
         public const string MyAllocations = "my-allocations";
         public const string Team = "team";
-        public const string TeamEmployeeDetail = "team/{employeeUserId:int}";
+        public const string TeamResourceDetail = "team/{resourceUserId:int}";
     }
 }

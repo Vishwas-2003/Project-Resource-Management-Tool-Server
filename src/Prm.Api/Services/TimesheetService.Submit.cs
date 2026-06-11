@@ -17,7 +17,7 @@ public partial class TimesheetService
         SubmitTimesheetRequest request,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var context = await PrepareSubmitContext(user, request, cancellationToken);
         var (entries, totalHours) = await BuildSubmitEntries(request.Entries, context, cancellationToken);
         ValidateSubmitTotalHours(totalHours, context.MaxWeeklyHours);

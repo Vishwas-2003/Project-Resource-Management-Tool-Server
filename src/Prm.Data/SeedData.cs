@@ -25,8 +25,8 @@ public static class SeedData
 
     public static readonly ResourceStatusType[] ResourceStatusTypes =
     [
-        new() { Id = (int)ResourceStatusTypeEnum.Bench, Name = EmployeeConstants.StatusBench, CreatedAtUtc = SeedCreatedAtUtc },
-        new() { Id = (int)ResourceStatusTypeEnum.Allocated, Name = EmployeeConstants.StatusAllocated, CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)ResourceStatusTypeEnum.Bench, Name = ResourceConstants.StatusBench, CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)ResourceStatusTypeEnum.Allocated, Name = ResourceConstants.StatusAllocated, CreatedAtUtc = SeedCreatedAtUtc },
     ];
 
     public static readonly ActivityTag[] ActivityTags =

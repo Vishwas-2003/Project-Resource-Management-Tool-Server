@@ -29,7 +29,7 @@ public interface ITimesheetService
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
-    Task<EmployeeAllocationsResponse> GetMyAllocations(
+    Task<ResourceAllocationsResponse> GetMyAllocations(
         int userId,
         CancellationToken cancellationToken = default);
 
@@ -38,9 +38,9 @@ public interface ITimesheetService
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
-    Task<EmployeeTimesheetDetailResponse> GetEmployeeTimesheetDetail(
+    Task<ResourceTimesheetDetailResponse> GetResourceTimesheetDetail(
         int managerUserId,
-        int employeeUserId,
+        int resourceUserId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 }

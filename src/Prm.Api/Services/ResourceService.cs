@@ -2,7 +2,7 @@ using AutoMapper;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -10,11 +10,11 @@ using Prm.Data.Repositories.Models;
 
 namespace Prm.Api.Services;
 
-public class EmployeeService(
+public class ResourceService(
     IUserRepository _userRepository,
     IAllocationRepository _allocationRepository,
     ITimesheetRepository _timesheetRepository,
-    IMapper _mapper) : IEmployeeService
+    IMapper _mapper) : IResourceService
 {
     public async Task<bool> AssignManager(
         AssignManagerRequest request,
@@ -24,25 +24,25 @@ public class EmployeeService(
         var designation = request.Designation.Trim();
         if (string.IsNullOrWhiteSpace(department) || string.IsNullOrWhiteSpace(designation))
         {
-            throw new ArgumentException(AppConstants.Employees.DepartmentAndDesignationRequired);
+            throw new ArgumentException(AppConstants.Resources.DepartmentAndDesignationRequired);
         }
 
-        var employeeUser = await _userRepository.GetByIdWithRole(
-            request.EmployeeUserId,
+        var resourceUser = await _userRepository.GetByIdWithRole(
+            request.ResourceUserId,
             cancellationToken);
-        if (employeeUser is null)
+        if (resourceUser is null)
         {
-            throw new KeyNotFoundException(AppConstants.Employees.UserNotFound);
+            throw new KeyNotFoundException(AppConstants.Resources.UserNotFound);
         }
 
-        if (!employeeUser.IsActive)
+        if (!resourceUser.IsActive)
         {
-            throw new InvalidOperationException(AppConstants.Employees.UserInactive);
+            throw new InvalidOperationException(AppConstants.Resources.UserInactive);
         }
 
-        if (employeeUser.RoleId != (int)RoleNameEnum.Employee)
+        if (resourceUser.RoleId != (int)RoleNameEnum.Employee)
         {
-            throw new InvalidOperationException(AppConstants.Employees.InvalidRoleForManagerAssignment);
+            throw new InvalidOperationException(AppConstants.Resources.InvalidRoleForManagerAssignment);
         }
 
         var managerUser = await _userRepository.GetByIdWithRole(
@@ -52,48 +52,48 @@ public class EmployeeService(
             || !managerUser.IsActive
             || managerUser.RoleId != (int)RoleNameEnum.Manager)
         {
-            throw new InvalidOperationException(AppConstants.Employees.InvalidManagerUser);
+            throw new InvalidOperationException(AppConstants.Resources.InvalidManagerUser);
         }
 
-        employeeUser.Department = department;
-        employeeUser.Designation = designation;
-        _userRepository.Update(employeeUser);
-        await _userRepository.SetManager(employeeUser.Id, managerUser.Id, cancellationToken);
+        resourceUser.Department = department;
+        resourceUser.Designation = designation;
+        _userRepository.Update(resourceUser);
+        await _userRepository.SetManager(resourceUser.Id, managerUser.Id, cancellationToken);
         await _userRepository.SaveChanges(cancellationToken);
 
         return true;
     }
 
-    public async Task<EmployeeListResult> GetEmployees(
-        EmployeeFilter filter,
+    public async Task<ResourceListResult> GetResources(
+        ResourceFilter filter,
         CancellationToken cancellationToken = default)
     {
-        var users = await _userRepository.GetEmployeeUsers(filter, cancellationToken);
-        var summaries = _mapper.Map<List<EmployeeSummary>>(users);
+        var users = await _userRepository.GetResourceUsers(filter, cancellationToken);
+        var summaries = _mapper.Map<List<ResourceSummary>>(users);
         for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
         {
             summaries[rowIndex].RowNumber = rowIndex + 1;
         }
 
-        return new EmployeeListResult
+        return new ResourceListResult
         {
-            Employees = summaries,
+            Resources = summaries,
             Total = summaries.Count,
-            Allocated = summaries.Count(summary => summary.Status == EmployeeConstants.StatusAllocated),
-            Bench = summaries.Count(summary => summary.Status == EmployeeConstants.StatusBench),
+            Allocated = summaries.Count(summary => summary.Status == ResourceConstants.StatusAllocated),
+            Bench = summaries.Count(summary => summary.Status == ResourceConstants.StatusBench),
         };
     }
 
     public async Task<bool> Update(
-        int employeeUserId,
-        UpdateEmployeeRequest request,
+        int resourceUserId,
+        UpdateResourceRequest request,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
+        var user = await GetResourceUserOrThrow(resourceUserId, cancellationToken);
 
         if (!user.IsActive)
         {
-            throw new InvalidOperationException(AppConstants.Employees.AlreadyDeactivated);
+            throw new InvalidOperationException(AppConstants.Resources.AlreadyDeactivated);
         }
 
         _mapper.Map(request, user);
@@ -103,13 +103,13 @@ public class EmployeeService(
         return true;
     }
 
-    public async Task<bool> Deactivate(int employeeUserId, CancellationToken cancellationToken = default)
+    public async Task<bool> Deactivate(int resourceUserId, CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserDetailOrThrow(employeeUserId, cancellationToken);
+        var user = await GetResourceUserDetailOrThrow(resourceUserId, cancellationToken);
 
         if (!user.IsActive)
         {
-            throw new InvalidOperationException(AppConstants.Employees.AlreadyDeactivated);
+            throw new InvalidOperationException(AppConstants.Resources.AlreadyDeactivated);
         }
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -136,35 +136,35 @@ public class EmployeeService(
         return true;
     }
 
-    public async Task<EmployeeDetailResponse> GetDetail(
-        int employeeUserId,
+    public async Task<ResourceDetailResponse> GetDetail(
+        int resourceUserId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetResourceEmployeeOrThrow(employeeUserId, cancellationToken);
+        var user = await GetResourcePoolUserOrThrow(resourceUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await GetUtilizationOnDate(employeeUserId, today, cancellationToken);
-        var allocations = await _allocationRepository.GetActiveByUserId(employeeUserId, today, cancellationToken);
+        var utilization = await GetUtilizationOnDate(resourceUserId, today, cancellationToken);
+        var allocations = await _allocationRepository.GetActiveByUserId(resourceUserId, today, cancellationToken);
         var pastAllocations = await _allocationRepository.GetPastByUserId(
             new UserPastAllocationsQuery
             {
-                UserId = employeeUserId,
+                UserId = resourceUserId,
                 AsOfDate = today,
                 Limit = ManagerConstants.PastAllocationsDisplayCount,
             },
             cancellationToken);
         var sinceDate = today.AddDays(-7 * ManagerConstants.ActivityTagsLookbackWeeks);
         var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForUser(
-            employeeUserId,
+            resourceUserId,
             sinceDate,
             cancellationToken);
 
-        return new EmployeeDetailResponse
+        return new ResourceDetailResponse
         {
             Id = user.Id,
             Name = user.FullName,
             Department = user.Department,
-            CurrentStatus = FormatEmployeeStatus(utilization),
+            CurrentStatus = FormatResourceStatus(utilization),
             UtilizationPercent = utilization,
             ProfileSkills = FormatSkills(user),
             ActiveAllocations = MapAllocationRows(allocations),
@@ -173,18 +173,18 @@ public class EmployeeService(
         };
     }
 
-    public async Task<EmployeeUtilizationResponse> GetUtilization(
-        int employeeUserId,
+    public async Task<ResourceUtilizationResponse> GetUtilization(
+        int resourceUserId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetResourceEmployeeOrThrow(employeeUserId, cancellationToken);
+        var user = await GetResourcePoolUserOrThrow(resourceUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await GetUtilizationOnDate(employeeUserId, today, cancellationToken);
+        var utilization = await GetUtilizationOnDate(resourceUserId, today, cancellationToken);
 
-        return new EmployeeUtilizationResponse
+        return new ResourceUtilizationResponse
         {
-            EmployeeUserId = user.Id,
+            ResourceUserId = user.Id,
             Name = user.FullName,
             UtilizationPercent = utilization,
             StatusDescription = utilization == 0
@@ -193,12 +193,12 @@ public class EmployeeService(
         };
     }
 
-    private async Task<User> GetResourceEmployeeOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetResourcePoolUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken);
+        var user = await _userRepository.GetResourceUserDetailById(userId, cancellationToken);
         if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
-            throw new KeyNotFoundException(AppConstants.Manager.EmployeeNotFound);
+            throw new KeyNotFoundException(AppConstants.Manager.ResourceNotFound);
         }
 
         return user;
@@ -214,9 +214,9 @@ public class EmployeeService(
             },
             cancellationToken);
 
-    private static IReadOnlyList<EmployeeAllocationRow> MapAllocationRows(IEnumerable<Allocation> allocations) =>
+    private static IReadOnlyList<ResourceAllocationRow> MapAllocationRows(IEnumerable<Allocation> allocations) =>
         allocations
-            .Select(allocation => new EmployeeAllocationRow
+            .Select(allocation => new ResourceAllocationRow
             {
                 Project = allocation.Project.Name,
                 UtilizationPercent = allocation.UtilizationPercent,
@@ -232,29 +232,29 @@ public class EmployeeService(
                 .Select(skillAssignment => skillAssignment.Skill.Name)
                 .OrderBy(skillName => skillName));
 
-    private static string FormatEmployeeStatus(int utilization) =>
+    private static string FormatResourceStatus(int utilization) =>
         utilization > 0
-            ? EmployeeConstants.StatusAllocated
-            : EmployeeConstants.StatusBench;
+            ? ResourceConstants.StatusAllocated
+            : ResourceConstants.StatusBench;
 
-    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetResourceUserOrThrow(int userId, CancellationToken cancellationToken)
     {
         var user = await _userRepository.GetById(userId, cancellationToken);
         if (user is null)
         {
-            throw new KeyNotFoundException(AppConstants.Employees.NotFound);
+            throw new KeyNotFoundException(AppConstants.Resources.NotFound);
         }
 
         return user;
     }
 
-    private async Task<User> GetEmployeeUserDetailOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetResourceUserDetailOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken)
+        var user = await _userRepository.GetResourceUserDetailById(userId, cancellationToken)
             ?? await _userRepository.GetById(userId, cancellationToken);
         if (user is null)
         {
-            throw new KeyNotFoundException(AppConstants.Employees.NotFound);
+            throw new KeyNotFoundException(AppConstants.Resources.NotFound);
         }
 
         return user;

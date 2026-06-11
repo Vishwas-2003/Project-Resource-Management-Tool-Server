@@ -9,7 +9,7 @@ internal static class MapperTestHelper
     {
         var config = new MapperConfiguration(cfg =>
         {
-            cfg.AddProfile<EmployeeMappingProfile>();
+            cfg.AddProfile<ResourceMappingProfile>();
             cfg.AddProfile<UserMappingProfile>();
             cfg.AddProfile<SkillMappingProfile>();
             cfg.AddProfile<ProjectMappingProfile>();

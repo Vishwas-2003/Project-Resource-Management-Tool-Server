@@ -14,7 +14,7 @@ namespace Prm.Api.Tests.Controllers;
 public class TimesheetControllerTests
 {
     private readonly Mock<ITimesheetService> _timesheetService = new();
-    private const int EmployeeUserId = 1;
+    private const int ResourceUserId = 1;
     private const int ManagerUserId = 10;
 
     [Fact]
@@ -29,7 +29,7 @@ public class TimesheetControllerTests
             .Setup(x => x.GetActivityTags(It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).GetActivityTags(CancellationToken.None);
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).GetActivityTags(CancellationToken.None);
         Assert.Single(ControllerTestHelper.AssertOkValue<ActivityTagsResponse>(result).Tags);
     }
 
@@ -39,10 +39,10 @@ public class TimesheetControllerTests
         var response = new MissingTimesheetReminder { HasMissing = true, WeekStart = new DateOnly(2026, 5, 26) };
 
         _timesheetService
-            .Setup(x => x.GetMissingReminder(EmployeeUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMissingReminder(ResourceUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).GetReminder(CancellationToken.None);
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).GetReminder(CancellationToken.None);
         Assert.True(ControllerTestHelper.AssertOkValue<MissingTimesheetReminder>(result).HasMissing);
     }
 
@@ -50,16 +50,16 @@ public class TimesheetControllerTests
     public async Task GetWeekAllocations_WhenValid_ReturnsOk()
     {
         var weekStart = new DateOnly(2026, 5, 26);
-        var response = new WeekAllocationsResponse { WeekStart = weekStart, EmployeeName = "Jane Doe" };
+        var response = new WeekAllocationsResponse { WeekStart = weekStart, ResourceName = "Jane Doe" };
 
         _timesheetService
-            .Setup(x => x.GetWeekAllocations(EmployeeUserId, weekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetWeekAllocations(ResourceUserId, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee)
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee)
             .GetWeekAllocations(weekStart, CancellationToken.None);
 
-        Assert.Equal("Jane Doe", ControllerTestHelper.AssertOkValue<WeekAllocationsResponse>(result).EmployeeName);
+        Assert.Equal("Jane Doe", ControllerTestHelper.AssertOkValue<WeekAllocationsResponse>(result).ResourceName);
     }
 
     [Fact]
@@ -68,10 +68,10 @@ public class TimesheetControllerTests
         var response = new SubmitTimesheetResponse { TimesheetId = 1, TotalHours = 8 };
 
         _timesheetService
-            .Setup(x => x.SubmitTimesheet(EmployeeUserId, It.IsAny<SubmitTimesheetRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SubmitTimesheet(ResourceUserId, It.IsAny<SubmitTimesheetRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).Submit(
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).Submit(
             new SubmitTimesheetRequest
             {
                 WeekStart = new DateOnly(2026, 5, 26),
@@ -86,10 +86,10 @@ public class TimesheetControllerTests
     public async Task Submit_WhenAlreadySubmitted_Returns400()
     {
         _timesheetService
-            .Setup(x => x.SubmitTimesheet(EmployeeUserId, It.IsAny<SubmitTimesheetRequest>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.SubmitTimesheet(ResourceUserId, It.IsAny<SubmitTimesheetRequest>(), It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException(AppConstants.Timesheets.AlreadySubmitted));
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).Submit(
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).Submit(
             new SubmitTimesheetRequest
             {
                 WeekStart = new DateOnly(2026, 5, 26),
@@ -112,10 +112,10 @@ public class TimesheetControllerTests
         };
 
         _timesheetService
-            .Setup(x => x.GetMyTimesheets(EmployeeUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMyTimesheets(ResourceUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).GetMyTimesheets(CancellationToken.None);
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).GetMyTimesheets(CancellationToken.None);
         Assert.Single(ControllerTestHelper.AssertOkValue<MyTimesheetsResponse>(result).Timesheets);
     }
 
@@ -126,10 +126,10 @@ public class TimesheetControllerTests
         var response = new TimesheetWeekDetailResponse { WeekStart = weekStart, TotalHours = 16 };
 
         _timesheetService
-            .Setup(x => x.GetMyTimesheetDetail(EmployeeUserId, weekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMyTimesheetDetail(ResourceUserId, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee)
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee)
             .GetMyTimesheetDetail(weekStart, CancellationToken.None);
 
         Assert.Equal(16, ControllerTestHelper.AssertOkValue<TimesheetWeekDetailResponse>(result).TotalHours);
@@ -138,14 +138,14 @@ public class TimesheetControllerTests
     [Fact]
     public async Task GetMyAllocations_WhenValid_ReturnsOk()
     {
-        var response = new EmployeeAllocationsResponse { TotalUtilizationPercent = 100 };
+        var response = new ResourceAllocationsResponse { TotalUtilizationPercent = 100 };
 
         _timesheetService
-            .Setup(x => x.GetMyAllocations(EmployeeUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetMyAllocations(ResourceUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var result = await CreateSut(EmployeeUserId, RoleNameEnum.Employee).GetMyAllocations(CancellationToken.None);
-        Assert.Equal(100, ControllerTestHelper.AssertOkValue<EmployeeAllocationsResponse>(result).TotalUtilizationPercent);
+        var result = await CreateSut(ResourceUserId, RoleNameEnum.Employee).GetMyAllocations(CancellationToken.None);
+        Assert.Equal(100, ControllerTestHelper.AssertOkValue<ResourceAllocationsResponse>(result).TotalUtilizationPercent);
     }
 
     [Fact]
@@ -165,19 +165,19 @@ public class TimesheetControllerTests
     }
 
     [Fact]
-    public async Task GetEmployeeTimesheetDetail_WhenValid_ReturnsOk()
+    public async Task GetResourceTimesheetDetail_WhenValid_ReturnsOk()
     {
         var weekStart = new DateOnly(2026, 5, 26);
-        var response = new EmployeeTimesheetDetailResponse { EmployeeUserId = 1, TotalHours = 20 };
+        var response = new ResourceTimesheetDetailResponse { ResourceUserId = 1, TotalHours = 20 };
 
         _timesheetService
-            .Setup(x => x.GetEmployeeTimesheetDetail(ManagerUserId, 1, weekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceTimesheetDetail(ManagerUserId, 1, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
         var result = await CreateSut(ManagerUserId, RoleNameEnum.Manager)
-            .GetEmployeeTimesheetDetail(1, weekStart, CancellationToken.None);
+            .GetResourceTimesheetDetail(1, weekStart, CancellationToken.None);
 
-        Assert.Equal(20, ControllerTestHelper.AssertOkValue<EmployeeTimesheetDetailResponse>(result).TotalHours);
+        Assert.Equal(20, ControllerTestHelper.AssertOkValue<ResourceTimesheetDetailResponse>(result).TotalHours);
     }
 
     private TimesheetController CreateSut(int userId, RoleNameEnum role) =>

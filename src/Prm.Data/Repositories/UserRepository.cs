@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Prm.Common.Enums;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Data.Entities;
 using Prm.Data.Persistence;
 using Prm.Data.Repositories.Interfaces;
@@ -53,8 +53,8 @@ public class UserRepository(AppDbContext _dbContext)
         return admins.Count == 1 && admins.Any(admin => admin.Id == user.Id);
     }
 
-    public async Task<IReadOnlyList<User>> GetEmployeeUsers(
-        EmployeeFilter filter,
+    public async Task<IReadOnlyList<User>> GetResourceUsers(
+        ResourceFilter filter,
         CancellationToken cancellationToken = default)
     {
         var query = DbSet
@@ -96,7 +96,7 @@ public class UserRepository(AppDbContext _dbContext)
             .OrderBy(x => x.FullName)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<User>> GetEmployeeUsersByManagerUserId(
+    public async Task<IReadOnlyList<User>> GetResourceUsersByManagerUserId(
         int managerUserId,
         CancellationToken cancellationToken = default) =>
         await DbSet
@@ -112,7 +112,7 @@ public class UserRepository(AppDbContext _dbContext)
             .OrderBy(x => x.FullName)
             .ToListAsync(cancellationToken);
 
-    public Task<User?> GetEmployeeUserDetailById(int userId, CancellationToken cancellationToken = default) =>
+    public Task<User?> GetResourceUserDetailById(int userId, CancellationToken cancellationToken = default) =>
         DbSet
             .Include(x => x.UserSkills)
                 .ThenInclude(x => x.Skill)

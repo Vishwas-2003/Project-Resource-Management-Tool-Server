@@ -20,8 +20,8 @@ public class ManagerService(
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var users = await _userRepository.GetResourcePoolUsers(cancellationToken);
 
-        var bench = new List<BenchEmployeeRow>();
-        var active = new List<ActiveEmployeeRow>();
+        var bench = new List<BenchResourceRow>();
+        var active = new List<ActiveResourceRow>();
         var partial = 0;
 
         foreach (var user in users)
@@ -29,7 +29,7 @@ public class ManagerService(
             var utilization = await GetUtilizationOnDate(user.Id, today, cancellationToken);
             if (utilization <= 0)
             {
-                bench.Add(new BenchEmployeeRow
+                bench.Add(new BenchResourceRow
                 {
                     Id = user.Id,
                     Name = user.FullName,
@@ -44,7 +44,7 @@ public class ManagerService(
                 partial++;
             }
 
-            active.Add(new ActiveEmployeeRow
+            active.Add(new ActiveResourceRow
             {
                 Id = user.Id,
                 Name = user.FullName,
@@ -58,8 +58,8 @@ public class ManagerService(
         return new ResourceDashboardResponse
         {
             PeriodLabel = today.ToString("MMMM yyyy"),
-            BenchEmployees = bench,
-            ActiveEmployees = active,
+            BenchResources = bench,
+            ActiveResources = active,
             Summary = new ResourceDashboardSummary
             {
                 BenchCount = bench.Count,
@@ -68,16 +68,16 @@ public class ManagerService(
         };
     }
 
-    private void AssignRowNumber(List<BenchEmployeeRow> bench, List<ActiveEmployeeRow> active)
+    private void AssignRowNumber(List<BenchResourceRow> bench, List<ActiveResourceRow> active)
     {
         int rowNumber = 1;
 
-        foreach(BenchEmployeeRow employeeRow in bench)
+        foreach(BenchResourceRow employeeRow in bench)
         {
             employeeRow.RowNumber = rowNumber++;
         }
 
-        foreach(ActiveEmployeeRow employeeRow in active)
+        foreach(ActiveResourceRow employeeRow in active)
         {
             employeeRow.RowNumber = rowNumber++;
         }

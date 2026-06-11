@@ -37,7 +37,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMissingReminder_WhenNoAllocations_ReturnsHasMissingFalse()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         SetupEmployeeByUserId(employee);
         SetupOverlappingAllocations(employee.Id, Array.Empty<Allocation>());
 
@@ -49,7 +49,7 @@ public class TimesheetServiceTests
     }
 
     [Fact]
-    public async Task GetWeekAllocations_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
+    public async Task GetWeekAllocations_WhenResourceNotFound_ThrowsKeyNotFoundException()
     {
         _userRepository
             .Setup(x => x.GetById(99, It.IsAny<CancellationToken>()))
@@ -61,14 +61,14 @@ public class TimesheetServiceTests
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             sut.GetWeekAllocations(99, weekStart));
 
-        Assert.Equal(AppConstants.Timesheets.EmployeeNotFound, exception.Message);
+        Assert.Equal(AppConstants.Timesheets.ResourceNotFound, exception.Message);
     }
 
     [Fact]
     public async Task GetMyAllocations_ReturnsActiveAllocations()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var allocations = new List<Allocation>
         {
             ApiTestData.CreateAllocation(
@@ -103,7 +103,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenAlreadySubmitted_ThrowsInvalidOperationException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
@@ -131,7 +131,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenFutureWeek_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var futureWeekStart = TimesheetWeekHelper.GetWeekStart(DateOnly.FromDateTime(DateTime.UtcNow)).AddDays(7);
 
         SetupEmployeeByUserId(employee);
@@ -153,9 +153,9 @@ public class TimesheetServiceTests
     }
 
     [Fact]
-    public async Task SubmitTimesheet_WhenWeekBeforeEmployeeCreated_ThrowsArgumentException()
+    public async Task SubmitTimesheet_WhenWeekBeforeResourceCreated_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         employee.CreatedAtUtc = DateTime.UtcNow;
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
@@ -174,13 +174,13 @@ public class TimesheetServiceTests
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             sut.SubmitTimesheet(employee.Id, request));
 
-        Assert.Equal(AppConstants.Timesheets.WeekBeforeEmployeeCreated, exception.Message);
+        Assert.Equal(AppConstants.Timesheets.WeekBeforeResourceCreated, exception.Message);
     }
 
     [Fact]
     public async Task SubmitTimesheet_WhenNoEntries_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
@@ -204,7 +204,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMyTimesheets_ReturnsSubmittedSummaries()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var timesheets = new List<Timesheet>
         {
@@ -257,7 +257,7 @@ public class TimesheetServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(submittedRows);
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<User>());
 
         var sut = CreateSut();
@@ -265,7 +265,7 @@ public class TimesheetServiceTests
 
         Assert.Equal(weekStart, result.WeekStart);
         Assert.Single(result.Rows);
-        Assert.Equal("Jane Doe", result.Rows[0].EmployeeName);
+        Assert.Equal("Jane Doe", result.Rows[0].ResourceName);
         Assert.Equal("Alpha", result.Rows[0].ProjectName);
         Assert.Equal(32, result.Rows[0].HoursWorked);
         Assert.Equal(TimesheetConstants.StatusSubmitted, result.Rows[0].Status);
@@ -274,7 +274,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMissingReminder_WhenAllocationExistsWithoutTimesheet_ReturnsHasMissingTrue()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var lastCompletedWeekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             fromDate: lastCompletedWeekStart,
@@ -296,7 +296,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenValid_ReturnsSubmittedResponse()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -342,7 +342,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMyTimesheetDetail_WhenSubmitted_ReturnsDetail()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var project = ApiTestData.CreateProject();
         var timesheet = new Timesheet
@@ -386,7 +386,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMyTimesheetDetail_WhenMissedWeekWithAllocation_ReturnsMissedStatus()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             fromDate: weekStart,
@@ -407,10 +407,10 @@ public class TimesheetServiceTests
     }
 
     [Fact]
-    public async Task GetEmployeeTimesheetDetail_WhenSubmitted_ReturnsDetail()
+    public async Task GetResourceTimesheetDetail_WhenSubmitted_ReturnsDetail()
     {
         const int managerUserId = 10;
-        var employee = ApiTestData.CreateEmployeeUser(managerUserId: managerUserId);
+        var employee = ApiTestData.CreateResourceUser(managerUserId: managerUserId);
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var project = ApiTestData.CreateProject();
         var timesheet = new Timesheet
@@ -433,43 +433,43 @@ public class TimesheetServiceTests
         };
 
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([employee]);
         _timesheetRepository
             .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(timesheet);
 
         var sut = CreateSut();
-        var result = await sut.GetEmployeeTimesheetDetail(managerUserId, employee.Id, weekStart);
+        var result = await sut.GetResourceTimesheetDetail(managerUserId, employee.Id, weekStart);
 
-        Assert.Equal(employee.Id, result.EmployeeUserId);
+        Assert.Equal(employee.Id, result.ResourceUserId);
         Assert.Equal(TimesheetConstants.StatusSubmitted, result.Status);
         Assert.Equal(20, result.TotalHours);
     }
 
     [Fact]
-    public async Task GetEmployeeTimesheetDetail_WhenEmployeeNotOnTeam_ThrowsUnauthorizedAccessException()
+    public async Task GetResourceTimesheetDetail_WhenResourceNotOnTeam_ThrowsUnauthorizedAccessException()
     {
         const int managerUserId = 10;
-        var employee = ApiTestData.CreateEmployeeUser(managerUserId: 99);
+        var employee = ApiTestData.CreateResourceUser(managerUserId: 99);
 
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var sut = CreateSut();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            sut.GetEmployeeTimesheetDetail(managerUserId, employee.Id, weekStart));
+            sut.GetResourceTimesheetDetail(managerUserId, employee.Id, weekStart));
 
-        Assert.Equal(AppConstants.Timesheets.EmployeeNotOnTeam, exception.Message);
+        Assert.Equal(AppConstants.Timesheets.ResourceNotOnTeam, exception.Message);
     }
 
     [Fact]
     public async Task SubmitTimesheet_WhenDuplicateProjectInEntries_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
@@ -495,7 +495,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenHoursExceedAllocation_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -527,7 +527,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenInvalidActivityTag_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -562,7 +562,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenInvalidWeekStart_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var invalidWeekStart = weekStart.AddDays(1);
 
@@ -587,7 +587,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetWeekAllocations_WhenValid_ReturnsAllocationsWithMaxHours()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -602,24 +602,24 @@ public class TimesheetServiceTests
         var sut = CreateSut();
         var result = await sut.GetWeekAllocations(employee.Id, weekStart);
 
-        Assert.Equal(employee.FullName, result.EmployeeName);
+        Assert.Equal(employee.FullName, result.ResourceName);
         Assert.Equal(40, result.MaxWeeklyHours);
         Assert.Single(result.Allocations);
         Assert.Equal(20, result.Allocations[0].MaxHours);
     }
 
     [Fact]
-    public async Task GetEmployeeTimesheetDetail_WhenMissedWeekWithAllocation_ReturnsMissedStatus()
+    public async Task GetResourceTimesheetDetail_WhenMissedWeekWithAllocation_ReturnsMissedStatus()
     {
         const int managerUserId = 10;
-        var employee = ApiTestData.CreateEmployeeUser(managerUserId: managerUserId);
+        var employee = ApiTestData.CreateResourceUser(managerUserId: managerUserId);
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             fromDate: weekStart,
             toDate: weekStart.AddDays(6));
 
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([employee]);
         _timesheetRepository
             .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
@@ -631,21 +631,21 @@ public class TimesheetServiceTests
             .ReturnsAsync([allocation]);
 
         var sut = CreateSut();
-        var result = await sut.GetEmployeeTimesheetDetail(managerUserId, employee.Id, weekStart);
+        var result = await sut.GetResourceTimesheetDetail(managerUserId, employee.Id, weekStart);
 
         Assert.Equal(TimesheetConstants.StatusMissed, result.Status);
         Assert.Equal(0, result.TotalHours);
     }
 
     [Fact]
-    public async Task GetEmployeeTimesheetDetail_WhenNoAllocationAndNoTimesheet_ThrowsKeyNotFoundException()
+    public async Task GetResourceTimesheetDetail_WhenNoAllocationAndNoTimesheet_ThrowsKeyNotFoundException()
     {
         const int managerUserId = 10;
-        var employee = ApiTestData.CreateEmployeeUser(managerUserId: managerUserId);
+        var employee = ApiTestData.CreateResourceUser(managerUserId: managerUserId);
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([employee]);
         _timesheetRepository
             .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
@@ -659,7 +659,7 @@ public class TimesheetServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            sut.GetEmployeeTimesheetDetail(managerUserId, employee.Id, weekStart));
+            sut.GetResourceTimesheetDetail(managerUserId, employee.Id, weekStart));
 
         Assert.Equal(AppConstants.Timesheets.NotFound, exception.Message);
     }
@@ -670,7 +670,7 @@ public class TimesheetServiceTests
         const int managerUserId = 10;
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(weekStart);
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var allocation = ApiTestData.CreateAllocation(
             userId: employee.Id,
             fromDate: weekStart,
@@ -680,7 +680,7 @@ public class TimesheetServiceTests
             .Setup(x => x.GetEntriesForTeamByManagerAndWeek(managerUserId, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<TeamTimesheetEntryRow>());
         _userRepository
-            .Setup(x => x.GetEmployeeUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([employee]);
         _allocationRepository
             .Setup(x => x.GetOverlappingForUser(
@@ -696,13 +696,13 @@ public class TimesheetServiceTests
 
         Assert.Single(result.Rows);
         Assert.Equal(TimesheetConstants.StatusMissed, result.Rows[0].Status);
-        Assert.Equal(employee.FullName, result.Rows[0].EmployeeName);
+        Assert.Equal(employee.FullName, result.Rows[0].ResourceName);
     }
 
     [Fact]
     public async Task SubmitTimesheet_WhenProjectNotAllocated_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
@@ -729,7 +729,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenActivityTagsMissing_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -760,7 +760,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WhenTotalHoursExceedMax_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation1 = ApiTestData.CreateAllocation(id: 1, projectId: 1, utilizationPercent: 100, fromDate: weekStart, toDate: weekStart.AddDays(6));
         var allocation2 = ApiTestData.CreateAllocation(id: 2, projectId: 2, projectName: "Beta", utilizationPercent: 100, fromDate: weekStart, toDate: weekStart.AddDays(6));
@@ -795,7 +795,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WithOtherActivityTag_UsesFindOrCreateActivityTag()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -845,7 +845,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task SubmitTimesheet_WithStandardActivityTagNames_ResolvesTagIds()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             projectId: 1,
@@ -896,7 +896,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMyTimesheetDetail_WhenNoTimesheetOrAllocation_ThrowsKeyNotFoundException()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
@@ -916,7 +916,7 @@ public class TimesheetServiceTests
     [Fact]
     public async Task GetMyTimesheets_IncludesMissedWeeksInHistory()
     {
-        var employee = ApiTestData.CreateEmployeeUser();
+        var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
         var allocation = ApiTestData.CreateAllocation(
             fromDate: weekStart,
@@ -955,19 +955,19 @@ public class TimesheetServiceTests
             .ReturnsAsync(ApiTestData.CreateConfiguration((int)ConfigurationOptionEnum.MaxWeeklyHours, hours.ToString()));
     }
 
-    private void SetupOverlappingAllocations(int employeeUserId, IReadOnlyList<Allocation> allocations)
+    private void SetupOverlappingAllocations(int resourceUserId, IReadOnlyList<Allocation> allocations)
     {
         _allocationRepository
             .Setup(x => x.GetOverlappingForUser(
-                It.Is<UserAllocationPeriodQuery>(query => query.UserId == employeeUserId),
+                It.Is<UserAllocationPeriodQuery>(query => query.UserId == resourceUserId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(allocations);
     }
 
-    private void SetupSubmitWeek(int employeeUserId, DateOnly weekStart, bool exists)
+    private void SetupSubmitWeek(int resourceUserId, DateOnly weekStart, bool exists)
     {
         _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(employeeUserId, weekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForUserWeek(resourceUserId, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(exists);
     }
 }

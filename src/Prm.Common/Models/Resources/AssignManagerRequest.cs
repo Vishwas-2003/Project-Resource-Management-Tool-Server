@@ -1,8 +1,8 @@
-namespace Prm.Common.Models.Employees;
+namespace Prm.Common.Models.Resources;
 
 public class AssignManagerRequest
 {
-    public int EmployeeUserId { get; set; }
+    public int ResourceUserId { get; set; }
     public int ManagerUserId { get; set; }
     public required string Department { get; set; }
     public required string Designation { get; set; }

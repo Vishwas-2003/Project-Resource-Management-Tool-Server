@@ -4,7 +4,7 @@ using Prm.Api.Services;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -25,9 +25,9 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Execute_WhenEmployeeHasNoUtilization_SetsStatusToBench()
     {
-        var user = ApiTestData.CreateEmployeeUser(status: EmployeeConstants.StatusAllocated);
+        var user = ApiTestData.CreateResourceUser(status: ResourceConstants.StatusAllocated);
         _userRepository
-            .Setup(x => x.GetEmployeeUsers(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsers(It.IsAny<ResourceFilter>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { user });
         _allocationRepository
             .Setup(x => x.SumUtilizationForUserInPeriod(
@@ -48,9 +48,9 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Execute_UpdatesProjectHealthAndReplacesRiskFlags()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         _userRepository
-            .Setup(x => x.GetEmployeeUsers(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+            .Setup(x => x.GetResourceUsers(It.IsAny<ResourceFilter>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<User> { user });
         _allocationRepository
             .Setup(x => x.SumUtilizationForUserInPeriod(

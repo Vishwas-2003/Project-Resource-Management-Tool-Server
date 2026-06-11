@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Prm.Common.Models.Employees;
+namespace Prm.Common.Models.Resources;
 
-public class UpdateEmployeeRequest
+public class UpdateResourceRequest
 {
     [Required]
     [MaxLength(100)]

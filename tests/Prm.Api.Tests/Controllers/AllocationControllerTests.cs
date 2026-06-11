@@ -22,7 +22,7 @@ public class AllocationControllerTests
         var response = new ActiveAllocationsResponse
         {
             TotalActiveAllocations = 1,
-            Allocations = [new ActiveAllocationRow { EmployeeName = "Jane Doe", ProjectName = "Alpha" }],
+            Allocations = [new ActiveAllocationRow { ResourceName = "Jane Doe", ProjectName = "Alpha" }],
         };
 
         _allocationService
@@ -39,7 +39,7 @@ public class AllocationControllerTests
     [Fact]
     public async Task Create_WhenValid_ReturnsCreated()
     {
-        var response = new AllocationCreatedResponse { AllocationId = 5, EmployeeName = "Jane Doe" };
+        var response = new AllocationCreatedResponse { AllocationId = 5, ResourceName = "Jane Doe" };
 
         _allocationService
             .Setup(x => x.Create(It.IsAny<CreateAllocationRequest>(), ManagerUserId, It.IsAny<CancellationToken>()))
@@ -49,7 +49,7 @@ public class AllocationControllerTests
         var result = await sut.Create(
             new CreateAllocationRequest
             {
-                EmployeeUserId = 1,
+                ResourceUserId = 1,
                 ProjectId = 1,
                 UtilizationPercent = 50,
                 FromDate = new DateOnly(2026, 1, 1),
@@ -70,7 +70,7 @@ public class AllocationControllerTests
 
         var sut = CreateSut();
         var result = await sut.Create(
-            new CreateAllocationRequest { EmployeeUserId = 1, ProjectId = 1, UtilizationPercent = 50, FromDate = new DateOnly(2026, 1, 1) },
+            new CreateAllocationRequest { ResourceUserId = 1, ProjectId = 1, UtilizationPercent = 50, FromDate = new DateOnly(2026, 1, 1) },
             CancellationToken.None);
 
         ControllerTestHelper.AssertErrorResult(
@@ -82,7 +82,7 @@ public class AllocationControllerTests
     [Fact]
     public async Task End_WhenValid_ReturnsOk()
     {
-        var response = new AllocationEndedResponse { AllocationId = 1, EmployeeName = "Jane Doe" };
+        var response = new AllocationEndedResponse { AllocationId = 1, ResourceName = "Jane Doe" };
 
         _allocationService
             .Setup(x => x.End(1, ManagerUserId, It.IsAny<CancellationToken>()))

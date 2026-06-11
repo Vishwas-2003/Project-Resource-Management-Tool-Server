@@ -18,7 +18,7 @@ internal static class UserAvailabilityHelper
     {
         if (!IsWeekEligibleForUser(user, weekStart))
         {
-            throw new ArgumentException(AppConstants.Timesheets.WeekBeforeEmployeeCreated);
+            throw new ArgumentException(AppConstants.Timesheets.WeekBeforeResourceCreated);
         }
     }
 
@@ -27,7 +27,7 @@ internal static class UserAvailabilityHelper
         var availabilityStart = GetAvailabilityStartDate(user.CreatedAtUtc);
         if (fromDate < availabilityStart || toDate < availabilityStart)
         {
-            throw new ArgumentException(AppConstants.Allocations.AllocationDatesBeforeEmployeeCreated);
+            throw new ArgumentException(AppConstants.Allocations.AllocationDatesBeforeResourceCreated);
         }
     }
 }

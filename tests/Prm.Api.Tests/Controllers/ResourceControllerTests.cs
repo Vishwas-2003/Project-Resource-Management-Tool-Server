@@ -5,47 +5,47 @@ using Prm.Api.Services.Interfaces;
 using Prm.Api.Tests.Helpers;
 using Prm.Common.Constants;
 using Prm.Common.Models;
-using Prm.Common.Models.Employees;
+using Prm.Common.Models.Resources;
 using Prm.Common.Models.Manager;
 
 namespace Prm.Api.Tests.Controllers;
 
-public class EmployeeControllerTests
+public class ResourceControllerTests
 {
-    private readonly Mock<IEmployeeService> _employeeService = new();
+    private readonly Mock<IResourceService> _resourceService = new();
 
     [Fact]
-    public async Task GetEmployees_WhenEmployeesExist_ReturnsOk()
+    public async Task GetResources_WhenResourcesExist_ReturnsOk()
     {
-        var response = new EmployeeListResult
+        var response = new ResourceListResult
         {
             Total = 1,
-            Employees = [new EmployeeSummary { Id = 1, FullName = "Jane Doe" }],
+            Resources = [new ResourceSummary { Id = 1, FullName = "Jane Doe" }],
         };
 
-        _employeeService
-            .Setup(x => x.GetEmployees(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+        _resourceService
+            .Setup(x => x.GetResources(It.IsAny<ResourceFilter>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var sut = new EmployeeController(_employeeService.Object);
-        var result = await sut.GetEmployees(new EmployeeFilter(), CancellationToken.None);
+        var sut = new ResourceController(_resourceService.Object);
+        var result = await sut.GetResources(new ResourceFilter(), CancellationToken.None);
 
-        var value = ControllerTestHelper.AssertOkValue<EmployeeListResult>(result);
+        var value = ControllerTestHelper.AssertOkValue<ResourceListResult>(result);
         Assert.Equal(1, value.Total);
     }
 
     [Fact]
     public async Task AssignManager_WhenValid_ReturnsOk()
     {
-        _employeeService
+        _resourceService
             .Setup(x => x.AssignManager(It.IsAny<AssignManagerRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = new EmployeeController(_employeeService.Object);
+        var sut = new ResourceController(_resourceService.Object);
         var result = await sut.AssignManager(
             new AssignManagerRequest
             {
-                EmployeeUserId = 1,
+                ResourceUserId = 1,
                 ManagerUserId = 10,
                 Department = "Engineering",
                 Designation = "Developer",
@@ -59,14 +59,14 @@ public class EmployeeControllerTests
     [Fact]
     public async Task Update_WhenValid_ReturnsOk()
     {
-        _employeeService
-            .Setup(x => x.Update(1, It.IsAny<UpdateEmployeeRequest>(), It.IsAny<CancellationToken>()))
+        _resourceService
+            .Setup(x => x.Update(1, It.IsAny<UpdateResourceRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = new EmployeeController(_employeeService.Object);
+        var sut = new ResourceController(_resourceService.Object);
         var result = await sut.Update(
             1,
-            new UpdateEmployeeRequest { Department = "Engineering", Designation = "Developer" },
+            new UpdateResourceRequest { Department = "Engineering", Designation = "Developer" },
             CancellationToken.None);
 
         Assert.True(ControllerTestHelper.AssertOkValue<UpdatedResponse>(result).Updated);
@@ -75,45 +75,45 @@ public class EmployeeControllerTests
     [Fact]
     public async Task Deactivate_WhenValid_ReturnsOk()
     {
-        _employeeService
+        _resourceService
             .Setup(x => x.Deactivate(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var sut = new EmployeeController(_employeeService.Object);
+        var sut = new ResourceController(_resourceService.Object);
         var result = await sut.Deactivate(1, CancellationToken.None);
 
         Assert.True(ControllerTestHelper.AssertOkValue<UpdatedResponse>(result).Updated);
     }
 
     [Fact]
-    public async Task GetDetail_WhenEmployeeNotFound_Returns404()
+    public async Task GetDetail_WhenResourceNotFound_Returns404()
     {
-        _employeeService
+        _resourceService
             .Setup(x => x.GetDetail(99, It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new KeyNotFoundException(AppConstants.Employees.NotFound));
+            .ThrowsAsync(new KeyNotFoundException(AppConstants.Resources.NotFound));
 
-        var sut = new EmployeeController(_employeeService.Object);
+        var sut = new ResourceController(_resourceService.Object);
         var result = await sut.GetDetail(99, CancellationToken.None);
 
         var error = ControllerTestHelper.AssertErrorResult(
             result,
             StatusCodes.Status404NotFound,
             AppConstants.ErrorCodes.NotFound);
-        Assert.Equal(AppConstants.Employees.NotFound, error.Message);
+        Assert.Equal(AppConstants.Resources.NotFound, error.Message);
     }
 
     [Fact]
     public async Task GetUtilization_WhenValid_ReturnsOk()
     {
-        var response = new EmployeeUtilizationResponse { EmployeeUserId = 1, UtilizationPercent = 80 };
+        var response = new ResourceUtilizationResponse { ResourceUserId = 1, UtilizationPercent = 80 };
 
-        _employeeService
+        _resourceService
             .Setup(x => x.GetUtilization(1, It.IsAny<CancellationToken>()))
             .ReturnsAsync(response);
 
-        var sut = new EmployeeController(_employeeService.Object);
+        var sut = new ResourceController(_resourceService.Object);
         var result = await sut.GetUtilization(1, CancellationToken.None);
 
-        Assert.Equal(80, ControllerTestHelper.AssertOkValue<EmployeeUtilizationResponse>(result).UtilizationPercent);
+        Assert.Equal(80, ControllerTestHelper.AssertOkValue<ResourceUtilizationResponse>(result).UtilizationPercent);
     }
 }

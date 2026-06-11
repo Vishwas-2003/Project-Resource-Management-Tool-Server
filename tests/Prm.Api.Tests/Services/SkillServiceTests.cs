@@ -17,7 +17,7 @@ public class SkillServiceTests
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     [Fact]
-    public async Task GetForEmployee_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
+    public async Task GetForResource_WhenResourceNotFound_ThrowsKeyNotFoundException()
     {
         _userRepository
             .Setup(x => x.GetById(1, It.IsAny<CancellationToken>()))
@@ -25,15 +25,15 @@ public class SkillServiceTests
 
         var sut = CreateSut();
 
-        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.GetForEmployee(1));
+        var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.GetForResource(1));
 
-        Assert.Equal(AppConstants.Employees.NotFound, exception.Message);
+        Assert.Equal(AppConstants.Resources.NotFound, exception.Message);
     }
 
     [Fact]
-    public async Task GetForEmployee_WhenSuccessful_ReturnsSkills()
+    public async Task GetForResource_WhenSuccessful_ReturnsSkills()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         var userSkills = new List<UserSkill>
         {
             new()
@@ -53,9 +53,9 @@ public class SkillServiceTests
             .ReturnsAsync(userSkills);
 
         var sut = CreateSut();
-        var result = await sut.GetForEmployee(user.Id);
+        var result = await sut.GetForResource(user.Id);
 
-        Assert.Equal(user.Id, result.EmployeeUserId);
+        Assert.Equal(user.Id, result.ResourceUserId);
         Assert.Equal(user.FullName, result.FullName);
         Assert.Single(result.Skills);
         Assert.Equal("C#", result.Skills[0].SkillName);
@@ -64,7 +64,7 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenInvalidCategory_ThrowsArgumentException()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         _userRepository
             .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -72,7 +72,7 @@ public class SkillServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.Add(user.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddResourceSkillRequest
             {
                 SkillName = "C#",
                 Category = "Invalid",
@@ -85,7 +85,7 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenInvalidProficiency_ThrowsArgumentException()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         _userRepository
             .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(user);
@@ -93,7 +93,7 @@ public class SkillServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.Add(user.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddResourceSkillRequest
             {
                 SkillName = "C#",
                 Category = "Backend",
@@ -106,7 +106,7 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenSkillAlreadyAssigned_ThrowsInvalidOperationException()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         var skill = new Skill { Id = 5, Name = "C#", Category = "Backend" };
 
         _userRepository
@@ -122,7 +122,7 @@ public class SkillServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(user.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddResourceSkillRequest
             {
                 SkillName = "C#",
                 Category = "Backend",
@@ -135,7 +135,7 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenSkillDoesNotExist_CreatesSkillAndReturnsSkillId()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
 
         _userRepository
             .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
@@ -161,7 +161,7 @@ public class SkillServiceTests
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
-        var skillId = await sut.Add(user.Id, new AddEmployeeSkillRequest
+        var skillId = await sut.Add(user.Id, new AddResourceSkillRequest
         {
             SkillName = "Go",
             Category = "Backend",
@@ -175,7 +175,7 @@ public class SkillServiceTests
     [Fact]
     public async Task Update_WhenSuccessful_ReturnsTrue()
     {
-        var user = ApiTestData.CreateEmployeeUser();
+        var user = ApiTestData.CreateResourceUser();
         var assignment = new UserSkill
         {
             UserId = user.Id,
@@ -195,7 +195,7 @@ public class SkillServiceTests
         var result = await sut.Update(
             user.Id,
             1,
-            new UpdateEmployeeSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced });
+            new UpdateResourceSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced });
 
         Assert.True(result);
         Assert.Equal(SkillConstants.ProficiencyAdvanced, assignment.Proficiency);
@@ -211,9 +211,9 @@ public class SkillServiceTests
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            sut.Update(1, 1, new UpdateEmployeeSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced }));
+            sut.Update(1, 1, new UpdateResourceSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced }));
 
-        Assert.Equal(AppConstants.Skills.EmployeeSkillNotFound, exception.Message);
+        Assert.Equal(AppConstants.Skills.ResourceSkillNotFound, exception.Message);
     }
 
     [Fact]
@@ -227,7 +227,7 @@ public class SkillServiceTests
 
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.Remove(1, 1));
 
-        Assert.Equal(AppConstants.Skills.EmployeeSkillNotFound, exception.Message);
+        Assert.Equal(AppConstants.Skills.ResourceSkillNotFound, exception.Message);
     }
 
     [Fact]
