@@ -79,7 +79,8 @@ public partial class TimesheetService
         var teamUsers = await _userRepository.GetEmployeeUsersByManagerUserId(managerUserId, cancellationToken);
         foreach (var user in teamUsers)
         {
-            if (submittedEmployeeIds.Contains(user.Id))
+            if (submittedEmployeeIds.Contains(user.Id)
+                || !UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
             {
                 continue;
             }
@@ -140,6 +141,11 @@ public partial class TimesheetService
         DateOnly normalizedWeekStart,
         CancellationToken cancellationToken)
     {
+        if (!UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
+        {
+            throw new KeyNotFoundException(AppConstants.Timesheets.NotFound);
+        }
+
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
         var allocations = await _allocationRepository.GetOverlappingForUser(
             new UserAllocationPeriodQuery

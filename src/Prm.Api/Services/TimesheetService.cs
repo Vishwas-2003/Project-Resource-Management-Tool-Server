@@ -37,6 +37,11 @@ public partial class TimesheetService(
         var lastCompletedWeekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(today);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(lastCompletedWeekStart);
 
+        if (!UserAvailabilityHelper.IsWeekEligibleForUser(user, lastCompletedWeekStart))
+        {
+            return new MissingTimesheetReminder { HasMissing = false };
+        }
+
         var allocations = await GetAllocationsOverlappingWeek(
             user.Id,
             lastCompletedWeekStart,
@@ -66,6 +71,7 @@ public partial class TimesheetService(
     {
         var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
+        UserAvailabilityHelper.EnsureWeekEligibleForUser(user, normalizedWeekStart);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
 

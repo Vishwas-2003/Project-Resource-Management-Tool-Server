@@ -18,7 +18,7 @@ public partial class TimesheetService
         CancellationToken cancellationToken = default)
     {
         var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
-        var context = await PrepareSubmitContext(user.Id, request, cancellationToken);
+        var context = await PrepareSubmitContext(user, request, cancellationToken);
         var (entries, totalHours) = await BuildSubmitEntries(request.Entries, context, cancellationToken);
         ValidateSubmitTotalHours(totalHours, context.MaxWeeklyHours);
 
@@ -26,17 +26,18 @@ public partial class TimesheetService
     }
 
     private async Task<SubmitContext> PrepareSubmitContext(
-        int userId,
+        User user,
         SubmitTimesheetRequest request,
         CancellationToken cancellationToken)
     {
         var weekStart = TimesheetWeekHelper.GetWeekStart(request.WeekStart);
         ValidateWeekStartIsMonday(request.WeekStart, weekStart);
-        await ValidateSubmitWeekAndRequest(userId, weekStart, request, cancellationToken);
+        UserAvailabilityHelper.EnsureWeekEligibleForUser(user, weekStart);
+        await ValidateSubmitWeekAndRequest(user.Id, weekStart, request, cancellationToken);
 
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(weekStart);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
-        var allocations = await GetAllocationsOverlappingWeek(userId, weekStart, weekEnd, cancellationToken);
+        var allocations = await GetAllocationsOverlappingWeek(user.Id, weekStart, weekEnd, cancellationToken);
 
         return new SubmitContext(
             weekStart,

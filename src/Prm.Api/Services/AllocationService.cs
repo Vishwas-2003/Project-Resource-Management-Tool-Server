@@ -75,6 +75,7 @@ public class AllocationService(
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
         var user = await GetAllocatableUserOrThrow(request.EmployeeId, cancellationToken);
+        UserAvailabilityHelper.EnsureAllocationDatesEligibleForUser(user, request.FromDate, request.ToDate);
 
         await EnsureNoOverlappingAllocationOnSameProject(
             request.EmployeeId,

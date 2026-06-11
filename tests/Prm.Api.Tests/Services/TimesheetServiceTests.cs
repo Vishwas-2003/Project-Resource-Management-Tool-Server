@@ -153,6 +153,31 @@ public class TimesheetServiceTests
     }
 
     [Fact]
+    public async Task SubmitTimesheet_WhenWeekBeforeEmployeeCreated_ThrowsArgumentException()
+    {
+        var employee = ApiTestData.CreateEmployeeUser();
+        employee.CreatedAtUtc = DateTime.UtcNow;
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        SetupEmployeeByUserId(employee);
+
+        var sut = CreateSut();
+        var request = new SubmitTimesheetRequest
+        {
+            WeekStart = weekStart,
+            Entries =
+            [
+                new TimesheetEntryRequest { ProjectId = 1, HoursWorked = 8, ActivityTagIds = [1] },
+            ],
+        };
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.SubmitTimesheet(employee.Id, request));
+
+        Assert.Equal(AppConstants.Timesheets.WeekBeforeEmployeeCreated, exception.Message);
+    }
+
+    [Fact]
     public async Task SubmitTimesheet_WhenNoEntries_ThrowsArgumentException()
     {
         var employee = ApiTestData.CreateEmployeeUser();

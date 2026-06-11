@@ -151,6 +151,8 @@ public static class AppConstants
             "Project must be in ACTIVE or PLANNED status to allocate resources.";
         public const string AllocationDatesOutsideProject =
             "Allocation dates must be within the project start and end dates.";
+        public const string AllocationDatesBeforeEmployeeCreated =
+            "Allocation dates cannot be before the employee account was created.";
         public const string CreatedSuccessfully = "Allocation created successfully.";
         public const string EndedSuccessfully = "Allocation ended successfully.";
     }
@@ -160,6 +162,8 @@ public static class AppConstants
         public const string EmployeeNotFound = "Employee profile not found.";
         public const string AlreadySubmitted = "A timesheet for this week has already been submitted.";
         public const string FutureWeekNotAllowed = "You cannot submit a timesheet for a future week.";
+        public const string WeekBeforeEmployeeCreated =
+            "You cannot submit a timesheet for a week before your account was created.";
         public const string InvalidWeekStart = "Week start must be a Monday.";
         public const string ProjectNotAllocated = "You can only log hours for projects you are allocated to during that week.";
         public const string HoursExceedAllocation = "Hours for a project cannot exceed the expected hours for your allocation.";

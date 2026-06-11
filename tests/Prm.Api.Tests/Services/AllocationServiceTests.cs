@@ -184,6 +184,34 @@ public class AllocationServiceTests
     }
 
     [Fact]
+    public async Task Create_WhenDatesBeforeEmployeeCreated_ThrowsArgumentException()
+    {
+        var project = ApiTestData.CreateProject();
+        var employee = ApiTestData.CreateEmployeeUser();
+        employee.CreatedAtUtc = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
+
+        _projectRepository
+            .Setup(x => x.GetByIdWithManager(project.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(project);
+        _userRepository
+            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(employee);
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.Create(
+                CreateValidRequest(
+                    projectId: project.Id,
+                    employeeId: employee.Id,
+                    from: new DateOnly(2026, 6, 1),
+                    to: new DateOnly(2026, 6, 30)),
+                ManagerUserId));
+
+        Assert.Equal(AppConstants.Allocations.AllocationDatesBeforeEmployeeCreated, exception.Message);
+    }
+
+    [Fact]
     public async Task Create_WhenOverlappingAllocation_ThrowsInvalidOperationException()
     {
         SetupValidProject();

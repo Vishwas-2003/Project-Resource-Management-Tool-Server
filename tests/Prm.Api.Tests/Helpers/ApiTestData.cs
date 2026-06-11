@@ -38,6 +38,7 @@ internal static class ApiTestData
             Department = department,
             Designation = designation,
             PasswordExpiryTime = null,
+            CreatedAtUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
             Role = new Role { Id = roleId, Name = roleName, CreatedAtUtc = DateTime.UtcNow },
             ResourceStatusHistories = resourceStatus is not null
                 ? [CreateResourceStatusHistory(id, resourceStatus)]
