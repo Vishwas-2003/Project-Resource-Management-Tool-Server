@@ -8,14 +8,14 @@ public class SkillMappingProfile : Profile
 {
     public SkillMappingProfile()
     {
-        CreateMap<EmployeeSkill, EmployeeSkillItem>()
+        CreateMap<UserSkill, EmployeeSkillItem>()
             .ForMember(d => d.SkillName, o => o.MapFrom(s => s.Skill.Name))
             .ForMember(d => d.Category, o => o.MapFrom(s => s.Skill.Category));
 
-        CreateMap<AddEmployeeSkillRequest, EmployeeSkill>()
-            .ForMember(d => d.EmployeeId, o => o.Ignore())
+        CreateMap<AddEmployeeSkillRequest, UserSkill>()
+            .ForMember(d => d.UserId, o => o.Ignore())
             .ForMember(d => d.SkillId, o => o.Ignore())
-            .ForMember(d => d.Employee, o => o.Ignore())
+            .ForMember(d => d.User, o => o.Ignore())
             .ForMember(d => d.Skill, o => o.Ignore())
             .ForMember(d => d.CreatedAtUtc, o => o.Ignore())
             .ForMember(d => d.ModifiedAtUtc, o => o.Ignore())
@@ -25,10 +25,10 @@ public class SkillMappingProfile : Profile
             .ForMember(d => d.ModifiedByUser, o => o.Ignore())
             .ForMember(d => d.Proficiency, o => o.MapFrom(s => s.Proficiency.Trim()));
 
-        CreateMap<UpdateEmployeeSkillRequest, EmployeeSkill>()
-            .ForMember(d => d.EmployeeId, o => o.Ignore())
+        CreateMap<UpdateEmployeeSkillRequest, UserSkill>()
+            .ForMember(d => d.UserId, o => o.Ignore())
             .ForMember(d => d.SkillId, o => o.Ignore())
-            .ForMember(d => d.Employee, o => o.Ignore())
+            .ForMember(d => d.User, o => o.Ignore())
             .ForMember(d => d.Skill, o => o.Ignore())
             .ForMember(d => d.CreatedAtUtc, o => o.Ignore())
             .ForMember(d => d.ModifiedAtUtc, o => o.Ignore())

@@ -129,7 +129,7 @@ public class UserServiceTests
     }
 
     [Fact]
-    public async Task Add_WhenSuccessful_SetsForcePasswordChangeAndReturnsId()
+    public async Task Add_WhenSuccessful_SetsPasswordExpiryTimeAndReturnsId()
     {
         SetupValidRole();
         _userRepository
@@ -164,7 +164,7 @@ public class UserServiceTests
 
         Assert.Equal(7, id);
         Assert.NotNull(saved);
-        Assert.True(saved!.ForcePasswordChange);
+        Assert.NotNull(saved!.PasswordExpiryTime);
         Assert.True(saved.IsActive);
         Assert.Equal(PasswordVerificationResult.Success,
             _passwordHasher.VerifyHashedPassword(saved, saved.PasswordHash, ApiTestData.ValidPassword));
@@ -344,7 +344,7 @@ public class UserServiceTests
         });
 
         Assert.True(result);
-        Assert.True(user.ForcePasswordChange);
+        Assert.NotNull(user.PasswordExpiryTime);
         Assert.Equal(PasswordVerificationResult.Success,
             _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, ApiTestData.ValidPassword));
         _refreshTokenRepository.Verify(x => x.RemoveByUserId(user.Id, It.IsAny<CancellationToken>()), Times.Once);

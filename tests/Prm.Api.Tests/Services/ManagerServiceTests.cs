@@ -12,7 +12,6 @@ namespace Prm.Api.Tests.Services;
 public class ManagerServiceTests
 {
     private readonly Mock<IUserRepository> _userRepository = new();
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
     private readonly Mock<IAllocationRepository> _allocationRepository = new();
 
     private const int ManagerUserId = 10;
@@ -36,20 +35,20 @@ public class ManagerServiceTests
     public async Task GetResourceDashboard_WhenUtilizationZero_ReturnsBenchEmployee()
     {
         SetupValidManager();
-        var employee = ApiTestData.CreateEmployee(id: 1, status: EmployeeConstants.StatusBench);
-        _employeeRepository
-            .Setup(x => x.GetResourcePoolEmployees(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Employee> { employee });
-        SetupUtilization(employee.Id, 0);
+        var user = ApiTestData.CreateEmployeeUser(id: 1, status: EmployeeConstants.StatusBench);
+        _userRepository
+            .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
+        SetupUtilization(user.Id, 0);
 
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
 
         Assert.Single(result.BenchEmployees);
         Assert.Empty(result.ActiveEmployees);
-        Assert.Equal(employee.Id, result.BenchEmployees[0].Id);
-        Assert.Equal(employee.User.FullName, result.BenchEmployees[0].Name);
-        Assert.Equal(employee.Department, result.BenchEmployees[0].Department);
+        Assert.Equal(user.Id, result.BenchEmployees[0].Id);
+        Assert.Equal(user.FullName, result.BenchEmployees[0].Name);
+        Assert.Equal(user.Department, result.BenchEmployees[0].Department);
         Assert.Equal(1, result.Summary.BenchCount);
         Assert.Equal(0, result.Summary.PartialCount);
     }
@@ -58,11 +57,11 @@ public class ManagerServiceTests
     public async Task GetResourceDashboard_WhenPartialUtilization_ReturnsActiveEmployeeAndPartialCount()
     {
         SetupValidManager();
-        var employee = ApiTestData.CreateEmployee(id: 2, userId: 2, status: EmployeeConstants.StatusAllocated);
-        _employeeRepository
-            .Setup(x => x.GetResourcePoolEmployees(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Employee> { employee });
-        SetupUtilization(employee.Id, 50);
+        var user = ApiTestData.CreateEmployeeUser(id: 2, status: EmployeeConstants.StatusAllocated);
+        _userRepository
+            .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
+        SetupUtilization(user.Id, 50);
 
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
@@ -80,17 +79,17 @@ public class ManagerServiceTests
     {
         SetupValidManager();
 
-        var benchEmployee = ApiTestData.CreateEmployee(id: 1, status: EmployeeConstants.StatusBench);
-        var activeEmployee = ApiTestData.CreateEmployee(id: 2, userId: 2, status: EmployeeConstants.StatusAllocated);
-        var fullEmployee = ApiTestData.CreateEmployee(id: 3, userId: 3, status: EmployeeConstants.StatusAllocated);
+        var benchUser = ApiTestData.CreateEmployeeUser(id: 1, status: EmployeeConstants.StatusBench);
+        var activeUser = ApiTestData.CreateEmployeeUser(id: 2, status: EmployeeConstants.StatusAllocated);
+        var fullUser = ApiTestData.CreateEmployeeUser(id: 3, status: EmployeeConstants.StatusAllocated);
 
-        _employeeRepository
-            .Setup(x => x.GetResourcePoolEmployees(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Employee> { benchEmployee, activeEmployee, fullEmployee });
+        _userRepository
+            .Setup(x => x.GetResourcePoolUsers(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { benchUser, activeUser, fullUser });
 
-        SetupUtilization(benchEmployee.Id, 0);
-        SetupUtilization(activeEmployee.Id, 50);
-        SetupUtilization(fullEmployee.Id, 100);
+        SetupUtilization(benchUser.Id, 0);
+        SetupUtilization(activeUser.Id, 50);
+        SetupUtilization(fullUser.Id, 100);
 
         var sut = CreateSut();
         var result = await sut.GetResourceDashboard(ManagerUserId);
@@ -106,14 +105,14 @@ public class ManagerServiceTests
     {
         _userRepository
             .Setup(x => x.GetActiveManagerById(ManagerUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(ApiTestData.CreateUser(id: ManagerUserId, roleId: (int)RoleNameEnum.Manager));
+            .ReturnsAsync(ApiTestData.CreateManager());
     }
 
-    private void SetupUtilization(int employeeId, int utilization)
+    private void SetupUtilization(int userId, int utilization)
     {
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.Is<EmployeeAllocationPeriodQuery>(query => query.EmployeeId == employeeId),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.Is<UserAllocationPeriodQuery>(query => query.UserId == userId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(utilization);
     }
@@ -121,6 +120,5 @@ public class ManagerServiceTests
     private ManagerService CreateSut() =>
         new(
             _userRepository.Object,
-            _employeeRepository.Object,
             _allocationRepository.Object);
 }

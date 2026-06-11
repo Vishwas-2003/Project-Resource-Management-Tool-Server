@@ -30,19 +30,19 @@ public partial class TimesheetService
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetTeamEmployeeOrThrow(managerUserId, employeeId, cancellationToken);
+        var user = await GetTeamEmployeeOrThrow(managerUserId, employeeId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
-        var timesheet = await _timesheetRepository.GetByEmployeeAndWeek(
-            employee.Id,
+        var timesheet = await _timesheetRepository.GetByUserAndWeek(
+            user.Id,
             normalizedWeekStart,
             cancellationToken);
 
         if (timesheet is null)
         {
-            return await BuildMissedEmployeeTimesheetDetail(employee, normalizedWeekStart, cancellationToken);
+            return await BuildMissedEmployeeTimesheetDetail(user, normalizedWeekStart, cancellationToken);
         }
 
-        return MapSubmittedEmployeeTimesheetDetail(employee, normalizedWeekStart, timesheet);
+        return MapSubmittedEmployeeTimesheetDetail(user, normalizedWeekStart, timesheet);
     }
 
     private async Task<List<TeamTimesheetRow>> BuildSubmittedTeamRows(
@@ -57,8 +57,8 @@ public partial class TimesheetService
 
         return submittedRows.Select(x => new TeamTimesheetRow
         {
-            EmployeeId = x.EmployeeId,
-            EmployeeName = x.EmployeeName,
+            EmployeeId = x.UserId,
+            EmployeeName = x.UserName,
             ProjectName = x.ProjectName,
             HoursWorked = x.Hours,
             Status = x.Status,
@@ -76,18 +76,18 @@ public partial class TimesheetService
             .Select(x => x.EmployeeId)
             .ToHashSet();
 
-        var teamEmployees = await _employeeRepository.GetEmployeesByManagerUserId(managerUserId, cancellationToken);
-        foreach (var employee in teamEmployees)
+        var teamUsers = await _userRepository.GetEmployeeUsersByManagerUserId(managerUserId, cancellationToken);
+        foreach (var user in teamUsers)
         {
-            if (submittedEmployeeIds.Contains(employee.Id))
+            if (submittedEmployeeIds.Contains(user.Id))
             {
                 continue;
             }
 
-            var allocations = await _allocationRepository.GetOverlappingForEmployee(
-                new EmployeeAllocationPeriodQuery
+            var allocations = await _allocationRepository.GetOverlappingForUser(
+                new UserAllocationPeriodQuery
                 {
-                    EmployeeId = employee.Id,
+                    UserId = user.Id,
                     FromDate = normalizedWeekStart,
                     ToDate = weekEnd,
                 },
@@ -100,8 +100,8 @@ public partial class TimesheetService
 
             rows.Add(new TeamTimesheetRow
             {
-                EmployeeId = employee.Id,
-                EmployeeName = employee.User.FullName,
+                EmployeeId = user.Id,
+                EmployeeName = user.FullName,
                 ProjectName = allocations[0].Project.Name,
                 HoursWorked = 0,
                 Status = TimesheetConstants.StatusMissed,
@@ -120,30 +120,31 @@ public partial class TimesheetService
             })
             .ToList();
 
-    private async Task<Employee> GetTeamEmployeeOrThrow(
+    private async Task<User> GetTeamEmployeeOrThrow(
         int managerUserId,
-        int employeeId,
+        int userId,
         CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeDetailById(employeeId, cancellationToken);
-        if (employee is null || employee.ManagerUserId != managerUserId)
+        var teamUsers = await _userRepository.GetEmployeeUsersByManagerUserId(managerUserId, cancellationToken);
+        var user = teamUsers.FirstOrDefault(x => x.Id == userId);
+        if (user is null)
         {
             throw new UnauthorizedAccessException(AppConstants.Timesheets.EmployeeNotOnTeam);
         }
 
-        return employee;
+        return user;
     }
 
     private async Task<EmployeeTimesheetDetailResponse> BuildMissedEmployeeTimesheetDetail(
-        Employee employee,
+        User user,
         DateOnly normalizedWeekStart,
         CancellationToken cancellationToken)
     {
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
-        var allocations = await _allocationRepository.GetOverlappingForEmployee(
-            new EmployeeAllocationPeriodQuery
+        var allocations = await _allocationRepository.GetOverlappingForUser(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employee.Id,
+                UserId = user.Id,
                 FromDate = normalizedWeekStart,
                 ToDate = weekEnd,
             },
@@ -156,8 +157,8 @@ public partial class TimesheetService
 
         return new EmployeeTimesheetDetailResponse
         {
-            EmployeeId = employee.Id,
-            EmployeeName = employee.User.FullName,
+            EmployeeId = user.Id,
+            EmployeeName = user.FullName,
             WeekStart = normalizedWeekStart,
             Status = TimesheetConstants.StatusMissed,
             TotalHours = 0,
@@ -166,13 +167,13 @@ public partial class TimesheetService
     }
 
     private static EmployeeTimesheetDetailResponse MapSubmittedEmployeeTimesheetDetail(
-        Employee employee,
+        User user,
         DateOnly normalizedWeekStart,
         Timesheet timesheet) =>
         new()
         {
-            EmployeeId = employee.Id,
-            EmployeeName = employee.User.FullName,
+            EmployeeId = user.Id,
+            EmployeeName = user.FullName,
             WeekStart = normalizedWeekStart,
             Status = timesheet.Status,
             TotalHours = timesheet.TotalHours,

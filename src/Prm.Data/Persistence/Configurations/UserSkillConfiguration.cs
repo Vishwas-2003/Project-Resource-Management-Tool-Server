@@ -4,18 +4,18 @@ using Prm.Data.Entities;
 
 namespace Prm.Data.Persistence.Configurations;
 
-public class EmployeeSkillConfiguration : IEntityTypeConfiguration<EmployeeSkill>
+public class UserSkillConfiguration : IEntityTypeConfiguration<UserSkill>
 {
-    public void Configure(EntityTypeBuilder<EmployeeSkill> builder)
+    public void Configure(EntityTypeBuilder<UserSkill> builder)
     {
-        builder.HasKey(x => new { x.EmployeeId, x.SkillId });
+        builder.HasKey(x => new { x.UserId, x.SkillId });
         builder.Property(x => x.Proficiency).HasMaxLength(50).IsRequired();
-        builder.HasOne(x => x.Employee)
-            .WithMany(x => x.EmployeeSkills)
-            .HasForeignKey(x => x.EmployeeId)
+        builder.HasOne(x => x.User)
+            .WithMany(x => x.UserSkills)
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.Skill)
-            .WithMany(x => x.EmployeeSkills)
+            .WithMany(x => x.UserSkills)
             .HasForeignKey(x => x.SkillId)
             .OnDelete(DeleteBehavior.Restrict);
     }

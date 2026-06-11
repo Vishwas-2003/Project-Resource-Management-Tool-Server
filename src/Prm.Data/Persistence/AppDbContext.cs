@@ -23,9 +23,11 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<ResourceManagerHistory> ResourceManagerHistories => Set<ResourceManagerHistory>();
+    public DbSet<ResourceStatusType> ResourceStatusTypes => Set<ResourceStatusType>();
+    public DbSet<ResourceStatusHistory> ResourceStatusHistories => Set<ResourceStatusHistory>();
     public DbSet<Skill> Skills => Set<Skill>();
-    public DbSet<EmployeeSkill> EmployeeSkills => Set<EmployeeSkill>();
+    public DbSet<UserSkill> UserSkills => Set<UserSkill>();
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<Allocation> Allocations => Set<Allocation>();

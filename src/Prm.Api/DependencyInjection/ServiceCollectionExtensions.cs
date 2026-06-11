@@ -19,9 +19,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection RegisterRepositories(this IServiceCollection services)
     {
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IEmployeeRepository, EmployeeRepository>();
         services.AddScoped<ISkillRepository, SkillRepository>();
-        services.AddScoped<IEmployeeSkillRepository, EmployeeSkillRepository>();
+        services.AddScoped<IUserSkillRepository, UserSkillRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();

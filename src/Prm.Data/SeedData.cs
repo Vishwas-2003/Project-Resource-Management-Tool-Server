@@ -19,8 +19,14 @@ public static class SeedData
     [
         new() { Id = (int)ConfigurationOptionEnum.Provider, ConfigurationType = nameof(ConfigurationOptionEnum.Provider), Value = string.Empty, CreatedAtUtc = SeedCreatedAtUtc },
         new() { Id = (int)ConfigurationOptionEnum.ApiKey, ConfigurationType = nameof(ConfigurationOptionEnum.ApiKey), Value = string.Empty, CreatedAtUtc = SeedCreatedAtUtc },
-        new() { Id = (int)ConfigurationOptionEnum.SchedulerInterval, ConfigurationType = nameof(ConfigurationOptionEnum.SchedulerInterval), Value = string.Empty, CreatedAtUtc = SeedCreatedAtUtc },
-        new() { Id = (int)ConfigurationOptionEnum.MaxWeeklyHours, ConfigurationType = nameof(ConfigurationOptionEnum.MaxWeeklyHours), Value = string.Empty, CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)ConfigurationOptionEnum.SchedulerInterval, ConfigurationType = nameof(ConfigurationOptionEnum.SchedulerInterval), Value = AppConstants.SystemConfiguration.DefaultSchedulerIntervalMinutes.ToString(), CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)ConfigurationOptionEnum.MaxWeeklyHours, ConfigurationType = nameof(ConfigurationOptionEnum.MaxWeeklyHours), Value = AppConstants.SystemConfiguration.DefaultMaxWeeklyHours.ToString(), CreatedAtUtc = SeedCreatedAtUtc },
+    ];
+
+    public static readonly ResourceStatusType[] ResourceStatusTypes =
+    [
+        new() { Id = (int)ResourceStatusTypeEnum.Bench, Name = EmployeeConstants.StatusBench, CreatedAtUtc = SeedCreatedAtUtc },
+        new() { Id = (int)ResourceStatusTypeEnum.Allocated, Name = EmployeeConstants.StatusAllocated, CreatedAtUtc = SeedCreatedAtUtc },
     ];
 
     public static readonly ActivityTag[] ActivityTags =

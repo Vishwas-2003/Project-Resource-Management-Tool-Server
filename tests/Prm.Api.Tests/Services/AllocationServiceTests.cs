@@ -13,7 +13,7 @@ namespace Prm.Api.Tests.Services;
 public class AllocationServiceTests
 {
     private readonly Mock<IAllocationRepository> _allocationRepository = new();
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IProjectRepository> _projectRepository = new();
 
     private static readonly DateOnly From = new(2026, 3, 1);
@@ -26,7 +26,7 @@ public class AllocationServiceTests
         var allocations = new List<Allocation>
         {
             ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, employeeId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -46,7 +46,7 @@ public class AllocationServiceTests
         var allocations = new List<Allocation>
         {
             ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, employeeId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -66,7 +66,7 @@ public class AllocationServiceTests
         var allocations = new List<Allocation>
         {
             ApiTestData.CreateAllocation(1, employeeName: "Jane Doe", projectName: "Alpha"),
-            ApiTestData.CreateAllocation(2, employeeId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: 2, employeeName: "John Smith", projectName: "Beta"),
         };
 
         _allocationRepository
@@ -171,9 +171,9 @@ public class AllocationServiceTests
     public async Task Create_WhenEmployeeNotEligible_ThrowsKeyNotFoundException()
     {
         SetupValidProject();
-        _employeeRepository
-            .Setup(x => x.GetEmployeeDetailById(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Employee?)null);
+        _userRepository
+            .Setup(x => x.GetEmployeeUserDetailById(1, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
 
         var sut = CreateSut();
 
@@ -209,8 +209,8 @@ public class AllocationServiceTests
         SetupValidEmployee();
         SetupNoOverlap();
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.IsAny<EmployeeAllocationPeriodQuery>(),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(60);
 
@@ -226,21 +226,21 @@ public class AllocationServiceTests
     public async Task Create_WhenSuccessful_UpdatesEmployeeStatus()
     {
         var project = ApiTestData.CreateProject();
-        var employee = ApiTestData.CreateEmployee(status: EmployeeConstants.StatusBench);
+        var employee = ApiTestData.CreateEmployeeUser(status: EmployeeConstants.StatusBench);
         Allocation? savedAllocation = null;
 
         _projectRepository
             .Setup(x => x.GetByIdWithManager(project.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(project);
-        _employeeRepository
-            .Setup(x => x.GetEmployeeDetailById(employee.Id, It.IsAny<CancellationToken>()))
+        _userRepository
+            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
         SetupNoOverlap();
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.IsAny<EmployeeAllocationPeriodQuery>(),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
                 It.IsAny<CancellationToken>()))
-            .Returns((EmployeeAllocationPeriodQuery query, CancellationToken _) =>
+            .Returns((UserAllocationPeriodQuery query, CancellationToken _) =>
             {
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var utilization = query.FromDate == today && query.ToDate == today ? 50 : 0;
@@ -257,10 +257,10 @@ public class AllocationServiceTests
         _allocationRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _employeeRepository
+        _userRepository
             .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
-        _employeeRepository
+        _userRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -270,13 +270,17 @@ public class AllocationServiceTests
             ManagerUserId);
 
         Assert.Equal(7, result.AllocationId);
-        Assert.Equal(employee.User.FullName, result.EmployeeName);
+        Assert.Equal(employee.FullName, result.EmployeeName);
         Assert.Equal(project.Name, result.ProjectName);
         Assert.NotNull(savedAllocation);
         Assert.Equal(50, savedAllocation!.UtilizationPercent);
-        Assert.Equal(EmployeeConstants.StatusAllocated, employee.Status);
-        _employeeRepository.Verify(x => x.Update(employee), Times.Once);
-        _employeeRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+        _userRepository.Verify(
+            x => x.SetCurrentResourceStatus(
+                employee.Id,
+                (int)ResourceStatusTypeEnum.Allocated,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _userRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -331,9 +335,9 @@ public class AllocationServiceTests
     public async Task End_WhenSuccessful_SetsEndDateToToday()
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var employee = ApiTestData.CreateEmployee();
+        var employee = ApiTestData.CreateEmployeeUser();
         var allocation = ApiTestData.CreateAllocation(toDate: today.AddMonths(1));
-        allocation.Employee = employee;
+        allocation.User = employee;
 
         _allocationRepository
             .Setup(x => x.GetByIdWithDetails(allocation.Id, It.IsAny<CancellationToken>()))
@@ -341,15 +345,15 @@ public class AllocationServiceTests
         _allocationRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _employeeRepository
+        _userRepository
             .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.IsAny<EmployeeAllocationPeriodQuery>(),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
-        _employeeRepository
+        _userRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -402,7 +406,7 @@ public class AllocationServiceTests
         var allocations = new List<Allocation>
         {
             ApiTestData.CreateAllocation(1, projectId: project.Id, projectName: project.Name),
-            ApiTestData.CreateAllocation(2, employeeId: 2, projectId: project.Id, projectName: project.Name),
+            ApiTestData.CreateAllocation(2, userId: 2, projectId: project.Id, projectName: project.Name),
         };
 
         _projectRepository
@@ -433,9 +437,9 @@ public class AllocationServiceTests
 
     private void SetupValidEmployee()
     {
-        var employee = ApiTestData.CreateEmployee(roleId: (int)RoleNameEnum.Employee);
-        _employeeRepository
-            .Setup(x => x.GetEmployeeDetailById(employee.Id, It.IsAny<CancellationToken>()))
+        var employee = ApiTestData.CreateEmployeeUser(roleId: (int)RoleNameEnum.Employee);
+        _userRepository
+            .Setup(x => x.GetEmployeeUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
     }
 
@@ -466,6 +470,6 @@ public class AllocationServiceTests
     private AllocationService CreateSut() =>
         new(
             _allocationRepository.Object,
-            _employeeRepository.Object,
+            _userRepository.Object,
             _projectRepository.Object);
 }

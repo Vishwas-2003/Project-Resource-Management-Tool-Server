@@ -1,8 +1,8 @@
 namespace Prm.Data.Repositories.Models;
 
-public sealed class EmployeePastAllocationsQuery
+public sealed class UserPastAllocationsQuery
 {
-    public int EmployeeId { get; init; }
+    public int UserId { get; init; }
     public DateOnly AsOfDate { get; init; }
     public int Limit { get; init; }
 }

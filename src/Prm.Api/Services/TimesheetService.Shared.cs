@@ -10,14 +10,14 @@ namespace Prm.Api.Services;
 public partial class TimesheetService
 {
     private Task<IReadOnlyList<Allocation>> GetAllocationsOverlappingWeek(
-        int employeeId,
+        int userId,
         DateOnly weekStart,
         DateOnly weekEnd,
         CancellationToken cancellationToken) =>
-        _allocationRepository.GetOverlappingForEmployee(
-            new EmployeeAllocationPeriodQuery
+        _allocationRepository.GetOverlappingForUser(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employeeId,
+                UserId = userId,
                 FromDate = weekStart,
                 ToDate = weekEnd,
             },
@@ -99,15 +99,15 @@ public partial class TimesheetService
         return tags;
     }
 
-    private async Task<Employee> GetEmployeeByUserIdOrThrow(int userId, CancellationToken cancellationToken)
+    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeByUserId(userId, cancellationToken);
-        if (employee is null)
+        var user = await _userRepository.GetById(userId, cancellationToken);
+        if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
             throw new KeyNotFoundException(AppConstants.Timesheets.EmployeeNotFound);
         }
 
-        return employee;
+        return user;
     }
 
     private async Task<int> GetMaxWeeklyHours(CancellationToken cancellationToken)

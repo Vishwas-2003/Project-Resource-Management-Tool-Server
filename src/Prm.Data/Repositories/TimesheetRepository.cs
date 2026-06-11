@@ -10,28 +10,28 @@ namespace Prm.Data.Repositories;
 public class TimesheetRepository(AppDbContext _dbContext)
     : CrudBaseRepository<Timesheet, int>(_dbContext), ITimesheetRepository
 {
-    public async Task<IReadOnlyList<string>> GetRecentActivityTagNamesForEmployee(
-        int employeeId,
+    public async Task<IReadOnlyList<string>> GetRecentActivityTagNamesForUser(
+        int userId,
         DateOnly sinceDate,
         CancellationToken cancellationToken = default) =>
         await DbContext.TimesheetActivityTags
             .Where(x =>
-                x.TimesheetEntry.Timesheet.EmployeeId == employeeId
+                x.TimesheetEntry.Timesheet.UserId == userId
                 && x.TimesheetEntry.Timesheet.WeekStart >= sinceDate)
             .Select(x => x.ActivityTag.Name)
             .Distinct()
             .OrderBy(x => x)
             .ToListAsync(cancellationToken);
 
-    public async Task<int> GetHoursWorkedForEmployeeOnProjectInWeek(
-        int employeeId,
+    public async Task<int> GetHoursWorkedForUserOnProjectInWeek(
+        int userId,
         int projectId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
         var hours = await DbContext.TimesheetEntries
             .Where(x =>
-                x.Timesheet.EmployeeId == employeeId
+                x.Timesheet.UserId == userId
                 && x.ProjectId == projectId
                 && x.Timesheet.WeekStart == weekStart)
             .SumAsync(x => (int?)x.HoursWorked, cancellationToken);
@@ -79,22 +79,22 @@ public class TimesheetRepository(AppDbContext _dbContext)
         return tag;
     }
 
-    public Task<bool> ExistsForEmployeeWeek(
-        int employeeId,
+    public Task<bool> ExistsForUserWeek(
+        int userId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default) =>
-        DbSet.AnyAsync(x => x.EmployeeId == employeeId && x.WeekStart == weekStart, cancellationToken);
+        DbSet.AnyAsync(x => x.UserId == userId && x.WeekStart == weekStart, cancellationToken);
 
-    public async Task<IReadOnlyList<Timesheet>> GetByEmployeeId(
-        int employeeId,
+    public async Task<IReadOnlyList<Timesheet>> GetByUserId(
+        int userId,
         CancellationToken cancellationToken = default) =>
         await DbSet
-            .Where(x => x.EmployeeId == employeeId)
+            .Where(x => x.UserId == userId)
             .OrderByDescending(x => x.WeekStart)
             .ToListAsync(cancellationToken);
 
-    public Task<Timesheet?> GetByEmployeeAndWeek(
-        int employeeId,
+    public Task<Timesheet?> GetByUserAndWeek(
+        int userId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default) =>
         DbSet
@@ -103,7 +103,7 @@ public class TimesheetRepository(AppDbContext _dbContext)
             .Include(x => x.Entries)
                 .ThenInclude(x => x.ActivityTags)
                     .ThenInclude(x => x.ActivityTag)
-            .FirstOrDefaultAsync(x => x.EmployeeId == employeeId && x.WeekStart == weekStart, cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.WeekStart == weekStart, cancellationToken);
 
     public async Task<IReadOnlyList<TeamTimesheetEntryRow>> GetEntriesForTeamByManagerAndWeek(
         int managerUserId,
@@ -112,18 +112,20 @@ public class TimesheetRepository(AppDbContext _dbContext)
         await DbContext.TimesheetEntries
             .Where(x =>
                 x.Timesheet.WeekStart == weekStart
-                && x.Timesheet.Employee.ManagerUserId == managerUserId
-                && x.Timesheet.Employee.User.RoleId == (int)RoleNameEnum.Employee
-                && x.Timesheet.Employee.User.IsActive)
+                && x.Timesheet.User.ManagerHistories.Any(history =>
+                    history.ManagerUserId == managerUserId
+                    && history.EffectiveToUtc == null)
+                && x.Timesheet.User.RoleId == (int)RoleNameEnum.Employee
+                && x.Timesheet.User.IsActive)
             .Select(x => new TeamTimesheetEntryRow
             {
-                EmployeeId = x.Timesheet.EmployeeId,
-                EmployeeName = x.Timesheet.Employee.User.FullName,
+                UserId = x.Timesheet.UserId,
+                UserName = x.Timesheet.User.FullName,
                 ProjectName = x.Project.Name,
                 Hours = x.HoursWorked,
                 Status = x.Timesheet.Status,
             })
-            .OrderBy(x => x.EmployeeName)
+            .OrderBy(x => x.UserName)
             .ThenBy(x => x.ProjectName)
             .ToListAsync(cancellationToken);
 }

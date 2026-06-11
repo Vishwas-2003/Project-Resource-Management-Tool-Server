@@ -10,10 +10,10 @@ public class TimesheetConfiguration : IEntityTypeConfiguration<Timesheet>
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Status).HasMaxLength(50).IsRequired();
-        builder.HasIndex(x => new { x.EmployeeId, x.WeekStart }).IsUnique();
-        builder.HasOne(x => x.Employee)
+        builder.HasIndex(x => new { x.UserId, x.WeekStart }).IsUnique();
+        builder.HasOne(x => x.User)
             .WithMany(x => x.Timesheets)
-            .HasForeignKey(x => x.EmployeeId)
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -42,7 +42,9 @@ public class UserService(
             RoleId = request.RoleId,
             PasswordHash = string.Empty,
             IsActive = true,
-            ForcePasswordChange = true,
+            Department = string.Empty,
+            Designation = string.Empty,
+            PasswordExpiryTime = DateTime.UtcNow,
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.TemporaryPassword);
@@ -91,7 +93,7 @@ public class UserService(
         ValidatePasswordStrength(request.TemporaryPassword);
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.TemporaryPassword);
-        user.ForcePasswordChange = true;
+        user.PasswordExpiryTime = DateTime.UtcNow;
 
         await _refreshTokenRepository.RemoveByUserId(user.Id, cancellationToken);
 

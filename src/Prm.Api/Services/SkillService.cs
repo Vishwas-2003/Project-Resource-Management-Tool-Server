@@ -8,17 +8,17 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class SkillService(
-    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
     ISkillRepository _skillRepository,
-    IEmployeeSkillRepository _employeeSkillRepository,
+    IUserSkillRepository _userSkillRepository,
     IMapper _mapper) : ISkillService
 {
     public async Task<EmployeeSkillsResult> GetForEmployee(int employeeId, CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeOrThrow(employeeId, cancellationToken);
-        var employeeSkills = await _employeeSkillRepository.GetByEmployeeId(employeeId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(employeeId, cancellationToken);
+        var userSkills = await _userSkillRepository.GetByUserId(employeeId, cancellationToken);
 
-        var skills = _mapper.Map<List<EmployeeSkillItem>>(employeeSkills);
+        var skills = _mapper.Map<List<EmployeeSkillItem>>(userSkills);
         for (var rowIndex = 0; rowIndex < skills.Count; rowIndex++)
         {
             skills[rowIndex].RowNumber = rowIndex + 1;
@@ -26,8 +26,8 @@ public class SkillService(
 
         return new EmployeeSkillsResult
         {
-            EmployeeId = employee.Id,
-            FullName = employee.User.FullName,
+            EmployeeId = user.Id,
+            FullName = user.FullName,
             Skills = skills,
         };
     }
@@ -37,25 +37,24 @@ public class SkillService(
         AddEmployeeSkillRequest request,
         CancellationToken cancellationToken = default)
     {
-        await GetEmployeeOrThrow(employeeId, cancellationToken);
+        await GetEmployeeUserOrThrow(employeeId, cancellationToken);
         ValidateCategory(request.Category);
         var proficiency = NormalizeProficiency(request.Proficiency);
 
         var skill = await GetOrCreateSkill(request, cancellationToken);
-        var key = new EmployeeSkillKey(employeeId, skill.Id);
 
-        if (await _employeeSkillRepository.Exists(key, cancellationToken))
+        if (await _userSkillRepository.Exists(employeeId, skill.Id, cancellationToken))
         {
             throw new InvalidOperationException(AppConstants.Skills.SkillAlreadyAssigned);
         }
 
-        var employeeSkill = _mapper.Map<EmployeeSkill>(request);
-        employeeSkill.EmployeeId = employeeId;
-        employeeSkill.SkillId = skill.Id;
-        employeeSkill.Proficiency = proficiency;
+        var userSkill = _mapper.Map<UserSkill>(request);
+        userSkill.UserId = employeeId;
+        userSkill.SkillId = skill.Id;
+        userSkill.Proficiency = proficiency;
 
-        await _employeeSkillRepository.Add(employeeSkill, cancellationToken);
-        await _employeeSkillRepository.SaveChanges(cancellationToken);
+        await _userSkillRepository.Add(userSkill, cancellationToken);
+        await _userSkillRepository.SaveChanges(cancellationToken);
 
         return skill.Id;
     }
@@ -67,33 +66,33 @@ public class SkillService(
         CancellationToken cancellationToken = default)
     {
         request.Proficiency = NormalizeProficiency(request.Proficiency);
-        var key = new EmployeeSkillKey(employeeId, skillId);
-        var employeeSkill = await _employeeSkillRepository.GetById(key, cancellationToken);
+        var key = new UserSkillKey(employeeId, skillId);
+        var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
-        if (employeeSkill is null)
+        if (userSkill is null)
         {
             throw new KeyNotFoundException(AppConstants.Skills.EmployeeSkillNotFound);
         }
 
-        _mapper.Map(request, employeeSkill);
-        _employeeSkillRepository.Update(employeeSkill);
-        await _employeeSkillRepository.SaveChanges(cancellationToken);
+        _mapper.Map(request, userSkill);
+        _userSkillRepository.Update(userSkill);
+        await _userSkillRepository.SaveChanges(cancellationToken);
 
         return true;
     }
 
     public async Task Remove(int employeeId, int skillId, CancellationToken cancellationToken = default)
     {
-        var key = new EmployeeSkillKey(employeeId, skillId);
-        var employeeSkill = await _employeeSkillRepository.GetById(key, cancellationToken);
+        var key = new UserSkillKey(employeeId, skillId);
+        var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
-        if (employeeSkill is null)
+        if (userSkill is null)
         {
             throw new KeyNotFoundException(AppConstants.Skills.EmployeeSkillNotFound);
         }
 
-        _employeeSkillRepository.Remove(employeeSkill);
-        await _employeeSkillRepository.SaveChanges(cancellationToken);
+        _userSkillRepository.Remove(userSkill);
+        await _userSkillRepository.SaveChanges(cancellationToken);
     }
 
     private async Task<Skill> GetOrCreateSkill(AddEmployeeSkillRequest request, CancellationToken cancellationToken)
@@ -118,15 +117,15 @@ public class SkillService(
         return skill;
     }
 
-    private async Task<Employee> GetEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)
+    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetById(employeeId, cancellationToken);
-        if (employee is null)
+        var user = await _userRepository.GetById(userId, cancellationToken);
+        if (user is null)
         {
             throw new KeyNotFoundException(AppConstants.Employees.NotFound);
         }
 
-        return employee;
+        return user;
     }
 
     private static void ValidateCategory(string category)

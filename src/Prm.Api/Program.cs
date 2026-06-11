@@ -27,6 +27,7 @@ using (var scope = app.Services.CreateScope())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseMiddleware<PasswordChangeRequiredMiddleware>();
 app.UseAuthorization();
 
 var hangfireOptions = app.Services.GetRequiredService<IOptions<HangfireOptions>>().Value;

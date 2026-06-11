@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Prm.Common.Enums;
+using Prm.Common.Models.Employees;
 using Prm.Data.Entities;
 using Prm.Data.Persistence;
 using Prm.Data.Repositories.Interfaces;
@@ -20,12 +21,6 @@ public class UserRepository(AppDbContext _dbContext)
     public Task<User?> GetByIdWithRole(int userId, CancellationToken cancellationToken = default) =>
         DbSet
             .Include(x => x.Role)
-            .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
-
-    public Task<User?> GetByIdWithRoleAndEmployee(int userId, CancellationToken cancellationToken = default) =>
-        DbSet
-            .Include(x => x.Role)
-            .Include(x => x.Employee)
             .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
 
     public Task<User?> GetActiveManagerById(int userId, CancellationToken cancellationToken = default) =>
@@ -52,14 +47,123 @@ public class UserRepository(AppDbContext _dbContext)
     public async Task<bool> IsLastActiveAdmin(User user, CancellationToken cancellationToken)
     {
         var admins = await DbSet
-            .Where(user => user.IsActive && user.RoleId == (int)RoleNameEnum.Admin)
-            .ToListAsync();
-        
-        if (admins.Count == 1 && admins.Any(admin => admin.Id == user.Id))
+            .Where(activeUser => activeUser.IsActive && activeUser.RoleId == (int)RoleNameEnum.Admin)
+            .ToListAsync(cancellationToken);
+
+        return admins.Count == 1 && admins.Any(admin => admin.Id == user.Id);
+    }
+
+    public async Task<IReadOnlyList<User>> GetEmployeeUsers(
+        EmployeeFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        var query = DbSet
+            .Include(x => x.ResourceStatusHistories)
+                .ThenInclude(x => x.ResourceStatusType)
+            .Where(x => x.RoleId == (int)RoleNameEnum.Employee)
+            .AsQueryable();
+
+        if (!filter.IncludeInactive)
         {
-            return true;
+            query = query.Where(x => x.IsActive);
         }
 
-        return false;
+        if (!string.IsNullOrWhiteSpace(filter.Status))
+        {
+            var normalizedStatus = filter.Status.Trim().ToUpperInvariant();
+            query = query.Where(x => x.ResourceStatusHistories.Any(history =>
+                history.EffectiveToUtc == null
+                && history.ResourceStatusType.Name == normalizedStatus));
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.Department))
+        {
+            var normalizedDepartment = filter.Department.Trim();
+            query = query.Where(x => x.Department == normalizedDepartment);
+        }
+
+        return await query
+            .OrderBy(x => x.Id)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<User>> GetResourcePoolUsers(CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.UserSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+            .Where(x => x.RoleId == (int)RoleNameEnum.Employee && x.IsActive)
+            .OrderBy(x => x.FullName)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<User>> GetEmployeeUsersByManagerUserId(
+        int managerUserId,
+        CancellationToken cancellationToken = default) =>
+        await DbSet
+            .Include(x => x.UserSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+            .Where(x =>
+                x.ManagerHistories.Any(history =>
+                    history.ManagerUserId == managerUserId
+                    && history.EffectiveToUtc == null)
+                && x.RoleId == (int)RoleNameEnum.Employee
+                && x.IsActive)
+            .OrderBy(x => x.FullName)
+            .ToListAsync(cancellationToken);
+
+    public Task<User?> GetEmployeeUserDetailById(int userId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(x => x.UserSkills)
+                .ThenInclude(x => x.Skill)
+            .Include(x => x.Allocations)
+                .ThenInclude(x => x.Project)
+            .FirstOrDefaultAsync(x => x.Id == userId && x.IsActive, cancellationToken);
+
+    public async Task SetManager(int userId, int managerUserId, CancellationToken cancellationToken = default)
+    {
+        var utcNow = DateTime.UtcNow;
+        var activeHistories = await _dbContext.ResourceManagerHistories
+            .Where(history => history.UserId == userId && history.EffectiveToUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var history in activeHistories)
+        {
+            history.EffectiveToUtc = utcNow;
+        }
+
+        await _dbContext.ResourceManagerHistories.AddAsync(
+            new ResourceManagerHistory
+            {
+                UserId = userId,
+                ManagerUserId = managerUserId,
+                EffectiveFromUtc = utcNow,
+            },
+            cancellationToken);
+    }
+
+    public async Task SetCurrentResourceStatus(
+        int userId,
+        int resourceStatusTypeId,
+        CancellationToken cancellationToken = default)
+    {
+        var utcNow = DateTime.UtcNow;
+        var activeHistories = await _dbContext.ResourceStatusHistories
+            .Where(history => history.UserId == userId && history.EffectiveToUtc == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var history in activeHistories)
+        {
+            history.EffectiveToUtc = utcNow;
+        }
+
+        await _dbContext.ResourceStatusHistories.AddAsync(
+            new ResourceStatusHistory
+            {
+                UserId = userId,
+                ResourceStatusTypeId = resourceStatusTypeId,
+                EffectiveFromUtc = utcNow,
+            },
+            cancellationToken);
     }
 }

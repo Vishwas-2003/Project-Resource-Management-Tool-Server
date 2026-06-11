@@ -17,26 +17,26 @@ public partial class TimesheetService
         SubmitTimesheetRequest request,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
-        var context = await PrepareSubmitContext(employee.Id, request, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var context = await PrepareSubmitContext(user.Id, request, cancellationToken);
         var (entries, totalHours) = await BuildSubmitEntries(request.Entries, context, cancellationToken);
         ValidateSubmitTotalHours(totalHours, context.MaxWeeklyHours);
 
-        return await SaveSubmittedTimesheet(employee.Id, context.WeekStart, totalHours, entries, cancellationToken);
+        return await SaveSubmittedTimesheet(user.Id, context.WeekStart, totalHours, entries, cancellationToken);
     }
 
     private async Task<SubmitContext> PrepareSubmitContext(
-        int employeeId,
+        int userId,
         SubmitTimesheetRequest request,
         CancellationToken cancellationToken)
     {
         var weekStart = TimesheetWeekHelper.GetWeekStart(request.WeekStart);
         ValidateWeekStartIsMonday(request.WeekStart, weekStart);
-        await ValidateSubmitWeekAndRequest(employeeId, weekStart, request, cancellationToken);
+        await ValidateSubmitWeekAndRequest(userId, weekStart, request, cancellationToken);
 
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(weekStart);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
-        var allocations = await GetAllocationsOverlappingWeek(employeeId, weekStart, weekEnd, cancellationToken);
+        var allocations = await GetAllocationsOverlappingWeek(userId, weekStart, weekEnd, cancellationToken);
 
         return new SubmitContext(
             weekStart,
@@ -46,7 +46,7 @@ public partial class TimesheetService
     }
 
     private async Task ValidateSubmitWeekAndRequest(
-        int employeeId,
+        int userId,
         DateOnly weekStart,
         SubmitTimesheetRequest request,
         CancellationToken cancellationToken)
@@ -57,7 +57,7 @@ public partial class TimesheetService
             throw new ArgumentException(AppConstants.Timesheets.FutureWeekNotAllowed);
         }
 
-        if (await _timesheetRepository.ExistsForEmployeeWeek(employeeId, weekStart, cancellationToken))
+        if (await _timesheetRepository.ExistsForUserWeek(userId, weekStart, cancellationToken))
         {
             throw new InvalidOperationException(AppConstants.Timesheets.AlreadySubmitted);
         }
@@ -146,7 +146,7 @@ public partial class TimesheetService
     }
 
     private async Task<SubmitTimesheetResponse> SaveSubmittedTimesheet(
-        int employeeId,
+        int userId,
         DateOnly weekStart,
         int totalHours,
         List<TimesheetEntry> entries,
@@ -154,7 +154,7 @@ public partial class TimesheetService
     {
         var timesheet = new Timesheet
         {
-            EmployeeId = employeeId,
+            UserId = userId,
             WeekStart = weekStart,
             TotalHours = totalHours,
             Status = TimesheetConstants.StatusSubmitted,

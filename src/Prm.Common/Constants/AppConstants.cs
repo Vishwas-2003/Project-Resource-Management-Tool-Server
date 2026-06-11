@@ -12,6 +12,7 @@ public static class AppConstants
     public static class ErrorCodes
     {
         public const string SessionExpired = "SESSION_EXPIRED";
+        public const string PasswordChangeRequired = "PASSWORD_CHANGE_REQUIRED";
         public const string Unauthorized = "UNAUTHORIZED";
         public const string BadRequest = "BAD_REQUEST";
         public const string NotFound = "NOT_FOUND";
@@ -37,6 +38,7 @@ public static class AppConstants
         public const string RefreshTokenInvalidOrExpired = "Refresh token is invalid or expired.";
         public const string UserNotAuthenticated = "You must be logged in to change your password.";
         public const string PasswordChangeNotRequired = "A password change is not required for this account.";
+        public const string PasswordChangeRequired = "You must change your password before continuing.";
         public const string PasswordsDoNotMatch = "New password and confirmation do not match.";
         public const string PasswordDoesNotMeetRequirements =
             "Password must be at least 8 characters and include one uppercase letter, one lowercase letter, one number, and one special character.";
@@ -116,6 +118,9 @@ public static class AppConstants
 
     public static class SystemConfiguration
     {
+        public const int DefaultSchedulerIntervalMinutes = 4;
+        public const int DefaultMaxWeeklyHours = 40;
+
         public const string NotFound = "System configuration not found.";
         public const string InvalidValue = "Invalid value.";
         public const string ValueUnchanged = "The value is the same as the current value.";

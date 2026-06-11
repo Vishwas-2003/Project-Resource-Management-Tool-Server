@@ -9,8 +9,8 @@ public partial class TimesheetService
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
-        var summaries = await BuildTimesheetHistorySummaries(employee.Id, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        var summaries = await BuildTimesheetHistorySummaries(user.Id, cancellationToken);
         return ToMyTimesheetsResponse(summaries);
     }
 
@@ -19,12 +19,12 @@ public partial class TimesheetService
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
-        return await GetTimesheetDetailForEmployee(employee.Id, weekStart, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
+        return await GetTimesheetDetailForUser(user.Id, weekStart, cancellationToken);
     }
 
     private async Task<Dictionary<DateOnly, TimesheetWeekSummary>> BuildTimesheetHistorySummaries(
-        int employeeId,
+        int userId,
         CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
@@ -33,10 +33,10 @@ public partial class TimesheetService
             lastCompletedWeekStart,
             TimesheetConstants.HistoryWeeksCount);
 
-        var summaries = await LoadSubmittedSummaries(employeeId, historyStart, cancellationToken);
+        var summaries = await LoadSubmittedSummaries(userId, historyStart, cancellationToken);
         await AppendMissedWeekSummaries(
             summaries,
-            employeeId,
+            userId,
             lastCompletedWeekStart,
             historyStart,
             cancellationToken);
@@ -45,11 +45,11 @@ public partial class TimesheetService
     }
 
     private async Task<Dictionary<DateOnly, TimesheetWeekSummary>> LoadSubmittedSummaries(
-        int employeeId,
+        int userId,
         DateOnly historyStart,
         CancellationToken cancellationToken)
     {
-        var submitted = await _timesheetRepository.GetByEmployeeId(employeeId, cancellationToken);
+        var submitted = await _timesheetRepository.GetByUserId(userId, cancellationToken);
         return submitted
             .Where(x => x.WeekStart >= historyStart)
             .Select(x => new TimesheetWeekSummary
@@ -63,7 +63,7 @@ public partial class TimesheetService
 
     private async Task AppendMissedWeekSummaries(
         Dictionary<DateOnly, TimesheetWeekSummary> summaries,
-        int employeeId,
+        int userId,
         DateOnly lastCompletedWeekStart,
         DateOnly historyStart,
         CancellationToken cancellationToken)
@@ -78,7 +78,7 @@ public partial class TimesheetService
             }
 
             var weekEnd = TimesheetWeekHelper.GetWeekEnd(weekStart);
-            var allocations = await GetAllocationsOverlappingWeek(employeeId, weekStart, weekEnd, cancellationToken);
+            var allocations = await GetAllocationsOverlappingWeek(userId, weekStart, weekEnd, cancellationToken);
             if (allocations.Count == 0)
             {
                 continue;
@@ -114,14 +114,14 @@ public partial class TimesheetService
         };
     }
 
-    private async Task<TimesheetWeekDetailResponse> GetTimesheetDetailForEmployee(
-        int employeeId,
+    private async Task<TimesheetWeekDetailResponse> GetTimesheetDetailForUser(
+        int userId,
         DateOnly weekStart,
         CancellationToken cancellationToken)
     {
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
-        var timesheet = await _timesheetRepository.GetByEmployeeAndWeek(
-            employeeId,
+        var timesheet = await _timesheetRepository.GetByUserAndWeek(
+            userId,
             normalizedWeekStart,
             cancellationToken);
 
@@ -136,16 +136,16 @@ public partial class TimesheetService
             };
         }
 
-        return await BuildMissedTimesheetWeekDetail(employeeId, normalizedWeekStart, cancellationToken);
+        return await BuildMissedTimesheetWeekDetail(userId, normalizedWeekStart, cancellationToken);
     }
 
     private async Task<TimesheetWeekDetailResponse> BuildMissedTimesheetWeekDetail(
-        int employeeId,
+        int userId,
         DateOnly normalizedWeekStart,
         CancellationToken cancellationToken)
     {
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
-        var allocations = await GetAllocationsOverlappingWeek(employeeId, normalizedWeekStart, weekEnd, cancellationToken);
+        var allocations = await GetAllocationsOverlappingWeek(userId, normalizedWeekStart, weekEnd, cancellationToken);
         if (allocations.Count == 0)
         {
             throw new KeyNotFoundException(AppConstants.Timesheets.NotFound);

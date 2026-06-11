@@ -85,8 +85,8 @@ public class ProjectHealthService(
             var expectedHours = TimesheetWeekHelper.ComputeExpectedHours(
                 allocation.UtilizationPercent,
                 maxWeeklyHours);
-            var actualHours = await _timesheetRepository.GetHoursWorkedForEmployeeOnProjectInWeek(
-                allocation.EmployeeId,
+            var actualHours = await _timesheetRepository.GetHoursWorkedForUserOnProjectInWeek(
+                allocation.UserId,
                 project.Id,
                 lastWeekStart,
                 cancellationToken);
@@ -97,7 +97,7 @@ public class ProjectHealthService(
                 {
                     Outcome = ManagerConstants.RiskFlagFail,
                     Message =
-                        $"{allocation.Employee.User.FullName} logged only {actualHours} hrs last week (expected {expectedHours} hrs)",
+                        $"{allocation.User.FullName} logged only {actualHours} hrs last week (expected {expectedHours} hrs)",
                 });
                 break;
             }

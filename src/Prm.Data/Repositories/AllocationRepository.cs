@@ -11,8 +11,7 @@ public class AllocationRepository(AppDbContext _dbContext)
 {
     public Task<Allocation?> GetByIdWithDetails(int allocationId, CancellationToken cancellationToken = default) =>
         DbSet
-            .Include(x => x.Employee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.User)
             .Include(x => x.Project)
                 .ThenInclude(x => x.ManagerUser)
             .FirstOrDefaultAsync(x => x.Id == allocationId, cancellationToken);
@@ -21,22 +20,21 @@ public class AllocationRepository(AppDbContext _dbContext)
         DateOnly asOfDate,
         CancellationToken cancellationToken = default) =>
         await DbSet
-            .Include(x => x.Employee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.User)
             .Include(x => x.Project)
             .Where(x => x.FromDate <= asOfDate && x.ToDate >= asOfDate)
-            .OrderBy(x => x.Employee.User.FullName)
+            .OrderBy(x => x.User.FullName)
             .ThenBy(x => x.Project.Name)
             .ThenBy(x => x.FromDate)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<Allocation>> GetActiveByEmployeeId(
-        int employeeId,
+    public async Task<IReadOnlyList<Allocation>> GetActiveByUserId(
+        int userId,
         DateOnly asOfDate,
         CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(x => x.Project)
-            .Where(x => x.EmployeeId == employeeId && x.FromDate <= asOfDate && x.ToDate >= asOfDate)
+            .Where(x => x.UserId == userId && x.FromDate <= asOfDate && x.ToDate >= asOfDate)
             .OrderBy(x => x.FromDate)
             .ToListAsync(cancellationToken);
 
@@ -45,29 +43,28 @@ public class AllocationRepository(AppDbContext _dbContext)
         DateOnly asOfDate,
         CancellationToken cancellationToken = default) =>
         await DbSet
-            .Include(x => x.Employee)
-                .ThenInclude(x => x.User)
+            .Include(x => x.User)
             .Where(x => x.ProjectId == projectId && x.FromDate <= asOfDate && x.ToDate >= asOfDate)
-            .OrderBy(x => x.Employee.User.FullName)
+            .OrderBy(x => x.User.FullName)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<Allocation>> GetPastByEmployeeId(
-        EmployeePastAllocationsQuery query,
+    public async Task<IReadOnlyList<Allocation>> GetPastByUserId(
+        UserPastAllocationsQuery query,
         CancellationToken cancellationToken = default) =>
         await DbSet
             .Include(x => x.Project)
-            .Where(x => x.EmployeeId == query.EmployeeId && x.ToDate < query.AsOfDate)
+            .Where(x => x.UserId == query.UserId && x.ToDate < query.AsOfDate)
             .OrderByDescending(x => x.ToDate)
             .ThenByDescending(x => x.FromDate)
             .Take(query.Limit)
             .ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<Allocation>> GetOverlappingForEmployee(
-        EmployeeAllocationPeriodQuery query,
+    public async Task<IReadOnlyList<Allocation>> GetOverlappingForUser(
+        UserAllocationPeriodQuery query,
         CancellationToken cancellationToken = default)
     {
         var dbQuery = DbSet.Where(x =>
-            x.EmployeeId == query.EmployeeId
+            x.UserId == query.UserId
             && x.FromDate <= query.ToDate
             && x.ToDate >= query.FromDate);
 
@@ -82,11 +79,11 @@ public class AllocationRepository(AppDbContext _dbContext)
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<int> SumUtilizationForEmployeeInPeriod(
-        EmployeeAllocationPeriodQuery query,
+    public async Task<int> SumUtilizationForUserInPeriod(
+        UserAllocationPeriodQuery query,
         CancellationToken cancellationToken = default)
     {
-        var allocations = await GetOverlappingForEmployee(query, cancellationToken);
+        var allocations = await GetOverlappingForUser(query, cancellationToken);
         return allocations.Sum(x => x.UtilizationPercent);
     }
 
@@ -95,7 +92,7 @@ public class AllocationRepository(AppDbContext _dbContext)
         CancellationToken cancellationToken = default)
     {
         var dbQuery = DbSet.Where(x =>
-            x.EmployeeId == query.EmployeeId
+            x.UserId == query.UserId
             && x.ProjectId == query.ProjectId
             && x.FromDate <= query.ToDate
             && x.ToDate >= query.FromDate);

@@ -7,5 +7,5 @@ public class AuthenticatedUser
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string RoleName { get; set; } = string.Empty;
-    public bool ForcePasswordChange { get; set; }
+    public DateTime? PasswordExpiryTime { get; set; }
 }

@@ -33,7 +33,9 @@ internal static class TestData
             Email = "admin@prm.local",
             PasswordHash = string.Empty,
             IsActive = isActive,
-            ForcePasswordChange = false,
+            Department = string.Empty,
+            Designation = string.Empty,
+            PasswordExpiryTime = null,
             Role = new Role { Id = 1, Name = "Admin", CreatedAtUtc = DateTime.UtcNow },
         };
 

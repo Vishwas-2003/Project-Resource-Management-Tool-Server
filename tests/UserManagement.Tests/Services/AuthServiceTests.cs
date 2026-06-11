@@ -19,7 +19,6 @@ namespace UserManagement.Tests.Services;
 public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _userRepository = new();
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository = new();
     private readonly Mock<IJwtTokenService> _jwtTokenService = new();
     private readonly Mock<ICurrentUserService> _currentUserService = new();
@@ -31,10 +30,6 @@ public class AuthServiceTests
     {
         var mapperConfig = new MapperConfiguration(cfg => cfg.AddProfile<AuthMappingProfile>());
         _mapper = mapperConfig.CreateMapper();
-
-        _employeeRepository
-            .Setup(x => x.GetEmployeeByUserId(It.IsAny<int>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Employee?)null);
     }
 
     [Fact]
@@ -79,7 +74,9 @@ public class AuthServiceTests
             Email = "employee@prm.local",
             PasswordHash = string.Empty,
             IsActive = true,
-            ForcePasswordChange = false,
+            Department = string.Empty,
+            Designation = string.Empty,
+            PasswordExpiryTime = null,
             Role = new Role { Id = (int)RoleNameEnum.Employee, Name = "Employee", CreatedAtUtc = DateTime.UtcNow },
         };
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
@@ -281,7 +278,7 @@ public class AuthServiceTests
     public async Task ChangePassword_WhenPasswordsDoNotMatch_ThrowsArgumentException()
     {
         var user = TestData.CreateUser();
-        user.ForcePasswordChange = true;
+        user.PasswordExpiryTime = DateTime.UtcNow;
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
 
         _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
@@ -301,7 +298,7 @@ public class AuthServiceTests
     public async Task ChangePassword_WhenPasswordDoesNotMeetRequirements_ThrowsArgumentException()
     {
         var user = TestData.CreateUser();
-        user.ForcePasswordChange = true;
+        user.PasswordExpiryTime = DateTime.UtcNow;
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
 
         _currentUserService.Setup(x => x.GetUserId()).Returns(user.Id);
@@ -322,7 +319,7 @@ public class AuthServiceTests
     {
         const string newPassword = "NewPass1!";
         var user = TestData.CreateUser();
-        user.ForcePasswordChange = true;
+        user.PasswordExpiryTime = DateTime.UtcNow;
         user.PasswordHash = _passwordHasher.HashPassword(user, TestData.Password);
         var expiresAtUtc = DateTime.UtcNow.AddMinutes(30);
 
@@ -344,10 +341,10 @@ public class AuthServiceTests
         var result = await sut.ChangePassword(
             new ChangePasswordRequest { NewPassword = newPassword, ConfirmPassword = newPassword });
 
-        Assert.False(user.ForcePasswordChange);
+        Assert.Null(user.PasswordExpiryTime);
         Assert.Equal(PasswordVerificationResult.Success,
             _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, newPassword));
-        Assert.False(result.User.ForcePasswordChange);
+        Assert.Null(result.User.PasswordExpiryTime);
         Assert.Equal("access-token", result.Tokens.AccessToken);
         Assert.Equal("new-refresh-token", result.Tokens.RefreshToken);
 
@@ -358,7 +355,6 @@ public class AuthServiceTests
     private AuthService CreateSut() =>
         new(
             _userRepository.Object,
-            _employeeRepository.Object,
             _refreshTokenRepository.Object,
             _passwordHasher,
             _jwtTokenService.Object,

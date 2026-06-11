@@ -11,8 +11,8 @@ public interface IAllocationRepository : ICrudBaseRepository<Allocation, int>
         DateOnly asOfDate,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Allocation>> GetActiveByEmployeeId(
-        int employeeId,
+    Task<IReadOnlyList<Allocation>> GetActiveByUserId(
+        int userId,
         DateOnly asOfDate,
         CancellationToken cancellationToken = default);
 
@@ -21,16 +21,16 @@ public interface IAllocationRepository : ICrudBaseRepository<Allocation, int>
         DateOnly asOfDate,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Allocation>> GetPastByEmployeeId(
-        EmployeePastAllocationsQuery query,
+    Task<IReadOnlyList<Allocation>> GetPastByUserId(
+        UserPastAllocationsQuery query,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Allocation>> GetOverlappingForEmployee(
-        EmployeeAllocationPeriodQuery query,
+    Task<IReadOnlyList<Allocation>> GetOverlappingForUser(
+        UserAllocationPeriodQuery query,
         CancellationToken cancellationToken = default);
 
-    Task<int> SumUtilizationForEmployeeInPeriod(
-        EmployeeAllocationPeriodQuery query,
+    Task<int> SumUtilizationForUserInPeriod(
+        UserAllocationPeriodQuery query,
         CancellationToken cancellationToken = default);
 
     Task<bool> HasOverlappingAllocationOnProject(

@@ -10,9 +10,9 @@ public class AllocationConfiguration : IEntityTypeConfiguration<Allocation>
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.UtilizationPercent).IsRequired();
-        builder.HasOne(x => x.Employee)
+        builder.HasOne(x => x.User)
             .WithMany(x => x.Allocations)
-            .HasForeignKey(x => x.EmployeeId)
+            .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.Project)
             .WithMany(x => x.Allocations)

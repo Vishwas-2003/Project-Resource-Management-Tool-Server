@@ -263,10 +263,10 @@ public class ProjectServiceTests
             ApiTestData.CreateMilestone(id: 1, title: "Phase 1", dueDate: today.AddMonths(1)),
             ApiTestData.CreateMilestone(id: 2, title: "Phase 2", dueDate: today.AddMonths(2), status: MilestoneConstants.StatusDone),
         ];
-        var allocatedEmployee = ApiTestData.CreateEmployee(id: 5, userId: 5, fullName: "Bob Smith");
+        var allocatedEmployee = ApiTestData.CreateEmployeeUser(id: 5, fullName: "Bob Smith");
         project.Allocations =
         [
-            ApiTestData.CreateAllocation(id: 10, employeeId: 5, projectId: project.Id, employee: allocatedEmployee, project: project),
+            ApiTestData.CreateAllocation(id: 10, userId: 5, projectId: project.Id, user: allocatedEmployee, project: project),
         ];
 
         var riskFlags = new List<ProjectRiskFlag>

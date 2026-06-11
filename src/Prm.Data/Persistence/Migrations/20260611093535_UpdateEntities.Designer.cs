@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Prm.Data.Persistence;
 
@@ -11,9 +12,11 @@ using Prm.Data.Persistence;
 namespace Prm.Data.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260611093535_UpdateEntities")]
+    partial class UpdateEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -683,14 +686,14 @@ namespace Prm.Data.Persistence.Migrations
                             Id = 3,
                             ConfigurationType = "SchedulerInterval",
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "4"
+                            Value = ""
                         },
                         new
                         {
                             Id = 4,
                             ConfigurationType = "MaxWeeklyHours",
                             CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Value = "40"
+                            Value = ""
                         });
                 });
 

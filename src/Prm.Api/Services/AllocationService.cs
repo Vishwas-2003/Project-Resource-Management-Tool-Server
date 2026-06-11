@@ -11,7 +11,7 @@ namespace Prm.Api.Services;
 
 public class AllocationService(
     IAllocationRepository _allocationRepository,
-    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
     IProjectRepository _projectRepository) : IAllocationService
 {
     public async Task<ActiveAllocationsResponse> GetActiveAllocations(
@@ -26,7 +26,7 @@ public class AllocationService(
             var query = filter.Trim();
 
             var employeeMatches = allocations
-                .Where(x => x.Employee.User.FullName.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Where(x => x.User.FullName.Contains(query, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             if (employeeMatches.Count > 0)
             {
@@ -53,7 +53,7 @@ public class AllocationService(
             TotalActiveAllocations = allocations.Count,
             Allocations = allocations.Select(x => new ActiveAllocationRow
             {
-                EmployeeName = x.Employee.User.FullName,
+                EmployeeName = x.User.FullName,
                 ProjectName = x.Project.Name,
                 UtilizationPercent = x.UtilizationPercent,
                 FromDate = x.FromDate,
@@ -74,7 +74,7 @@ public class AllocationService(
         EnsureProjectAllowsAllocation(project);
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
-        var employee = await GetAllocatableEmployeeOrThrow(request.EmployeeId, cancellationToken);
+        var user = await GetAllocatableUserOrThrow(request.EmployeeId, cancellationToken);
 
         await EnsureNoOverlappingAllocationOnSameProject(
             request.EmployeeId,
@@ -92,7 +92,7 @@ public class AllocationService(
 
         var allocation = new Allocation
         {
-            EmployeeId = request.EmployeeId,
+            UserId = request.EmployeeId,
             ProjectId = request.ProjectId,
             UtilizationPercent = request.UtilizationPercent,
             FromDate = request.FromDate,
@@ -101,12 +101,12 @@ public class AllocationService(
 
         await _allocationRepository.Add(allocation, cancellationToken);
         await _allocationRepository.SaveChanges(cancellationToken);
-        await UpdateEmployeeStatus(request.EmployeeId, cancellationToken);
+        await UpdateUserResourceStatus(request.EmployeeId, cancellationToken);
 
         return new AllocationCreatedResponse
         {
             AllocationId = allocation.Id,
-            EmployeeName = employee.User.FullName,
+            EmployeeName = user.FullName,
             ProjectName = project.Name,
             UtilizationPercent = allocation.UtilizationPercent,
             FromDate = allocation.FromDate,
@@ -139,12 +139,12 @@ public class AllocationService(
         allocation.ToDate = today;
         _allocationRepository.Update(allocation);
         await _allocationRepository.SaveChanges(cancellationToken);
-        await UpdateEmployeeStatus(allocation.EmployeeId, cancellationToken);
+        await UpdateUserResourceStatus(allocation.UserId, cancellationToken);
 
         return new AllocationEndedResponse
         {
             AllocationId = allocation.Id,
-            EmployeeName = allocation.Employee.User.FullName,
+            EmployeeName = allocation.User.FullName,
             ProjectName = allocation.Project.Name,
             EndDate = today,
         };
@@ -168,7 +168,7 @@ public class AllocationService(
                 {
                     AllocationId = allocation.Id,
                     RowNumber = rowIndex + 1,
-                    EmployeeName = allocation.Employee.User.FullName,
+                    EmployeeName = allocation.User.FullName,
                     UtilizationPercent = allocation.UtilizationPercent,
                     FromDate = allocation.FromDate,
                     ToDate = allocation.ToDate,
@@ -177,17 +177,17 @@ public class AllocationService(
         };
     }
 
-    private async Task<Employee> GetAllocatableEmployeeOrThrow(
-        int employeeId,
+    private async Task<User> GetAllocatableUserOrThrow(
+        int userId,
         CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeDetailById(employeeId, cancellationToken);
-        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Employee)
+        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken);
+        if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
             throw new KeyNotFoundException(AppConstants.Manager.EmployeeNotEligible);
         }
 
-        return employee;
+        return user;
     }
 
     private async Task<Project> GetOwnedProjectOrThrow(
@@ -246,7 +246,7 @@ public class AllocationService(
     }
 
     private async Task EnsureNoOverlappingAllocationOnSameProject(
-        int employeeId,
+        int userId,
         int projectId,
         DateOnly fromDate,
         DateOnly toDate,
@@ -255,7 +255,7 @@ public class AllocationService(
         if (await _allocationRepository.HasOverlappingAllocationOnProject(
                 new ProjectAllocationOverlapQuery
                 {
-                    EmployeeId = employeeId,
+                    UserId = userId,
                     ProjectId = projectId,
                     FromDate = fromDate,
                     ToDate = toDate,
@@ -267,16 +267,16 @@ public class AllocationService(
     }
 
     private async Task EnsureUtilizationWithinLimit(
-        int employeeId,
+        int userId,
         int utilizationPercent,
         DateOnly fromDate,
         DateOnly toDate,
         CancellationToken cancellationToken)
     {
-        var existing = await _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            new EmployeeAllocationPeriodQuery
+        var existing = await _allocationRepository.SumUtilizationForUserInPeriod(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employeeId,
+                UserId = userId,
                 FromDate = fromDate,
                 ToDate = toDate,
             },
@@ -288,29 +288,23 @@ public class AllocationService(
         }
     }
 
-    private async Task UpdateEmployeeStatus(int employeeId, CancellationToken cancellationToken)
+    private async Task UpdateUserResourceStatus(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetById(employeeId, cancellationToken);
-        if (employee is null)
-        {
-            return;
-        }
-
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            new EmployeeAllocationPeriodQuery
+        var utilization = await _allocationRepository.SumUtilizationForUserInPeriod(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employeeId,
+                UserId = userId,
                 FromDate = today,
                 ToDate = today,
             },
             cancellationToken);
 
-        employee.Status = utilization > 0
-            ? EmployeeConstants.StatusAllocated
-            : EmployeeConstants.StatusBench;
+        var status = utilization > 0
+            ? ResourceStatusTypeEnum.Allocated
+            : ResourceStatusTypeEnum.Bench;
 
-        _employeeRepository.Update(employee);
-        await _employeeRepository.SaveChanges();
+        await _userRepository.SetCurrentResourceStatus(userId, (int)status, cancellationToken);
+        await _userRepository.SaveChanges(cancellationToken);
     }
 }

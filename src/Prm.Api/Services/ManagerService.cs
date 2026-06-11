@@ -1,6 +1,5 @@
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
-using Prm.Common.Enums;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -10,7 +9,6 @@ namespace Prm.Api.Services;
 
 public class ManagerService(
     IUserRepository _userRepository,
-    IEmployeeRepository _employeeRepository,
     IAllocationRepository _allocationRepository) : IManagerService
 {
     public async Task<ResourceDashboardResponse> GetResourceDashboard(
@@ -20,23 +18,23 @@ public class ManagerService(
         await EnsureManagerUserOrThrow(managerUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var employees = await _employeeRepository.GetResourcePoolEmployees(cancellationToken);
+        var users = await _userRepository.GetResourcePoolUsers(cancellationToken);
 
         var bench = new List<BenchEmployeeRow>();
         var active = new List<ActiveEmployeeRow>();
         var partial = 0;
 
-        foreach (var employee in employees)
+        foreach (var user in users)
         {
-            var utilization = await GetUtilizationOnDate(employee.Id, today, cancellationToken);
+            var utilization = await GetUtilizationOnDate(user.Id, today, cancellationToken);
             if (utilization <= 0)
             {
                 bench.Add(new BenchEmployeeRow
                 {
-                    Id = employee.Id,
-                    Name = employee.User.FullName,
-                    Department = employee.Department,
-                    Skills = FormatSkills(employee),
+                    Id = user.Id,
+                    Name = user.FullName,
+                    Department = user.Department,
+                    Skills = FormatSkills(user),
                 });
                 continue;
             }
@@ -48,8 +46,8 @@ public class ManagerService(
 
             active.Add(new ActiveEmployeeRow
             {
-                Id = employee.Id,
-                Name = employee.User.FullName,
+                Id = user.Id,
+                Name = user.FullName,
                 AllocationPercent = utilization,
                 Availability = FormatAvailability(utilization),
             });
@@ -94,20 +92,20 @@ public class ManagerService(
         }
     }
 
-    private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>
-        _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            new EmployeeAllocationPeriodQuery
+    private Task<int> GetUtilizationOnDate(int userId, DateOnly date, CancellationToken cancellationToken) =>
+        _allocationRepository.SumUtilizationForUserInPeriod(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employeeId,
+                UserId = userId,
                 FromDate = date,
                 ToDate = date,
             },
             cancellationToken);
 
-    private static string FormatSkills(Employee employee) =>
+    private static string FormatSkills(User user) =>
         string.Join(
             ", ",
-            employee.EmployeeSkills
+            user.UserSkills
                 .Select(skillAssignment => skillAssignment.Skill.Name)
                 .OrderBy(skillName => skillName));
 

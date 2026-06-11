@@ -138,7 +138,7 @@ public class ProjectService(
         var storedRiskFlags = await _projectRiskFlagRepository.GetByProjectId(projectId, cancellationToken);
         var activeAllocations = project.Allocations
             .Where(allocation => allocation.FromDate <= today && allocation.ToDate >= today)
-            .OrderBy(allocation => allocation.Employee.User.FullName)
+            .OrderBy(allocation => allocation.User.FullName)
             .ToList();
 
         return new ManagerProjectDetailResponse
@@ -168,7 +168,7 @@ public class ProjectService(
             AllocatedResources = activeAllocations
                 .Select(allocation => new ProjectResourceRow
                 {
-                    Name = allocation.Employee.User.FullName,
+                    Name = allocation.User.FullName,
                     UtilizationPercent = allocation.UtilizationPercent,
                     FromDate = allocation.FromDate,
                     ToDate = allocation.ToDate,

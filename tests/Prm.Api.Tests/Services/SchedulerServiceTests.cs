@@ -3,10 +3,12 @@ using Moq;
 using Prm.Api.Services;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Common.Models.Employees;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
+using Prm.Data.Repositories.Models;
 using Prm.Api.Tests.Helpers;
 
 namespace Prm.Api.Tests.Services;
@@ -14,7 +16,7 @@ namespace Prm.Api.Tests.Services;
 public class SchedulerServiceTests
 {
     private readonly Mock<IAllocationRepository> _allocationRepository = new();
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IProjectRepository> _projectRepository = new();
     private readonly Mock<IProjectRiskFlagRepository> _projectRiskFlagRepository = new();
     private readonly Mock<IProjectHealthService> _projectHealthService = new();
@@ -23,13 +25,13 @@ public class SchedulerServiceTests
     [Fact]
     public async Task Execute_WhenEmployeeHasNoUtilization_SetsStatusToBench()
     {
-        var employee = ApiTestData.CreateEmployee(status: EmployeeConstants.StatusAllocated);
-        _employeeRepository
-            .Setup(x => x.GetEmployees(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Employee> { employee });
+        var user = ApiTestData.CreateEmployeeUser(status: EmployeeConstants.StatusAllocated);
+        _userRepository
+            .Setup(x => x.GetEmployeeUsers(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.IsAny<Prm.Data.Repositories.Models.EmployeeAllocationPeriodQuery>(),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(0);
         SetupEmptyProjectHealth();
@@ -37,21 +39,22 @@ public class SchedulerServiceTests
         var sut = CreateSut();
         await sut.Execute();
 
-        Assert.Equal(EmployeeConstants.StatusBench, employee.Status);
-        _employeeRepository.Verify(x => x.Update(employee), Times.Once);
-        _employeeRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+        _userRepository.Verify(
+            x => x.SetCurrentResourceStatus(user.Id, (int)ResourceStatusTypeEnum.Bench, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _userRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
     public async Task Execute_UpdatesProjectHealthAndReplacesRiskFlags()
     {
-        var employee = ApiTestData.CreateEmployee();
-        _employeeRepository
-            .Setup(x => x.GetEmployees(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Employee> { employee });
+        var user = ApiTestData.CreateEmployeeUser();
+        _userRepository
+            .Setup(x => x.GetEmployeeUsers(It.IsAny<EmployeeFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
         _allocationRepository
-            .Setup(x => x.SumUtilizationForEmployeeInPeriod(
-                It.IsAny<Prm.Data.Repositories.Models.EmployeeAllocationPeriodQuery>(),
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(100);
 
@@ -111,7 +114,7 @@ public class SchedulerServiceTests
     private SchedulerService CreateSut() =>
         new(
             _allocationRepository.Object,
-            _employeeRepository.Object,
+            _userRepository.Object,
             _projectRepository.Object,
             _projectRiskFlagRepository.Object,
             _projectHealthService.Object,

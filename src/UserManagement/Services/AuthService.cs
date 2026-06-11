@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Prm.Common.Auth;
 using Prm.Common.Constants;
 using Prm.Common.Enums;
 using Prm.Common.Models.Auth;
@@ -14,7 +15,6 @@ namespace UserManagement.Services;
 
 public class AuthService(
     IUserRepository _userRepository,
-    IEmployeeRepository _employeeRepository,
     IRefreshTokenRepository _refreshTokenRepository,
     IPasswordHasher<User> _passwordHasher,
     IJwtTokenService _jwtTokenService,
@@ -30,9 +30,7 @@ public class AuthService(
             throw new UnauthorizedAccessException(AppConstants.Auth.InvalidCredentials);
         }
 
-        var employee = await _employeeRepository.GetEmployeeByUserId(user.Id, cancellationToken);
-
-        if ((user.RoleId != (int)RoleNameEnum.Admin && user.RoleId != (int)RoleNameEnum.Manager) && employee is null)
+        if (user.RoleId == (int)RoleNameEnum.Employee && string.IsNullOrWhiteSpace(user.Department))
         {
             throw new UnauthorizedAccessException(AppConstants.Auth.EmployeeProfileNotFound);
         }
@@ -73,7 +71,7 @@ public class AuthService(
             throw new UnauthorizedAccessException(AppConstants.Auth.UserNotAuthenticated);
         }
 
-        if (!user.ForcePasswordChange)
+        if (!PasswordChangeRules.IsRequired(user.PasswordExpiryTime))
         {
             throw new InvalidOperationException(AppConstants.Auth.PasswordChangeNotRequired);
         }
@@ -92,7 +90,7 @@ public class AuthService(
         }
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.NewPassword);
-        user.ForcePasswordChange = false;
+        user.PasswordExpiryTime = null;
         _userRepository.Update(user);
         await _userRepository.SaveChanges(cancellationToken);
 

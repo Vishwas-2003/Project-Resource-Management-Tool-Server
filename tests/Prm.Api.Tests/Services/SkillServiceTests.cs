@@ -11,17 +11,17 @@ namespace Prm.Api.Tests.Services;
 
 public class SkillServiceTests
 {
-    private readonly Mock<IEmployeeRepository> _employeeRepository = new();
+    private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<ISkillRepository> _skillRepository = new();
-    private readonly Mock<IEmployeeSkillRepository> _employeeSkillRepository = new();
+    private readonly Mock<IUserSkillRepository> _userSkillRepository = new();
     private readonly IMapper _mapper = MapperTestHelper.CreateMapper();
 
     [Fact]
     public async Task GetForEmployee_WhenEmployeeNotFound_ThrowsKeyNotFoundException()
     {
-        _employeeRepository
+        _userRepository
             .Setup(x => x.GetById(1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Employee?)null);
+            .ReturnsAsync((User?)null);
 
         var sut = CreateSut();
 
@@ -33,30 +33,30 @@ public class SkillServiceTests
     [Fact]
     public async Task GetForEmployee_WhenSuccessful_ReturnsSkills()
     {
-        var employee = ApiTestData.CreateEmployee();
-        var employeeSkills = new List<EmployeeSkill>
+        var user = ApiTestData.CreateEmployeeUser();
+        var userSkills = new List<UserSkill>
         {
             new()
             {
-                EmployeeId = employee.Id,
+                UserId = user.Id,
                 SkillId = 1,
                 Proficiency = SkillConstants.ProficiencyIntermediate,
                 Skill = new Skill { Id = 1, Name = "C#", Category = "Backend" },
             },
         };
 
-        _employeeRepository
-            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employee);
-        _employeeSkillRepository
-            .Setup(x => x.GetByEmployeeId(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employeeSkills);
+        _userRepository
+            .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
+        _userSkillRepository
+            .Setup(x => x.GetByUserId(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(userSkills);
 
         var sut = CreateSut();
-        var result = await sut.GetForEmployee(employee.Id);
+        var result = await sut.GetForEmployee(user.Id);
 
-        Assert.Equal(employee.Id, result.EmployeeId);
-        Assert.Equal(employee.User.FullName, result.FullName);
+        Assert.Equal(user.Id, result.EmployeeId);
+        Assert.Equal(user.FullName, result.FullName);
         Assert.Single(result.Skills);
         Assert.Equal("C#", result.Skills[0].SkillName);
     }
@@ -64,15 +64,15 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenInvalidCategory_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployee();
-        _employeeRepository
-            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employee);
+        var user = ApiTestData.CreateEmployeeUser();
+        _userRepository
+            .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.Add(employee.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddEmployeeSkillRequest
             {
                 SkillName = "C#",
                 Category = "Invalid",
@@ -85,15 +85,15 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenInvalidProficiency_ThrowsArgumentException()
     {
-        var employee = ApiTestData.CreateEmployee();
-        _employeeRepository
-            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employee);
+        var user = ApiTestData.CreateEmployeeUser();
+        _userRepository
+            .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            sut.Add(employee.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddEmployeeSkillRequest
             {
                 SkillName = "C#",
                 Category = "Backend",
@@ -106,23 +106,23 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenSkillAlreadyAssigned_ThrowsInvalidOperationException()
     {
-        var employee = ApiTestData.CreateEmployee();
+        var user = ApiTestData.CreateEmployeeUser();
         var skill = new Skill { Id = 5, Name = "C#", Category = "Backend" };
 
-        _employeeRepository
-            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employee);
+        _userRepository
+            .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         _skillRepository
             .Setup(x => x.GetByName("C#", It.IsAny<CancellationToken>()))
             .ReturnsAsync(skill);
-        _employeeSkillRepository
-            .Setup(x => x.Exists(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
+        _userSkillRepository
+            .Setup(x => x.Exists(user.Id, skill.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var sut = CreateSut();
 
         var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            sut.Add(employee.Id, new AddEmployeeSkillRequest
+            sut.Add(user.Id, new AddEmployeeSkillRequest
             {
                 SkillName = "C#",
                 Category = "Backend",
@@ -135,11 +135,11 @@ public class SkillServiceTests
     [Fact]
     public async Task Add_WhenSkillDoesNotExist_CreatesSkillAndReturnsSkillId()
     {
-        var employee = ApiTestData.CreateEmployee();
+        var user = ApiTestData.CreateEmployeeUser();
 
-        _employeeRepository
-            .Setup(x => x.GetById(employee.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employee);
+        _userRepository
+            .Setup(x => x.GetById(user.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(user);
         _skillRepository
             .Setup(x => x.GetByName("Go", It.IsAny<CancellationToken>()))
             .ReturnsAsync((Skill?)null);
@@ -150,18 +150,18 @@ public class SkillServiceTests
         _skillRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _employeeSkillRepository
-            .Setup(x => x.Exists(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
+        _userSkillRepository
+            .Setup(x => x.Exists(user.Id, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
-        _employeeSkillRepository
-            .Setup(x => x.Add(It.IsAny<EmployeeSkill>(), It.IsAny<CancellationToken>()))
+        _userSkillRepository
+            .Setup(x => x.Add(It.IsAny<UserSkill>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
-        _employeeSkillRepository
+        _userSkillRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
-        var skillId = await sut.Add(employee.Id, new AddEmployeeSkillRequest
+        var skillId = await sut.Add(user.Id, new AddEmployeeSkillRequest
         {
             SkillName = "Go",
             Category = "Backend",
@@ -175,25 +175,25 @@ public class SkillServiceTests
     [Fact]
     public async Task Update_WhenSuccessful_ReturnsTrue()
     {
-        var employee = ApiTestData.CreateEmployee();
-        var assignment = new EmployeeSkill
+        var user = ApiTestData.CreateEmployeeUser();
+        var assignment = new UserSkill
         {
-            EmployeeId = employee.Id,
+            UserId = user.Id,
             SkillId = 1,
             Proficiency = SkillConstants.ProficiencyBeginner,
             Skill = new Skill { Id = 1, Name = "C#", Category = "Backend" },
         };
 
-        _employeeSkillRepository
-            .Setup(x => x.GetById(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
+        _userSkillRepository
+            .Setup(x => x.GetById(It.IsAny<UserSkillKey>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(assignment);
-        _employeeSkillRepository
+        _userSkillRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
         var result = await sut.Update(
-            employee.Id,
+            user.Id,
             1,
             new UpdateEmployeeSkillRequest { Proficiency = SkillConstants.ProficiencyAdvanced });
 
@@ -204,9 +204,9 @@ public class SkillServiceTests
     [Fact]
     public async Task Update_WhenAssignmentNotFound_ThrowsKeyNotFoundException()
     {
-        _employeeSkillRepository
-            .Setup(x => x.GetById(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((EmployeeSkill?)null);
+        _userSkillRepository
+            .Setup(x => x.GetById(It.IsAny<UserSkillKey>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserSkill?)null);
 
         var sut = CreateSut();
 
@@ -219,9 +219,9 @@ public class SkillServiceTests
     [Fact]
     public async Task Remove_WhenAssignmentNotFound_ThrowsKeyNotFoundException()
     {
-        _employeeSkillRepository
-            .Setup(x => x.GetById(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((EmployeeSkill?)null);
+        _userSkillRepository
+            .Setup(x => x.GetById(It.IsAny<UserSkillKey>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((UserSkill?)null);
 
         var sut = CreateSut();
 
@@ -233,28 +233,28 @@ public class SkillServiceTests
     [Fact]
     public async Task Remove_WhenSuccessful_RemovesAssignment()
     {
-        var employeeSkill = new EmployeeSkill
+        var userSkill = new UserSkill
         {
-            EmployeeId = 1,
+            UserId = 1,
             SkillId = 2,
             Proficiency = SkillConstants.ProficiencyBeginner,
         };
 
-        _employeeSkillRepository
-            .Setup(x => x.GetById(It.IsAny<EmployeeSkillKey>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(employeeSkill);
+        _userSkillRepository
+            .Setup(x => x.GetById(It.IsAny<UserSkillKey>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(userSkill);
 
         var sut = CreateSut();
         await sut.Remove(1, 2);
 
-        _employeeSkillRepository.Verify(x => x.Remove(employeeSkill), Times.Once);
-        _employeeSkillRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+        _userSkillRepository.Verify(x => x.Remove(userSkill), Times.Once);
+        _userSkillRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     private SkillService CreateSut() =>
         new(
-            _employeeRepository.Object,
+            _userRepository.Object,
             _skillRepository.Object,
-            _employeeSkillRepository.Object,
+            _userSkillRepository.Object,
             _mapper);
 }

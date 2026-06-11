@@ -11,7 +11,6 @@ using Prm.Data.Repositories.Models;
 namespace Prm.Api.Services;
 
 public class EmployeeService(
-    IEmployeeRepository _employeeRepository,
     IUserRepository _userRepository,
     IAllocationRepository _allocationRepository,
     ITimesheetRepository _timesheetRepository,
@@ -28,7 +27,7 @@ public class EmployeeService(
             throw new ArgumentException(AppConstants.Employees.DepartmentAndDesignationRequired);
         }
 
-        var employeeUser = await _userRepository.GetByIdWithRoleAndEmployee(
+        var employeeUser = await _userRepository.GetByIdWithRole(
             request.EmployeeUserId,
             cancellationToken);
         if (employeeUser is null)
@@ -46,7 +45,7 @@ public class EmployeeService(
             throw new InvalidOperationException(AppConstants.Employees.InvalidRoleForManagerAssignment);
         }
 
-        var managerUser = await _userRepository.GetByIdWithRoleAndEmployee(
+        var managerUser = await _userRepository.GetByIdWithRole(
             request.ManagerUserId,
             cancellationToken);
         if (managerUser is null
@@ -56,28 +55,11 @@ public class EmployeeService(
             throw new InvalidOperationException(AppConstants.Employees.InvalidManagerUser);
         }
 
-        var employee = employeeUser.Employee;
-        if (employee is null)
-        {
-            employee = new Employee
-            {
-                UserId = employeeUser.Id,
-                Department = department,
-                Designation = designation,
-                ManagerUserId = managerUser.Id,
-                Status = EmployeeConstants.StatusBench,
-            };
-            await _employeeRepository.Add(employee, cancellationToken);
-        }
-        else
-        {
-            employee.ManagerUserId = managerUser.Id;
-            employee.Department = department;
-            employee.Designation = designation;
-            _employeeRepository.Update(employee);
-        }
-
-        await _employeeRepository.SaveChanges(cancellationToken);
+        employeeUser.Department = department;
+        employeeUser.Designation = designation;
+        _userRepository.Update(employeeUser);
+        await _userRepository.SetManager(employeeUser.Id, managerUser.Id, cancellationToken);
+        await _userRepository.SaveChanges(cancellationToken);
 
         return true;
     }
@@ -86,8 +68,8 @@ public class EmployeeService(
         EmployeeFilter filter,
         CancellationToken cancellationToken = default)
     {
-        var employees = await _employeeRepository.GetEmployees(filter, cancellationToken);
-        var summaries = _mapper.Map<List<EmployeeSummary>>(employees);
+        var users = await _userRepository.GetEmployeeUsers(filter, cancellationToken);
+        var summaries = _mapper.Map<List<EmployeeSummary>>(users);
         for (var rowIndex = 0; rowIndex < summaries.Count; rowIndex++)
         {
             summaries[rowIndex].RowNumber = rowIndex + 1;
@@ -107,46 +89,49 @@ public class EmployeeService(
         UpdateEmployeeRequest request,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(employeeId, cancellationToken);
 
-        if (!employee.User.IsActive)
+        if (!user.IsActive)
         {
             throw new InvalidOperationException(AppConstants.Employees.AlreadyDeactivated);
         }
 
-        _mapper.Map(request, employee);
-        _employeeRepository.Update(employee);
-        await _employeeRepository.SaveChanges(cancellationToken);
+        _mapper.Map(request, user);
+        _userRepository.Update(user);
+        await _userRepository.SaveChanges(cancellationToken);
 
         return true;
     }
 
     public async Task<bool> Deactivate(int employeeId, CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetEmployeeUserDetailOrThrow(employeeId, cancellationToken);
 
-        if (!employee.User.IsActive)
+        if (!user.IsActive)
         {
             throw new InvalidOperationException(AppConstants.Employees.AlreadyDeactivated);
         }
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var activeAllocations = employee.Allocations.Where(allocation => allocation.ToDate >= today).ToList();
+        var activeAllocations = user.Allocations.Where(allocation => allocation.ToDate >= today).ToList();
 
         foreach (var allocation in activeAllocations)
         {
             allocation.ToDate = today;
         }
 
-        if (employee.User.RoleId == (int)RoleNameEnum.Employee)
+        if (user.RoleId == (int)RoleNameEnum.Employee)
         {
-            employee.Status = EmployeeConstants.StatusBench;
+            await _userRepository.SetCurrentResourceStatus(
+                user.Id,
+                (int)ResourceStatusTypeEnum.Bench,
+                cancellationToken);
         }
 
-        employee.User.IsActive = false;
+        user.IsActive = false;
 
-        _employeeRepository.Update(employee);
-        await _employeeRepository.SaveChanges(cancellationToken);
+        _userRepository.Update(user);
+        await _userRepository.SaveChanges(cancellationToken);
 
         return true;
     }
@@ -155,33 +140,33 @@ public class EmployeeService(
         int employeeId,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
-        var allocations = await _allocationRepository.GetActiveByEmployeeId(employeeId, today, cancellationToken);
-        var pastAllocations = await _allocationRepository.GetPastByEmployeeId(
-            new EmployeePastAllocationsQuery
+        var allocations = await _allocationRepository.GetActiveByUserId(employeeId, today, cancellationToken);
+        var pastAllocations = await _allocationRepository.GetPastByUserId(
+            new UserPastAllocationsQuery
             {
-                EmployeeId = employeeId,
+                UserId = employeeId,
                 AsOfDate = today,
                 Limit = ManagerConstants.PastAllocationsDisplayCount,
             },
             cancellationToken);
         var sinceDate = today.AddDays(-7 * ManagerConstants.ActivityTagsLookbackWeeks);
-        var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForEmployee(
+        var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForUser(
             employeeId,
             sinceDate,
             cancellationToken);
 
         return new EmployeeDetailResponse
         {
-            Id = employee.Id,
-            Name = employee.User.FullName,
-            Department = employee.Department,
+            Id = user.Id,
+            Name = user.FullName,
+            Department = user.Department,
             CurrentStatus = FormatEmployeeStatus(utilization),
             UtilizationPercent = utilization,
-            ProfileSkills = FormatSkills(employee),
+            ProfileSkills = FormatSkills(user),
             ActiveAllocations = MapAllocationRows(allocations),
             PastAllocations = MapAllocationRows(pastAllocations),
             RecentActivityTags = activityTags,
@@ -192,15 +177,15 @@ public class EmployeeService(
         int employeeId,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
 
         return new EmployeeUtilizationResponse
         {
-            EmployeeId = employee.Id,
-            Name = employee.User.FullName,
+            EmployeeId = user.Id,
+            Name = user.FullName,
             UtilizationPercent = utilization,
             StatusDescription = utilization == 0
                 ? ManagerConstants.AvailabilityOnBench
@@ -208,22 +193,22 @@ public class EmployeeService(
         };
     }
 
-    private async Task<Employee> GetResourceEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)
+    private async Task<User> GetResourceEmployeeOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetEmployeeDetailById(employeeId, cancellationToken);
-        if (employee is null || employee.User.RoleId != (int)RoleNameEnum.Employee)
+        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken);
+        if (user is null || user.RoleId != (int)RoleNameEnum.Employee)
         {
             throw new KeyNotFoundException(AppConstants.Manager.EmployeeNotFound);
         }
 
-        return employee;
+        return user;
     }
 
-    private Task<int> GetUtilizationOnDate(int employeeId, DateOnly date, CancellationToken cancellationToken) =>
-        _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            new EmployeeAllocationPeriodQuery
+    private Task<int> GetUtilizationOnDate(int userId, DateOnly date, CancellationToken cancellationToken) =>
+        _allocationRepository.SumUtilizationForUserInPeriod(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employeeId,
+                UserId = userId,
                 FromDate = date,
                 ToDate = date,
             },
@@ -240,10 +225,10 @@ public class EmployeeService(
             })
             .ToList();
 
-    private static string FormatSkills(Employee employee) =>
+    private static string FormatSkills(User user) =>
         string.Join(
             ", ",
-            employee.EmployeeSkills
+            user.UserSkills
                 .Select(skillAssignment => skillAssignment.Skill.Name)
                 .OrderBy(skillName => skillName));
 
@@ -252,15 +237,26 @@ public class EmployeeService(
             ? EmployeeConstants.StatusAllocated
             : EmployeeConstants.StatusBench;
 
-    private async Task<Employee> GetEmployeeOrThrow(int employeeId, CancellationToken cancellationToken)
+    private async Task<User> GetEmployeeUserOrThrow(int userId, CancellationToken cancellationToken)
     {
-        var employee = await _employeeRepository.GetById(employeeId, cancellationToken);
-        if (employee is null)
+        var user = await _userRepository.GetById(userId, cancellationToken);
+        if (user is null)
         {
             throw new KeyNotFoundException(AppConstants.Employees.NotFound);
         }
 
-        return employee;
+        return user;
     }
 
+    private async Task<User> GetEmployeeUserDetailOrThrow(int userId, CancellationToken cancellationToken)
+    {
+        var user = await _userRepository.GetEmployeeUserDetailById(userId, cancellationToken)
+            ?? await _userRepository.GetById(userId, cancellationToken);
+        if (user is null)
+        {
+            throw new KeyNotFoundException(AppConstants.Employees.NotFound);
+        }
+
+        return user;
+    }
 }

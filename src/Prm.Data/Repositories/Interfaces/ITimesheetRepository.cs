@@ -5,13 +5,13 @@ namespace Prm.Data.Repositories.Interfaces;
 
 public interface ITimesheetRepository : ICrudBaseRepository<Timesheet, int>
 {
-    Task<IReadOnlyList<string>> GetRecentActivityTagNamesForEmployee(
-        int employeeId,
+    Task<IReadOnlyList<string>> GetRecentActivityTagNamesForUser(
+        int userId,
         DateOnly sinceDate,
         CancellationToken cancellationToken = default);
 
-    Task<int> GetHoursWorkedForEmployeeOnProjectInWeek(
-        int employeeId,
+    Task<int> GetHoursWorkedForUserOnProjectInWeek(
+        int userId,
         int projectId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
@@ -26,17 +26,17 @@ public interface ITimesheetRepository : ICrudBaseRepository<Timesheet, int>
 
     Task<ActivityTag> FindOrCreateActivityTagByName(string name, CancellationToken cancellationToken = default);
 
-    Task<bool> ExistsForEmployeeWeek(
-        int employeeId,
+    Task<bool> ExistsForUserWeek(
+        int userId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<Timesheet>> GetByEmployeeId(
-        int employeeId,
+    Task<IReadOnlyList<Timesheet>> GetByUserId(
+        int userId,
         CancellationToken cancellationToken = default);
 
-    Task<Timesheet?> GetByEmployeeAndWeek(
-        int employeeId,
+    Task<Timesheet?> GetByUserAndWeek(
+        int userId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 

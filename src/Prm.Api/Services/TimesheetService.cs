@@ -7,7 +7,7 @@ namespace Prm.Api.Services;
 
 public partial class TimesheetService(
     ITimesheetRepository _timesheetRepository,
-    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
     IAllocationRepository _allocationRepository,
     ISystemConfigurationRepository _systemConfigurationRepository) : ITimesheetService
 {
@@ -32,13 +32,13 @@ public partial class TimesheetService(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var lastCompletedWeekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(today);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(lastCompletedWeekStart);
 
         var allocations = await GetAllocationsOverlappingWeek(
-            employee.Id,
+            user.Id,
             lastCompletedWeekStart,
             weekEnd,
             cancellationToken);
@@ -47,8 +47,8 @@ public partial class TimesheetService(
             return new MissingTimesheetReminder { HasMissing = false };
         }
 
-        var exists = await _timesheetRepository.ExistsForEmployeeWeek(
-            employee.Id,
+        var exists = await _timesheetRepository.ExistsForUserWeek(
+            user.Id,
             lastCompletedWeekStart,
             cancellationToken);
 
@@ -64,20 +64,20 @@ public partial class TimesheetService(
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
 
         var allocations = await GetAllocationsOverlappingWeek(
-            employee.Id,
+            user.Id,
             normalizedWeekStart,
             weekEnd,
             cancellationToken);
 
         return new WeekAllocationsResponse
         {
-            EmployeeName = employee.User.FullName,
+            EmployeeName = user.FullName,
             WeekStart = normalizedWeekStart,
             MaxWeeklyHours = maxWeeklyHours,
             Allocations = allocations.Select(x => new WeekAllocationRow
@@ -94,9 +94,9 @@ public partial class TimesheetService(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var employee = await GetEmployeeByUserIdOrThrow(userId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(userId, cancellationToken);
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var allocations = await _allocationRepository.GetActiveByEmployeeId(employee.Id, today, cancellationToken);
+        var allocations = await _allocationRepository.GetActiveByUserId(user.Id, today, cancellationToken);
 
         return new EmployeeAllocationsResponse
         {

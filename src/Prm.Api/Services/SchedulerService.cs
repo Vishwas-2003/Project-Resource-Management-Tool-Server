@@ -1,5 +1,6 @@
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Common.Models.Employees;
 using Prm.Common.Models.Manager;
 using Prm.Data.Entities;
@@ -10,7 +11,7 @@ namespace Prm.Api.Services;
 
 public class SchedulerService(
     IAllocationRepository _allocationRepository,
-    IEmployeeRepository _employeeRepository,
+    IUserRepository _userRepository,
     IProjectRepository _projectRepository,
     IProjectRiskFlagRepository _projectRiskFlagRepository,
     IProjectHealthService _projectHealthService,
@@ -28,37 +29,38 @@ public class SchedulerService(
 
     private async Task UpdateEmployeesStatus(CancellationToken cancellationToken)
     {
-        var employees = await _employeeRepository.GetEmployees(
+        var users = await _userRepository.GetEmployeeUsers(
             new EmployeeFilter { IncludeInactive = false },
             cancellationToken);
 
-        foreach (var employee in employees)
+        foreach (var user in users)
         {
-            await ApplyStatus(employee, cancellationToken);
-            _employeeRepository.Update(employee);
+            await ApplyStatus(user, cancellationToken);
         }
 
-        await _employeeRepository.SaveChanges(cancellationToken);
-        _logger.LogInformation("Updated bench status for {EmployeeCount} employees.", employees.Count);
+        await _userRepository.SaveChanges(cancellationToken);
+        _logger.LogInformation("Updated bench status for {EmployeeCount} employees.", users.Count);
     }
 
     private async Task ApplyStatus(
-        Employee employee,
+        User user,
         CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await _allocationRepository.SumUtilizationForEmployeeInPeriod(
-            new EmployeeAllocationPeriodQuery
+        var utilization = await _allocationRepository.SumUtilizationForUserInPeriod(
+            new UserAllocationPeriodQuery
             {
-                EmployeeId = employee.Id,
+                UserId = user.Id,
                 FromDate = today,
                 ToDate = today,
             },
             cancellationToken);
 
-        employee.Status = utilization > 0
-            ? EmployeeConstants.StatusAllocated
-            : EmployeeConstants.StatusBench;
+        var status = utilization > 0
+            ? ResourceStatusTypeEnum.Allocated
+            : ResourceStatusTypeEnum.Bench;
+
+        await _userRepository.SetCurrentResourceStatus(user.Id, (int)status, cancellationToken);
     }
 
     private async Task ComputeProjectHealth(CancellationToken cancellationToken)

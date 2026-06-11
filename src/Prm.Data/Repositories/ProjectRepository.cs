@@ -29,8 +29,7 @@ public class ProjectRepository(AppDbContext _dbContext)
             .Include(x => x.ManagerUser)
             .Include(x => x.Milestones)
             .Include(x => x.Allocations)
-                .ThenInclude(x => x.Employee)
-                    .ThenInclude(x => x.User)
+                .ThenInclude(x => x.User)
             .FirstOrDefaultAsync(x => x.Id == projectId, cancellationToken);
 
     public async Task<IReadOnlyList<Project>> GetByManagerUserId(
@@ -39,8 +38,7 @@ public class ProjectRepository(AppDbContext _dbContext)
         await DbSet
             .Include(x => x.Milestones)
             .Include(x => x.Allocations)
-                .ThenInclude(x => x.Employee)
-                    .ThenInclude(x => x.User)
+                .ThenInclude(x => x.User)
             .Where(x => x.ManagerUserId == managerUserId)
             .OrderBy(x => x.Id)
             .ToListAsync(cancellationToken);

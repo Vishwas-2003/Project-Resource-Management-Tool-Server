@@ -139,7 +139,7 @@ public class ProjectHealthServiceTests
     private void SetupHoursWorked(int employeeId, int projectId, int hours)
     {
         _timesheetRepository
-            .Setup(x => x.GetHoursWorkedForEmployeeOnProjectInWeek(
+            .Setup(x => x.GetHoursWorkedForUserOnProjectInWeek(
                 employeeId,
                 projectId,
                 It.IsAny<DateOnly>(),

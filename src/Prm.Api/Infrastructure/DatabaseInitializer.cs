@@ -30,7 +30,9 @@ public static class DatabaseInitializer
                 Email = bootstrapAdmin.Email,
                 PasswordHash = string.Empty,
                 IsActive = true,
-                ForcePasswordChange = true,
+                Department = string.Empty,
+                Designation = string.Empty,
+                PasswordExpiryTime = DateTime.UtcNow,
             };
             adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, bootstrapAdmin.Password);
             await dbContext.Users.AddAsync(adminUser, cancellationToken);
