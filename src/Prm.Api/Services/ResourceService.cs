@@ -59,6 +59,15 @@ public class ResourceService(
         resourceUser.Designation = designation;
         _userRepository.Update(resourceUser);
         await _userRepository.SetManager(resourceUser.Id, managerUser.Id, cancellationToken);
+
+        if (!await _userRepository.HasActiveResourceStatus(resourceUser.Id, cancellationToken))
+        {
+            await _userRepository.SetCurrentResourceStatus(
+                resourceUser.Id,
+                (int)ResourceStatusTypeEnum.Bench,
+                cancellationToken);
+        }
+
         await _userRepository.SaveChanges(cancellationToken);
 
         return true;

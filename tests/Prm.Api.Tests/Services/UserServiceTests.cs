@@ -151,6 +151,12 @@ public class UserServiceTests
         _userRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _userRepository
+            .Setup(x => x.SetCurrentResourceStatus(
+                It.IsAny<int>(),
+                (int)ResourceStatusTypeEnum.Bench,
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
         var id = await sut.Add(new CreateUserRequest
@@ -168,6 +174,42 @@ public class UserServiceTests
         Assert.True(saved.IsActive);
         Assert.Equal(PasswordVerificationResult.Success,
             _passwordHasher.VerifyHashedPassword(saved, saved.PasswordHash, ApiTestData.ValidPassword));
+        _userRepository.Verify(
+            x => x.SetCurrentResourceStatus(7, (int)ResourceStatusTypeEnum.Bench, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Add_WhenManagerRole_DoesNotSetBenchStatus()
+    {
+        SetupValidRole();
+        _userRepository
+            .Setup(x => x.ExistsByUsername(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _userRepository
+            .Setup(x => x.ExistsByEmail(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _userRepository
+            .Setup(x => x.Add(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+            .Callback<User, CancellationToken>((user, _) => user.Id = 8)
+            .Returns(Task.CompletedTask);
+        _userRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+        await sut.Add(new CreateUserRequest
+        {
+            FullName = "Manager User",
+            Email = "manager@prm.local",
+            Username = "manageruser",
+            TemporaryPassword = ApiTestData.ValidPassword,
+            RoleId = (int)RoleNameEnum.Manager,
+        });
+
+        _userRepository.Verify(
+            x => x.SetCurrentResourceStatus(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

@@ -52,6 +52,15 @@ public class UserService(
         await _userRepository.Add(user, cancellationToken);
         await _userRepository.SaveChanges(cancellationToken);
 
+        if (request.RoleId == (int)RoleNameEnum.Employee)
+        {
+            await _userRepository.SetCurrentResourceStatus(
+                user.Id,
+                (int)ResourceStatusTypeEnum.Bench,
+                cancellationToken);
+            await _userRepository.SaveChanges(cancellationToken);
+        }
+
         return user.Id;
     }
 

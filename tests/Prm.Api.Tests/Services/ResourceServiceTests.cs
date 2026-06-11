@@ -117,6 +117,9 @@ public class ResourceServiceTests
             .Setup(x => x.GetByIdWithRole(managerUser.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(managerUser);
         _userRepository
+            .Setup(x => x.HasActiveResourceStatus(resourceUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _userRepository
             .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
@@ -132,6 +135,12 @@ public class ResourceServiceTests
         Assert.Equal("Senior Developer", resourceUser.Designation);
         _userRepository.Verify(x => x.SetManager(resourceUser.Id, managerUser.Id, It.IsAny<CancellationToken>()), Times.Once);
         _userRepository.Verify(x => x.Update(resourceUser), Times.Once);
+        _userRepository.Verify(
+            x => x.SetCurrentResourceStatus(
+                resourceUser.Id,
+                (int)ResourceStatusTypeEnum.Bench,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

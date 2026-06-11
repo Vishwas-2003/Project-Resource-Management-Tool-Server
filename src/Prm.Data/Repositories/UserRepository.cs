@@ -142,6 +142,11 @@ public class UserRepository(AppDbContext _dbContext)
             cancellationToken);
     }
 
+    public Task<bool> HasActiveResourceStatus(int userId, CancellationToken cancellationToken = default) =>
+        _dbContext.ResourceStatusHistories.AnyAsync(
+            history => history.UserId == userId && history.EffectiveToUtc == null,
+            cancellationToken);
+
     public async Task SetCurrentResourceStatus(
         int userId,
         int resourceStatusTypeId,
@@ -155,6 +160,11 @@ public class UserRepository(AppDbContext _dbContext)
         if (activeHistory != null && activeHistory.ResourceStatusTypeId == resourceStatusTypeId)
         {
             return;
+        }
+
+        if (activeHistory != null)
+        {
+            activeHistory.EffectiveToUtc = utcNow;
         }
 
         await _dbContext.ResourceStatusHistories.AddAsync(

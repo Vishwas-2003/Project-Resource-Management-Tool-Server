@@ -19,5 +19,6 @@ public interface IUserRepository : ICrudBaseRepository<User, int>
         CancellationToken cancellationToken = default);
     Task<User?> GetResourceUserDetailById(int userId, CancellationToken cancellationToken = default);
     Task SetManager(int userId, int managerUserId, CancellationToken cancellationToken = default);
+    Task<bool> HasActiveResourceStatus(int userId, CancellationToken cancellationToken = default);
     Task SetCurrentResourceStatus(int userId, int resourceStatusTypeId, CancellationToken cancellationToken = default);
 }
