@@ -351,7 +351,7 @@ public class EmployeeServiceTests
         var sut = CreateSut();
         var result = await sut.GetUtilization(user.Id);
 
-        Assert.Equal(user.Id, result.EmployeeId);
+        Assert.Equal(user.Id, result.EmployeeUserId);
         Assert.Equal(0, result.UtilizationPercent);
         Assert.Equal(ManagerConstants.AvailabilityOnBench, result.StatusDescription);
     }

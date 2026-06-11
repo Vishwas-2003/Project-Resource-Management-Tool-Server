@@ -40,7 +40,7 @@ public interface ITimesheetService
 
     Task<EmployeeTimesheetDetailResponse> GetEmployeeTimesheetDetail(
         int managerUserId,
-        int employeeId,
+        int employeeUserId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 }

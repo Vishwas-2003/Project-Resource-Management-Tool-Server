@@ -85,11 +85,11 @@ public class EmployeeService(
     }
 
     public async Task<bool> Update(
-        int employeeId,
+        int employeeUserId,
         UpdateEmployeeRequest request,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(employeeId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
 
         if (!user.IsActive)
         {
@@ -103,9 +103,9 @@ public class EmployeeService(
         return true;
     }
 
-    public async Task<bool> Deactivate(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<bool> Deactivate(int employeeUserId, CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserDetailOrThrow(employeeId, cancellationToken);
+        var user = await GetEmployeeUserDetailOrThrow(employeeUserId, cancellationToken);
 
         if (!user.IsActive)
         {
@@ -137,25 +137,25 @@ public class EmployeeService(
     }
 
     public async Task<EmployeeDetailResponse> GetDetail(
-        int employeeId,
+        int employeeUserId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetResourceEmployeeOrThrow(employeeUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
-        var allocations = await _allocationRepository.GetActiveByUserId(employeeId, today, cancellationToken);
+        var utilization = await GetUtilizationOnDate(employeeUserId, today, cancellationToken);
+        var allocations = await _allocationRepository.GetActiveByUserId(employeeUserId, today, cancellationToken);
         var pastAllocations = await _allocationRepository.GetPastByUserId(
             new UserPastAllocationsQuery
             {
-                UserId = employeeId,
+                UserId = employeeUserId,
                 AsOfDate = today,
                 Limit = ManagerConstants.PastAllocationsDisplayCount,
             },
             cancellationToken);
         var sinceDate = today.AddDays(-7 * ManagerConstants.ActivityTagsLookbackWeeks);
         var activityTags = await _timesheetRepository.GetRecentActivityTagNamesForUser(
-            employeeId,
+            employeeUserId,
             sinceDate,
             cancellationToken);
 
@@ -174,17 +174,17 @@ public class EmployeeService(
     }
 
     public async Task<EmployeeUtilizationResponse> GetUtilization(
-        int employeeId,
+        int employeeUserId,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetResourceEmployeeOrThrow(employeeId, cancellationToken);
+        var user = await GetResourceEmployeeOrThrow(employeeUserId, cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var utilization = await GetUtilizationOnDate(employeeId, today, cancellationToken);
+        var utilization = await GetUtilizationOnDate(employeeUserId, today, cancellationToken);
 
         return new EmployeeUtilizationResponse
         {
-            EmployeeId = user.Id,
+            EmployeeUserId = user.Id,
             Name = user.FullName,
             UtilizationPercent = utilization,
             StatusDescription = utilization == 0

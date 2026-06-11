@@ -136,11 +136,11 @@ public class ProjectHealthServiceTests
             .ReturnsAsync(ApiTestData.CreateConfiguration((int)ConfigurationOptionEnum.MaxWeeklyHours, hours.ToString()));
     }
 
-    private void SetupHoursWorked(int employeeId, int projectId, int hours)
+    private void SetupHoursWorked(int employeeUserId, int projectId, int hours)
     {
         _timesheetRepository
             .Setup(x => x.GetHoursWorkedForUserOnProjectInWeek(
-                employeeId,
+                employeeUserId,
                 projectId,
                 It.IsAny<DateOnly>(),
                 It.IsAny<CancellationToken>()))

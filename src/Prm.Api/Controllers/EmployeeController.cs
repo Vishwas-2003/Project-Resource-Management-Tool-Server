@@ -36,39 +36,39 @@ public class EmployeeController(IEmployeeService _employeeService) : ApiControll
     [Authorize(Roles = nameof(RoleNameEnum.Admin))]
     [HttpPut(ApiRoutes.Employees.Update)]
     public Task<IActionResult> Update(
-        int employeeId,
+        int employeeUserId,
         [FromBody] UpdateEmployeeRequest request,
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var updated = await _employeeService.Update(employeeId, request, cancellationToken);
+            var updated = await _employeeService.Update(employeeUserId, request, cancellationToken);
             return Ok(new UpdatedResponse { Updated = updated });
         });
 
     [Authorize(Roles = nameof(RoleNameEnum.Admin))]
     [HttpPost(ApiRoutes.Employees.Deactivate)]
-    public Task<IActionResult> Deactivate(int employeeId, CancellationToken cancellationToken) =>
+    public Task<IActionResult> Deactivate(int employeeUserId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var updated = await _employeeService.Deactivate(employeeId, cancellationToken);
+            var updated = await _employeeService.Deactivate(employeeUserId, cancellationToken);
             return Ok(new UpdatedResponse { Updated = updated });
         });
 
     [Authorize(Roles = $"{nameof(RoleNameEnum.Admin)},{nameof(RoleNameEnum.Manager)}")]
     [HttpGet(ApiRoutes.Employees.GetDetail)]
-    public Task<IActionResult> GetDetail(int employeeId, CancellationToken cancellationToken) =>
+    public Task<IActionResult> GetDetail(int employeeUserId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var result = await _employeeService.GetDetail(employeeId, cancellationToken);
+            var result = await _employeeService.GetDetail(employeeUserId, cancellationToken);
             return Ok(result);
         });
 
     [Authorize(Roles = nameof(RoleNameEnum.Manager))]
     [HttpGet(ApiRoutes.Employees.GetUtilization)]
-    public Task<IActionResult> GetUtilization(int employeeId, CancellationToken cancellationToken) =>
+    public Task<IActionResult> GetUtilization(int employeeUserId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var result = await _employeeService.GetUtilization(employeeId, cancellationToken);
+            var result = await _employeeService.GetUtilization(employeeUserId, cancellationToken);
             return Ok(result);
         });
 }

@@ -203,7 +203,7 @@ public class AllocationServiceTests
             sut.Create(
                 CreateValidRequest(
                     projectId: project.Id,
-                    employeeId: employee.Id,
+                    employeeUserId: employee.Id,
                     from: new DateOnly(2026, 6, 1),
                     to: new DateOnly(2026, 6, 30)),
                 ManagerUserId));
@@ -294,7 +294,7 @@ public class AllocationServiceTests
 
         var sut = CreateSut();
         var result = await sut.Create(
-            CreateValidRequest(projectId: project.Id, employeeId: employee.Id),
+            CreateValidRequest(projectId: project.Id, employeeUserId: employee.Id),
             ManagerUserId);
 
         Assert.Equal(7, result.AllocationId);
@@ -482,14 +482,14 @@ public class AllocationServiceTests
 
     private static CreateAllocationRequest CreateValidRequest(
         int projectId = 1,
-        int employeeId = 1,
+        int employeeUserId = 1,
         int utilizationPercent = 50,
         DateOnly? from = null,
         DateOnly? to = null) =>
         new()
         {
             ProjectId = projectId,
-            EmployeeId = employeeId,
+            EmployeeUserId = employeeUserId,
             UtilizationPercent = utilizationPercent,
             FromDate = from ?? From,
             ToDate = to ?? To,

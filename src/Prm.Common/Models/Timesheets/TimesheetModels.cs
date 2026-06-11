@@ -124,7 +124,7 @@ public class EmployeeAllocationsResponse
 public class TeamTimesheetRow
 {
     public int RowNumber { get; set; }
-    public int EmployeeId { get; set; }
+    public int EmployeeUserId { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public int HoursWorked { get; set; }
@@ -139,7 +139,7 @@ public class TeamTimesheetsResponse
 
 public class EmployeeTimesheetDetailResponse
 {
-    public int EmployeeId { get; set; }
+    public int EmployeeUserId { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
     public DateOnly WeekStart { get; set; }
     public int TotalHours { get; set; }

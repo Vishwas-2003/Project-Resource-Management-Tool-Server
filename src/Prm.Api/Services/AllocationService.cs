@@ -74,18 +74,18 @@ public class AllocationService(
         EnsureProjectAllowsAllocation(project);
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
-        var user = await GetAllocatableUserOrThrow(request.EmployeeId, cancellationToken);
+        var user = await GetAllocatableUserOrThrow(request.EmployeeUserId, cancellationToken);
         UserAvailabilityHelper.EnsureAllocationDatesEligibleForUser(user, request.FromDate, request.ToDate);
 
         await EnsureNoOverlappingAllocationOnSameProject(
-            request.EmployeeId,
+            request.EmployeeUserId,
             request.ProjectId,
             request.FromDate,
             request.ToDate,
             cancellationToken);
 
         await EnsureUtilizationWithinLimit(
-            request.EmployeeId,
+            request.EmployeeUserId,
             request.UtilizationPercent,
             request.FromDate,
             request.ToDate,
@@ -93,7 +93,7 @@ public class AllocationService(
 
         var allocation = new Allocation
         {
-            UserId = request.EmployeeId,
+            UserId = request.EmployeeUserId,
             ProjectId = request.ProjectId,
             UtilizationPercent = request.UtilizationPercent,
             FromDate = request.FromDate,
@@ -102,7 +102,7 @@ public class AllocationService(
 
         await _allocationRepository.Add(allocation, cancellationToken);
         await _allocationRepository.SaveChanges(cancellationToken);
-        await UpdateUserResourceStatus(request.EmployeeId, cancellationToken);
+        await UpdateUserResourceStatus(request.EmployeeUserId, cancellationToken);
 
         return new AllocationCreatedResponse
         {

@@ -442,7 +442,7 @@ public class TimesheetServiceTests
         var sut = CreateSut();
         var result = await sut.GetEmployeeTimesheetDetail(managerUserId, employee.Id, weekStart);
 
-        Assert.Equal(employee.Id, result.EmployeeId);
+        Assert.Equal(employee.Id, result.EmployeeUserId);
         Assert.Equal(TimesheetConstants.StatusSubmitted, result.Status);
         Assert.Equal(20, result.TotalHours);
     }
@@ -955,19 +955,19 @@ public class TimesheetServiceTests
             .ReturnsAsync(ApiTestData.CreateConfiguration((int)ConfigurationOptionEnum.MaxWeeklyHours, hours.ToString()));
     }
 
-    private void SetupOverlappingAllocations(int employeeId, IReadOnlyList<Allocation> allocations)
+    private void SetupOverlappingAllocations(int employeeUserId, IReadOnlyList<Allocation> allocations)
     {
         _allocationRepository
             .Setup(x => x.GetOverlappingForUser(
-                It.Is<UserAllocationPeriodQuery>(query => query.UserId == employeeId),
+                It.Is<UserAllocationPeriodQuery>(query => query.UserId == employeeUserId),
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync(allocations);
     }
 
-    private void SetupSubmitWeek(int employeeId, DateOnly weekStart, bool exists)
+    private void SetupSubmitWeek(int employeeUserId, DateOnly weekStart, bool exists)
     {
         _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(employeeId, weekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.ExistsForUserWeek(employeeUserId, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(exists);
     }
 }

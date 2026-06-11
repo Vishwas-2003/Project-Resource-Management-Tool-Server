@@ -4,12 +4,12 @@ namespace Prm.Api.Services.Interfaces;
 
 public interface ISkillService
 {
-    Task<EmployeeSkillsResult> GetForEmployee(int employeeId, CancellationToken cancellationToken = default);
-    Task<int> Add(int employeeId, AddEmployeeSkillRequest request, CancellationToken cancellationToken = default);
+    Task<EmployeeSkillsResult> GetForEmployee(int employeeUserId, CancellationToken cancellationToken = default);
+    Task<int> Add(int employeeUserId, AddEmployeeSkillRequest request, CancellationToken cancellationToken = default);
     Task<bool> Update(
-        int employeeId,
+        int employeeUserId,
         int skillId,
         UpdateEmployeeSkillRequest request,
         CancellationToken cancellationToken = default);
-    Task Remove(int employeeId, int skillId, CancellationToken cancellationToken = default);
+    Task Remove(int employeeUserId, int skillId, CancellationToken cancellationToken = default);
 }

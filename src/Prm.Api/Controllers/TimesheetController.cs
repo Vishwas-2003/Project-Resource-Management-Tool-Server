@@ -102,7 +102,7 @@ public class TimesheetController(
     [Authorize(Roles = nameof(RoleNameEnum.Manager))]
     [HttpGet(ApiRoutes.Timesheets.TeamEmployeeDetail)]
     public Task<IActionResult> GetEmployeeTimesheetDetail(
-        int employeeId,
+        int employeeUserId,
         [FromQuery] DateOnly weekStart,
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
@@ -110,7 +110,7 @@ public class TimesheetController(
             var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
             var result = await _timesheetService.GetEmployeeTimesheetDetail(
                 managerUserId,
-                employeeId,
+                employeeUserId,
                 weekStart,
                 cancellationToken);
             return Ok(result);

@@ -49,7 +49,7 @@ public class AllocationControllerTests
         var result = await sut.Create(
             new CreateAllocationRequest
             {
-                EmployeeId = 1,
+                EmployeeUserId = 1,
                 ProjectId = 1,
                 UtilizationPercent = 50,
                 FromDate = new DateOnly(2026, 1, 1),
@@ -70,7 +70,7 @@ public class AllocationControllerTests
 
         var sut = CreateSut();
         var result = await sut.Create(
-            new CreateAllocationRequest { EmployeeId = 1, ProjectId = 1, UtilizationPercent = 50, FromDate = new DateOnly(2026, 1, 1) },
+            new CreateAllocationRequest { EmployeeUserId = 1, ProjectId = 1, UtilizationPercent = 50, FromDate = new DateOnly(2026, 1, 1) },
             CancellationToken.None);
 
         ControllerTestHelper.AssertErrorResult(

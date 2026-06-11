@@ -13,10 +13,10 @@ public class SkillService(
     IUserSkillRepository _userSkillRepository,
     IMapper _mapper) : ISkillService
 {
-    public async Task<EmployeeSkillsResult> GetForEmployee(int employeeId, CancellationToken cancellationToken = default)
+    public async Task<EmployeeSkillsResult> GetForEmployee(int employeeUserId, CancellationToken cancellationToken = default)
     {
-        var user = await GetEmployeeUserOrThrow(employeeId, cancellationToken);
-        var userSkills = await _userSkillRepository.GetByUserId(employeeId, cancellationToken);
+        var user = await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
+        var userSkills = await _userSkillRepository.GetByUserId(employeeUserId, cancellationToken);
 
         var skills = _mapper.Map<List<EmployeeSkillItem>>(userSkills);
         for (var rowIndex = 0; rowIndex < skills.Count; rowIndex++)
@@ -26,30 +26,30 @@ public class SkillService(
 
         return new EmployeeSkillsResult
         {
-            EmployeeId = user.Id,
+            EmployeeUserId = user.Id,
             FullName = user.FullName,
             Skills = skills,
         };
     }
 
     public async Task<int> Add(
-        int employeeId,
+        int employeeUserId,
         AddEmployeeSkillRequest request,
         CancellationToken cancellationToken = default)
     {
-        await GetEmployeeUserOrThrow(employeeId, cancellationToken);
+        await GetEmployeeUserOrThrow(employeeUserId, cancellationToken);
         ValidateCategory(request.Category);
         var proficiency = NormalizeProficiency(request.Proficiency);
 
         var skill = await GetOrCreateSkill(request, cancellationToken);
 
-        if (await _userSkillRepository.Exists(employeeId, skill.Id, cancellationToken))
+        if (await _userSkillRepository.Exists(employeeUserId, skill.Id, cancellationToken))
         {
             throw new InvalidOperationException(AppConstants.Skills.SkillAlreadyAssigned);
         }
 
         var userSkill = _mapper.Map<UserSkill>(request);
-        userSkill.UserId = employeeId;
+        userSkill.UserId = employeeUserId;
         userSkill.SkillId = skill.Id;
         userSkill.Proficiency = proficiency;
 
@@ -60,13 +60,13 @@ public class SkillService(
     }
 
     public async Task<bool> Update(
-        int employeeId,
+        int employeeUserId,
         int skillId,
         UpdateEmployeeSkillRequest request,
         CancellationToken cancellationToken = default)
     {
         request.Proficiency = NormalizeProficiency(request.Proficiency);
-        var key = new UserSkillKey(employeeId, skillId);
+        var key = new UserSkillKey(employeeUserId, skillId);
         var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
         if (userSkill is null)
@@ -81,9 +81,9 @@ public class SkillService(
         return true;
     }
 
-    public async Task Remove(int employeeId, int skillId, CancellationToken cancellationToken = default)
+    public async Task Remove(int employeeUserId, int skillId, CancellationToken cancellationToken = default)
     {
-        var key = new UserSkillKey(employeeId, skillId);
+        var key = new UserSkillKey(employeeUserId, skillId);
         var userSkill = await _userSkillRepository.GetById(key, cancellationToken);
 
         if (userSkill is null)

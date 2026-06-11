@@ -3,7 +3,7 @@ namespace Prm.Common.Models.Manager;
 public class CreateAllocationRequest
 {
     public int ProjectId { get; set; }
-    public int EmployeeId { get; set; }
+    public int EmployeeUserId { get; set; }
     public int UtilizationPercent { get; set; }
     public DateOnly FromDate { get; set; }
     public DateOnly ToDate { get; set; }

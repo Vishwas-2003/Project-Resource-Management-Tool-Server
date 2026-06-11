@@ -168,7 +168,7 @@ public class TimesheetControllerTests
     public async Task GetEmployeeTimesheetDetail_WhenValid_ReturnsOk()
     {
         var weekStart = new DateOnly(2026, 5, 26);
-        var response = new EmployeeTimesheetDetailResponse { EmployeeId = 1, TotalHours = 20 };
+        var response = new EmployeeTimesheetDetailResponse { EmployeeUserId = 1, TotalHours = 20 };
 
         _timesheetService
             .Setup(x => x.GetEmployeeTimesheetDetail(ManagerUserId, 1, weekStart, It.IsAny<CancellationToken>()))

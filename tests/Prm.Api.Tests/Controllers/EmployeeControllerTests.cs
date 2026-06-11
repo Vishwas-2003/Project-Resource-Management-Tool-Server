@@ -105,7 +105,7 @@ public class EmployeeControllerTests
     [Fact]
     public async Task GetUtilization_WhenValid_ReturnsOk()
     {
-        var response = new EmployeeUtilizationResponse { EmployeeId = 1, UtilizationPercent = 80 };
+        var response = new EmployeeUtilizationResponse { EmployeeUserId = 1, UtilizationPercent = 80 };
 
         _employeeService
             .Setup(x => x.GetUtilization(1, It.IsAny<CancellationToken>()))

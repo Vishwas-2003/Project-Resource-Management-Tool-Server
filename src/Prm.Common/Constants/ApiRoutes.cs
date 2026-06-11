@@ -13,21 +13,21 @@ public static class ApiRoutes
 
     public static class Employees
     {
-        public const string Update = "{employeeId:int}";
+        public const string Update = "{employeeUserId:int}";
         public const string GetEmployees = "get-employees";
         public const string AddEmployee = "add";
         public const string AssignManager = "assign-manager";
-        public const string Deactivate = "{employeeId:int}/deactivate";
-        public const string GetDetail = "{employeeId:int}";
-        public const string GetUtilization = "{employeeId:int}/utilization";
+        public const string Deactivate = "{employeeUserId:int}/deactivate";
+        public const string GetDetail = "{employeeUserId:int}";
+        public const string GetUtilization = "{employeeUserId:int}/utilization";
     }
 
     public static class Skills
     {
-        public const string GetForEmployee = "employee/{employeeId:int}";
-        public const string Add = "employee/{employeeId:int}";
-        public const string Update = "employee/{employeeId:int}/{skillId:int}";
-        public const string Remove = "employee/{employeeId:int}/{skillId:int}";
+        public const string GetForEmployee = "employee/{employeeUserId:int}";
+        public const string Add = "employee/{employeeUserId:int}";
+        public const string Update = "employee/{employeeUserId:int}/{skillId:int}";
+        public const string Remove = "employee/{employeeUserId:int}/{skillId:int}";
     }
 
     public static class Users
@@ -83,6 +83,6 @@ public static class ApiRoutes
         public const string MyTimesheetDetail = "my-timesheets/{weekStart}";
         public const string MyAllocations = "my-allocations";
         public const string Team = "team";
-        public const string TeamEmployeeDetail = "team/{employeeId:int}";
+        public const string TeamEmployeeDetail = "team/{employeeUserId:int}";
     }
 }

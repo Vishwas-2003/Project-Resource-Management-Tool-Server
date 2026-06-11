@@ -18,7 +18,7 @@ public class SkillControllerTests
     {
         var response = new EmployeeSkillsResult
         {
-            EmployeeId = 1,
+            EmployeeUserId = 1,
             Skills = [new EmployeeSkillItem { SkillId = 1, SkillName = "C#" }],
         };
 

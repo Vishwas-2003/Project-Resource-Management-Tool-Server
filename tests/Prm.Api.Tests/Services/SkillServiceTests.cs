@@ -55,7 +55,7 @@ public class SkillServiceTests
         var sut = CreateSut();
         var result = await sut.GetForEmployee(user.Id);
 
-        Assert.Equal(user.Id, result.EmployeeId);
+        Assert.Equal(user.Id, result.EmployeeUserId);
         Assert.Equal(user.FullName, result.FullName);
         Assert.Single(result.Skills);
         Assert.Equal("C#", result.Skills[0].SkillName);

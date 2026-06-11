@@ -15,41 +15,41 @@ namespace Prm.Api.Controllers;
 public class SkillController(ISkillService _skillService) : ApiControllerBase
 {
     [HttpGet(ApiRoutes.Skills.GetForEmployee)]
-    public Task<IActionResult> GetForEmployee(int employeeId, CancellationToken cancellationToken) =>
+    public Task<IActionResult> GetForEmployee(int employeeUserId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var result = await _skillService.GetForEmployee(employeeId, cancellationToken);
+            var result = await _skillService.GetForEmployee(employeeUserId, cancellationToken);
             return Ok(result);
         });
 
     [HttpPost(ApiRoutes.Skills.Add)]
     public Task<IActionResult> Add(
-        int employeeId,
+        int employeeUserId,
         [FromBody] AddEmployeeSkillRequest request,
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var id = await _skillService.Add(employeeId, request, cancellationToken);
+            var id = await _skillService.Add(employeeUserId, request, cancellationToken);
             return StatusCode(StatusCodes.Status201Created, new CreatedIdResponse { Id = id });
         });
 
     [HttpPut(ApiRoutes.Skills.Update)]
     public Task<IActionResult> Update(
-        int employeeId,
+        int employeeUserId,
         int skillId,
         [FromBody] UpdateEmployeeSkillRequest request,
         CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            var updated = await _skillService.Update(employeeId, skillId, request, cancellationToken);
+            var updated = await _skillService.Update(employeeUserId, skillId, request, cancellationToken);
             return Ok(new UpdatedResponse { Updated = updated });
         });
 
     [HttpDelete(ApiRoutes.Skills.Remove)]
-    public Task<IActionResult> Remove(int employeeId, int skillId, CancellationToken cancellationToken) =>
+    public Task<IActionResult> Remove(int employeeUserId, int skillId, CancellationToken cancellationToken) =>
         ExecuteResultAsync(async () =>
         {
-            await _skillService.Remove(employeeId, skillId, cancellationToken);
+            await _skillService.Remove(employeeUserId, skillId, cancellationToken);
             return Ok(new { message = AppConstants.Skills.SkillRemoved });
         });
 }

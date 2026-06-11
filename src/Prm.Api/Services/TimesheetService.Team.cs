@@ -26,11 +26,11 @@ public partial class TimesheetService
 
     public async Task<EmployeeTimesheetDetailResponse> GetEmployeeTimesheetDetail(
         int managerUserId,
-        int employeeId,
+        int employeeUserId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default)
     {
-        var user = await GetTeamEmployeeOrThrow(managerUserId, employeeId, cancellationToken);
+        var user = await GetTeamEmployeeOrThrow(managerUserId, employeeUserId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
         var timesheet = await _timesheetRepository.GetByUserAndWeek(
             user.Id,
@@ -57,7 +57,7 @@ public partial class TimesheetService
 
         return submittedRows.Select(x => new TeamTimesheetRow
         {
-            EmployeeId = x.UserId,
+            EmployeeUserId = x.UserId,
             EmployeeName = x.UserName,
             ProjectName = x.ProjectName,
             HoursWorked = x.Hours,
@@ -72,14 +72,14 @@ public partial class TimesheetService
         DateOnly weekEnd,
         CancellationToken cancellationToken)
     {
-        var submittedEmployeeIds = rows
-            .Select(x => x.EmployeeId)
+        var submittedEmployeeUserIds = rows
+            .Select(x => x.EmployeeUserId)
             .ToHashSet();
 
         var teamUsers = await _userRepository.GetEmployeeUsersByManagerUserId(managerUserId, cancellationToken);
         foreach (var user in teamUsers)
         {
-            if (submittedEmployeeIds.Contains(user.Id)
+            if (submittedEmployeeUserIds.Contains(user.Id)
                 || !UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
             {
                 continue;
@@ -101,7 +101,7 @@ public partial class TimesheetService
 
             rows.Add(new TeamTimesheetRow
             {
-                EmployeeId = user.Id,
+                EmployeeUserId = user.Id,
                 EmployeeName = user.FullName,
                 ProjectName = allocations[0].Project.Name,
                 HoursWorked = 0,
@@ -163,7 +163,7 @@ public partial class TimesheetService
 
         return new EmployeeTimesheetDetailResponse
         {
-            EmployeeId = user.Id,
+            EmployeeUserId = user.Id,
             EmployeeName = user.FullName,
             WeekStart = normalizedWeekStart,
             Status = TimesheetConstants.StatusMissed,
@@ -178,7 +178,7 @@ public partial class TimesheetService
         Timesheet timesheet) =>
         new()
         {
-            EmployeeId = user.Id,
+            EmployeeUserId = user.Id,
             EmployeeName = user.FullName,
             WeekStart = normalizedWeekStart,
             Status = timesheet.Status,
