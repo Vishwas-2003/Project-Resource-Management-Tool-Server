@@ -37,7 +37,7 @@ public class AppDbContext : DbContext
     public DbSet<TimesheetActivityTag> TimesheetActivityTags => Set<TimesheetActivityTag>();
     public DbSet<SystemConfiguration> SystemConfigurations => Set<SystemConfiguration>();
     public DbSet<ProjectRiskFlag> ProjectRiskFlags => Set<ProjectRiskFlag>();
-    public DbSet<ProjectRiskEmailHistory> ProjectRiskEmailHistories => Set<ProjectRiskEmailHistory>();
+    public DbSet<EmailNotificationHistory> EmailNotificationHistories => Set<EmailNotificationHistory>();
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
     {

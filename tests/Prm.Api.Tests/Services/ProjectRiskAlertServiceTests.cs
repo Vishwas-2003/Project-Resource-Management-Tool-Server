@@ -5,6 +5,7 @@ using Prm.Api.Models.Email;
 using Prm.Api.Services;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
 using Prm.Api.Tests.Helpers;
@@ -15,14 +16,14 @@ public class ProjectRiskAlertServiceTests
 {
     private readonly Mock<IProjectRepository> _projectRepository = new();
     private readonly Mock<IProjectRiskFlagRepository> _projectRiskFlagRepository = new();
-    private readonly Mock<IProjectRiskEmailHistoryRepository> _projectRiskEmailHistoryRepository = new();
+    private readonly Mock<IEmailNotificationHistoryRepository> _emailNotificationHistoryRepository = new();
     private readonly Mock<IAiServiceClient> _aiServiceClient = new();
     private readonly Mock<IEmailNotificationService> _emailNotificationService = new();
 
     public ProjectRiskAlertServiceTests()
     {
-        _projectRiskEmailHistoryRepository
-            .Setup(x => x.ExistsForProjectOnDateAsync(
+        _emailNotificationHistoryRepository
+            .Setup(x => x.ExistsForProjectRiskOnDateAsync(
                 It.IsAny<int>(),
                 It.IsAny<DateOnly>(),
                 It.IsAny<CancellationToken>()))
@@ -108,10 +109,10 @@ public class ProjectRiskAlertServiceTests
             .Callback<EmailMessage, CancellationToken>((message, _) => capturedEmail = message)
             .Returns(Task.CompletedTask);
 
-        ProjectRiskEmailHistory? capturedHistory = null;
-        _projectRiskEmailHistoryRepository
-            .Setup(x => x.Add(It.IsAny<ProjectRiskEmailHistory>(), It.IsAny<CancellationToken>()))
-            .Callback<ProjectRiskEmailHistory, CancellationToken>((history, _) => capturedHistory = history)
+        EmailNotificationHistory? capturedHistory = null;
+        _emailNotificationHistoryRepository
+            .Setup(x => x.Add(It.IsAny<EmailNotificationHistory>(), It.IsAny<CancellationToken>()))
+            .Callback<EmailNotificationHistory, CancellationToken>((history, _) => capturedHistory = history)
             .Returns(Task.CompletedTask);
 
         var sut = CreateSut();
@@ -122,13 +123,14 @@ public class ProjectRiskAlertServiceTests
         Assert.Contains(project.Name, capturedEmail.Subject);
 
         Assert.NotNull(capturedHistory);
-        Assert.Equal(project.Id, capturedHistory!.ProjectId);
-        Assert.Equal(project.ManagerUserId, capturedHistory.ManagerUserId);
+        Assert.Equal((int)EmailNotificationTypeEnum.ProjectRisk, capturedHistory!.EmailTypeId);
+        Assert.Equal(project.Id, capturedHistory.ProjectId);
+        Assert.Equal(project.ManagerUserId, capturedHistory.UserId);
         Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow), capturedHistory.SentOnDate);
         Assert.Equal(project.ManagerUser.Email, capturedHistory.RecipientEmail);
         Assert.Equal(capturedEmail.Subject, capturedHistory.Subject);
 
-        _projectRiskEmailHistoryRepository.Verify(
+        _emailNotificationHistoryRepository.Verify(
             x => x.SaveChanges(It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -142,8 +144,8 @@ public class ProjectRiskAlertServiceTests
         _projectRepository
             .Setup(x => x.GetAllWithManager(It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Project> { project });
-        _projectRiskEmailHistoryRepository
-            .Setup(x => x.ExistsForProjectOnDateAsync(
+        _emailNotificationHistoryRepository
+            .Setup(x => x.ExistsForProjectRiskOnDateAsync(
                 project.Id,
                 DateOnly.FromDateTime(DateTime.UtcNow),
                 It.IsAny<CancellationToken>()))
@@ -155,8 +157,8 @@ public class ProjectRiskAlertServiceTests
         _emailNotificationService.Verify(
             x => x.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        _projectRiskEmailHistoryRepository.Verify(
-            x => x.Add(It.IsAny<ProjectRiskEmailHistory>(), It.IsAny<CancellationToken>()),
+        _emailNotificationHistoryRepository.Verify(
+            x => x.Add(It.IsAny<EmailNotificationHistory>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -216,7 +218,7 @@ public class ProjectRiskAlertServiceTests
         new(
             _projectRepository.Object,
             _projectRiskFlagRepository.Object,
-            _projectRiskEmailHistoryRepository.Object,
+            _emailNotificationHistoryRepository.Object,
             _aiServiceClient.Object,
             _emailNotificationService.Object,
             NullLogger<ProjectRiskAlertService>.Instance);

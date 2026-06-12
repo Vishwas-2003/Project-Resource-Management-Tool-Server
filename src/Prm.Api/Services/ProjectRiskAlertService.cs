@@ -1,6 +1,7 @@
 using Prm.Api.Models.Ai;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
 
@@ -9,7 +10,7 @@ namespace Prm.Api.Services;
 public class ProjectRiskAlertService(
     IProjectRepository projectRepository,
     IProjectRiskFlagRepository projectRiskFlagRepository,
-    IProjectRiskEmailHistoryRepository projectRiskEmailHistoryRepository,
+    IEmailNotificationHistoryRepository emailNotificationHistoryRepository,
     IAiServiceClient aiServiceClient,
     IEmailNotificationService emailNotificationService,
     ILogger<ProjectRiskAlertService> logger) : IProjectRiskAlertService
@@ -39,7 +40,7 @@ public class ProjectRiskAlertService(
                 continue;
             }
 
-            if (await projectRiskEmailHistoryRepository.ExistsForProjectOnDateAsync(
+            if (await emailNotificationHistoryRepository.ExistsForProjectRiskOnDateAsync(
                     project.Id,
                     today,
                     cancellationToken))
@@ -92,21 +93,22 @@ public class ProjectRiskAlertService(
         await emailNotificationService.SendAsync(email, cancellationToken);
 
         var sentAtUtc = DateTime.UtcNow;
-        await projectRiskEmailHistoryRepository.Add(
-            new ProjectRiskEmailHistory
+        await emailNotificationHistoryRepository.Add(
+            new EmailNotificationHistory
             {
+                EmailTypeId = (int)EmailNotificationTypeEnum.ProjectRisk,
+                UserId = project.ManagerUserId,
                 ProjectId = project.Id,
-                ManagerUserId = project.ManagerUserId,
                 SentOnDate = sentOnDate,
                 SentAtUtc = sentAtUtc,
                 RecipientEmail = project.ManagerUser.Email,
                 Subject = email.Subject,
             },
             cancellationToken);
-        await projectRiskEmailHistoryRepository.SaveChanges(cancellationToken);
+        await emailNotificationHistoryRepository.SaveChanges(cancellationToken);
 
         logger.LogInformation(
-            "Logged project risk email history for project {ProjectId}, manager {ManagerUserId}, sent on {SentOnDate}.",
+            "Logged project risk email history for project {ProjectId}, user {UserId}, sent on {SentOnDate}.",
             project.Id,
             project.ManagerUserId,
             sentOnDate);

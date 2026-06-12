@@ -4,6 +4,7 @@ using Prm.Api.Models.Email;
 using Prm.Api.Services;
 using Prm.Api.Services.Interfaces;
 using Prm.Common.Constants;
+using Prm.Common.Enums;
 using Prm.Common.Models.Resources;
 using Prm.Data.Entities;
 using Prm.Data.Repositories.Interfaces;
@@ -17,7 +18,24 @@ public class TimesheetReminderServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IAllocationRepository> _allocationRepository = new();
     private readonly Mock<ITimesheetRepository> _timesheetRepository = new();
+    private readonly Mock<IEmailNotificationHistoryRepository> _emailNotificationHistoryRepository = new();
     private readonly Mock<IEmailNotificationService> _emailNotificationService = new();
+
+    public TimesheetReminderServiceTests()
+    {
+        _emailNotificationHistoryRepository
+            .Setup(x => x.ExistsForMissedTimesheetOnDateAsync(
+                It.IsAny<int>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _emailNotificationHistoryRepository
+            .Setup(x => x.Add(It.IsAny<EmailNotificationHistory>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _emailNotificationHistoryRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+    }
 
     [Fact]
     public async Task ExecuteAsync_OnThursday_DoesNotSendEmail()
@@ -56,6 +74,13 @@ public class TimesheetReminderServiceTests
         Assert.NotNull(capturedEmail);
         Assert.Equal(resource.Email, capturedEmail.ToEmail);
         Assert.Contains(weekStart.ToString("yyyy-MM-dd"), capturedEmail.Subject);
+        _emailNotificationHistoryRepository.Verify(
+            x => x.Add(
+                It.Is<EmailNotificationHistory>(history =>
+                    history.EmailTypeId == (int)EmailNotificationTypeEnum.MissedTimeSheet
+                    && history.UserId == resource.Id),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -156,6 +181,33 @@ public class TimesheetReminderServiceTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_OnMonday_WhenEmailAlreadySentToday_SkipsEmail()
+    {
+        var monday = new DateTime(2026, 6, 8, 9, 0, 0, DateTimeKind.Utc);
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(monday));
+        var resource = ApiTestData.CreateResourceUser();
+        var allocation = ApiTestData.CreateAllocation(fromDate: weekStart, toDate: weekStart.AddDays(6));
+
+        SetupMissingResource(resource, weekStart, allocation, submitted: false);
+        _emailNotificationHistoryRepository
+            .Setup(x => x.ExistsForMissedTimesheetOnDateAsync(
+                resource.Id,
+                DateOnly.FromDateTime(monday),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut(monday);
+        await sut.ExecuteAsync();
+
+        _emailNotificationService.Verify(
+            x => x.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _emailNotificationHistoryRepository.Verify(
+            x => x.Add(It.IsAny<EmailNotificationHistory>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_WhenTimesheetSubmitted_SkipsResource()
     {
         var monday = new DateTime(2026, 6, 8, 9, 0, 0, DateTimeKind.Utc);
@@ -202,6 +254,7 @@ public class TimesheetReminderServiceTests
             _userRepository.Object,
             _allocationRepository.Object,
             _timesheetRepository.Object,
+            _emailNotificationHistoryRepository.Object,
             _emailNotificationService.Object,
             new FixedTimeProvider(utcNow),
             NullLogger<TimesheetReminderService>.Instance);

@@ -12,6 +12,7 @@ public class TimesheetReminderService(
     IUserRepository userRepository,
     IAllocationRepository allocationRepository,
     ITimesheetRepository timesheetRepository,
+    IEmailNotificationHistoryRepository emailNotificationHistoryRepository,
     IEmailNotificationService emailNotificationService,
     TimeProvider timeProvider,
     ILogger<TimesheetReminderService> logger) : ITimesheetReminderService
@@ -35,13 +36,22 @@ public class TimesheetReminderService(
         var lastCompletedWeekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(today);
         var missingResources = await GetMissingTimesheetResources(lastCompletedWeekStart, cancellationToken);
         var processed = 0;
+        var emailsSent = 0;
+        var skippedAlreadySent = 0;
 
         foreach (var resource in missingResources)
         {
             try
             {
-                await ProcessResourceAsync(resource, lastCompletedWeekStart, dayOfWeek, cancellationToken);
+                var result = await ProcessResourceAsync(
+                    resource,
+                    lastCompletedWeekStart,
+                    today,
+                    dayOfWeek,
+                    cancellationToken);
                 processed++;
+                emailsSent += result.EmailsSent;
+                skippedAlreadySent += result.SkippedAlreadySent;
             }
             catch (Exception ex)
             {
@@ -53,39 +63,46 @@ public class TimesheetReminderService(
         }
 
         logger.LogInformation(
-            "Timesheet reminder job completed for {DayOfWeek}. Processed {ProcessedCount} of {MissingCount} resources.",
+            "Timesheet reminder job completed for {DayOfWeek}. Processed {ProcessedCount} of {MissingCount} resources. Sent {EmailsSent}, skipped {SkippedAlreadySent}.",
             dayOfWeek,
             processed,
-            missingResources.Count);
+            missingResources.Count,
+            emailsSent,
+            skippedAlreadySent);
     }
 
-    private async Task ProcessResourceAsync(
+    private async Task<(int EmailsSent, int SkippedAlreadySent)> ProcessResourceAsync(
         User resource,
         DateOnly weekStart,
+        DateOnly sentOnDate,
         DayOfWeek dayOfWeek,
         CancellationToken cancellationToken)
     {
         switch (dayOfWeek)
         {
             case DayOfWeek.Monday:
-                await SendEmailAsync(
+                return await SendMissedTimesheetEmailAsync(
+                    resource,
                     TimesheetReminderEmailBuilder.BuildMondayReminder(resource, weekStart),
+                    sentOnDate,
                     cancellationToken);
-                break;
             case DayOfWeek.Tuesday:
-                await SendEmailAsync(
+                return await SendMissedTimesheetEmailAsync(
+                    resource,
                     TimesheetReminderEmailBuilder.BuildTuesdayWarning(resource, weekStart),
+                    sentOnDate,
                     cancellationToken);
-                break;
             case DayOfWeek.Wednesday:
-                await BlockAndNotifyAsync(resource, weekStart, cancellationToken);
-                break;
+                return await BlockAndNotifyAsync(resource, weekStart, sentOnDate, cancellationToken);
+            default:
+                return (0, 0);
         }
     }
 
-    private async Task BlockAndNotifyAsync(
+    private async Task<(int EmailsSent, int SkippedAlreadySent)> BlockAndNotifyAsync(
         User resource,
         DateOnly weekStart,
+        DateOnly sentOnDate,
         CancellationToken cancellationToken)
     {
         var existing = await timesheetRepository.GetByUserAndWeek(resource.Id, weekStart, cancellationToken);
@@ -95,34 +112,79 @@ public class TimesheetReminderService(
                 "Skipping Wednesday block for resource {ResourceUserId} because access is already blocked for {WeekStart}.",
                 resource.Id,
                 weekStart);
-            return;
+            return (0, 0);
         }
 
         await timesheetRepository.EnsureBlockedTimesheetAsync(resource.Id, weekStart, cancellationToken);
         await timesheetRepository.SaveChanges(cancellationToken);
 
-        await SendEmailAsync(
+        var resourceResult = await SendMissedTimesheetEmailAsync(
+            resource,
             TimesheetReminderEmailBuilder.BuildWednesdayResourceBlocked(resource, weekStart),
+            sentOnDate,
             cancellationToken);
 
         var manager = await userRepository.GetCurrentManagerForResourceUserId(resource.Id, cancellationToken);
-        if (manager is { IsActive: true } && !string.IsNullOrWhiteSpace(manager.Email))
-        {
-            await SendEmailAsync(
-                TimesheetReminderEmailBuilder.BuildWednesdayManagerBlocked(manager, resource, weekStart),
-                cancellationToken);
-        }
-        else
+        if (manager is not { IsActive: true } || string.IsNullOrWhiteSpace(manager.Email))
         {
             logger.LogWarning(
                 "No active manager email found for resource {ResourceUserId} during Wednesday timesheet block.",
                 resource.Id);
+            return resourceResult;
         }
+
+        var managerResult = await SendMissedTimesheetEmailAsync(
+            manager,
+            TimesheetReminderEmailBuilder.BuildWednesdayManagerBlocked(manager, resource, weekStart),
+            sentOnDate,
+            cancellationToken);
+
+        return (
+            resourceResult.EmailsSent + managerResult.EmailsSent,
+            resourceResult.SkippedAlreadySent + managerResult.SkippedAlreadySent);
     }
 
-    private async Task SendEmailAsync(EmailMessage email, CancellationToken cancellationToken)
+    private async Task<(int EmailsSent, int SkippedAlreadySent)> SendMissedTimesheetEmailAsync(
+        User recipient,
+        EmailMessage email,
+        DateOnly sentOnDate,
+        CancellationToken cancellationToken)
     {
+        if (await emailNotificationHistoryRepository.ExistsForMissedTimesheetOnDateAsync(
+                recipient.Id,
+                sentOnDate,
+                cancellationToken))
+        {
+            logger.LogInformation(
+                "Skipping missed timesheet email for user {UserId} because an email was already sent on {SentOnDate}.",
+                recipient.Id,
+                sentOnDate);
+            return (0, 1);
+        }
+
         await emailNotificationService.SendAsync(email, cancellationToken);
+
+        var sentAtUtc = timeProvider.GetUtcNow().UtcDateTime;
+        await emailNotificationHistoryRepository.Add(
+            new EmailNotificationHistory
+            {
+                EmailTypeId = (int)EmailNotificationTypeEnum.MissedTimeSheet,
+                UserId = recipient.Id,
+                ProjectId = null,
+                SentOnDate = sentOnDate,
+                SentAtUtc = sentAtUtc,
+                RecipientEmail = email.ToEmail,
+                Subject = email.Subject,
+            },
+            cancellationToken);
+        await emailNotificationHistoryRepository.SaveChanges(cancellationToken);
+
+        logger.LogInformation(
+            "Logged missed timesheet email history for user {UserId}, sent on {SentOnDate}.",
+            recipient.Id,
+            sentOnDate);
+
+        return (1, 0);
     }
 
     private async Task<IReadOnlyList<User>> GetMissingTimesheetResources(
