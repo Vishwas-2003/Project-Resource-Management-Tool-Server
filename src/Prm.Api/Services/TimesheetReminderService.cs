@@ -81,17 +81,33 @@ public class TimesheetReminderService(
         switch (dayOfWeek)
         {
             case DayOfWeek.Monday:
+            {
+                var timesheet = await timesheetRepository.GetOrEnsureMissedTimesheetAsync(
+                    resource.Id,
+                    weekStart,
+                    cancellationToken);
+                await timesheetRepository.SaveChanges(cancellationToken);
                 return await SendMissedTimesheetEmailAsync(
                     resource,
+                    timesheet.Id,
                     TimesheetReminderEmailBuilder.BuildMondayReminder(resource, weekStart),
                     sentOnDate,
                     cancellationToken);
+            }
             case DayOfWeek.Tuesday:
+            {
+                var timesheet = await timesheetRepository.GetOrEnsureMissedTimesheetAsync(
+                    resource.Id,
+                    weekStart,
+                    cancellationToken);
+                await timesheetRepository.SaveChanges(cancellationToken);
                 return await SendMissedTimesheetEmailAsync(
                     resource,
+                    timesheet.Id,
                     TimesheetReminderEmailBuilder.BuildTuesdayWarning(resource, weekStart),
                     sentOnDate,
                     cancellationToken);
+            }
             case DayOfWeek.Wednesday:
                 return await BlockAndNotifyAsync(resource, weekStart, sentOnDate, cancellationToken);
             default:
@@ -115,11 +131,12 @@ public class TimesheetReminderService(
             return (0, 0);
         }
 
-        await timesheetRepository.EnsureBlockedTimesheetAsync(resource.Id, weekStart, cancellationToken);
+        var timesheet = await timesheetRepository.EnsureBlockedTimesheetAsync(resource.Id, weekStart, cancellationToken);
         await timesheetRepository.SaveChanges(cancellationToken);
 
         var resourceResult = await SendMissedTimesheetEmailAsync(
             resource,
+            timesheet.Id,
             TimesheetReminderEmailBuilder.BuildWednesdayResourceBlocked(resource, weekStart),
             sentOnDate,
             cancellationToken);
@@ -135,6 +152,7 @@ public class TimesheetReminderService(
 
         var managerResult = await SendMissedTimesheetEmailAsync(
             manager,
+            timesheet.Id,
             TimesheetReminderEmailBuilder.BuildWednesdayManagerBlocked(manager, resource, weekStart),
             sentOnDate,
             cancellationToken);
@@ -146,6 +164,7 @@ public class TimesheetReminderService(
 
     private async Task<(int EmailsSent, int SkippedAlreadySent)> SendMissedTimesheetEmailAsync(
         User recipient,
+        int timesheetEntityId,
         EmailMessage email,
         DateOnly sentOnDate,
         CancellationToken cancellationToken)
@@ -170,7 +189,7 @@ public class TimesheetReminderService(
             {
                 EmailTypeId = (int)EmailNotificationTypeEnum.MissedTimeSheet,
                 UserId = recipient.Id,
-                ProjectId = null,
+                EntityId = timesheetEntityId,
                 SentOnDate = sentOnDate,
                 SentAtUtc = sentAtUtc,
                 RecipientEmail = email.ToEmail,
@@ -180,8 +199,9 @@ public class TimesheetReminderService(
         await emailNotificationHistoryRepository.SaveChanges(cancellationToken);
 
         logger.LogInformation(
-            "Logged missed timesheet email history for user {UserId}, sent on {SentOnDate}.",
+            "Logged missed timesheet email history for user {UserId}, timesheet {TimesheetId}, sent on {SentOnDate}.",
             recipient.Id,
+            timesheetEntityId,
             sentOnDate);
 
         return (1, 0);

@@ -45,6 +45,11 @@ public interface ITimesheetRepository : ICrudBaseRepository<Timesheet, int>
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
+    Task<Timesheet> GetOrEnsureMissedTimesheetAsync(
+        int userId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Timesheet>> GetByUserId(
         int userId,
         CancellationToken cancellationToken = default);

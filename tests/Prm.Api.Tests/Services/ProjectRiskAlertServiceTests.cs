@@ -124,7 +124,7 @@ public class ProjectRiskAlertServiceTests
 
         Assert.NotNull(capturedHistory);
         Assert.Equal((int)EmailNotificationTypeEnum.ProjectRisk, capturedHistory!.EmailTypeId);
-        Assert.Equal(project.Id, capturedHistory.ProjectId);
+        Assert.Equal(project.Id, capturedHistory.EntityId);
         Assert.Equal(project.ManagerUserId, capturedHistory.UserId);
         Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow), capturedHistory.SentOnDate);
         Assert.Equal(project.ManagerUser.Email, capturedHistory.RecipientEmail);

@@ -98,7 +98,7 @@ public class ProjectRiskAlertService(
             {
                 EmailTypeId = (int)EmailNotificationTypeEnum.ProjectRisk,
                 UserId = project.ManagerUserId,
-                ProjectId = project.Id,
+                EntityId = project.Id,
                 SentOnDate = sentOnDate,
                 SentAtUtc = sentAtUtc,
                 RecipientEmail = project.ManagerUser.Email,

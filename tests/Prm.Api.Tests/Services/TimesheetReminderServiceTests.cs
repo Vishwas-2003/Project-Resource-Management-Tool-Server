@@ -78,7 +78,8 @@ public class TimesheetReminderServiceTests
             x => x.Add(
                 It.Is<EmailNotificationHistory>(history =>
                     history.EmailTypeId == (int)EmailNotificationTypeEnum.MissedTimeSheet
-                    && history.UserId == resource.Id),
+                    && history.UserId == resource.Id
+                    && history.EntityId == 100),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
@@ -123,6 +124,7 @@ public class TimesheetReminderServiceTests
             .Setup(x => x.EnsureBlockedTimesheetAsync(resource.Id, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Timesheet
             {
+                Id = 100,
                 UserId = resource.Id,
                 WeekStart = weekStart,
                 Status = TimesheetConstants.StatusMissed,
@@ -147,6 +149,11 @@ public class TimesheetReminderServiceTests
         Assert.Equal(2, sentEmails.Count);
         Assert.Contains(sentEmails, email => email.ToEmail == resource.Email);
         Assert.Contains(sentEmails, email => email.ToEmail == manager.Email);
+        _emailNotificationHistoryRepository.Verify(
+            x => x.Add(
+                It.Is<EmailNotificationHistory>(history => history.EntityId == 100),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 
     [Fact]
@@ -247,6 +254,24 @@ public class TimesheetReminderServiceTests
         _timesheetRepository
             .Setup(x => x.IsSubmittedForUserWeek(resource.Id, weekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(submitted);
+
+        if (!submitted)
+        {
+            _timesheetRepository
+                .Setup(x => x.GetOrEnsureMissedTimesheetAsync(resource.Id, weekStart, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Timesheet
+                {
+                    Id = 100,
+                    UserId = resource.Id,
+                    WeekStart = weekStart,
+                    Status = TimesheetConstants.StatusMissed,
+                    Access = TimesheetConstants.AccessAllowed,
+                    TotalHours = 0,
+                });
+            _timesheetRepository
+                .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+        }
     }
 
     private TimesheetReminderService CreateSut(DateTime utcNow) =>

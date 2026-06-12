@@ -121,6 +121,30 @@ public class TimesheetRepository(AppDbContext _dbContext)
         return true;
     }
 
+    public async Task<Timesheet> GetOrEnsureMissedTimesheetAsync(
+        int userId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await GetByUserAndWeek(userId, weekStart, cancellationToken);
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var timesheet = new Timesheet
+        {
+            UserId = userId,
+            WeekStart = weekStart,
+            TotalHours = 0,
+            Status = TimesheetConstants.StatusMissed,
+            Access = TimesheetConstants.AccessAllowed,
+        };
+
+        await Add(timesheet, cancellationToken);
+        return timesheet;
+    }
+
     public async Task<Timesheet> EnsureBlockedTimesheetAsync(
         int userId,
         DateOnly weekStart,

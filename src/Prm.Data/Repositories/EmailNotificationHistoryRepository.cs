@@ -15,7 +15,7 @@ public class EmailNotificationHistoryRepository(AppDbContext _dbContext)
         CancellationToken cancellationToken = default) =>
         DbSet.AnyAsync(
             x => x.EmailTypeId == (int)EmailNotificationTypeEnum.ProjectRisk
-                && x.ProjectId == projectId
+                && x.EntityId == projectId
                 && x.SentOnDate == sentOnDate,
             cancellationToken);
 
