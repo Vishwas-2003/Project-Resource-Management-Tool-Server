@@ -10,10 +10,10 @@ using Prm.Common.Constants;
 namespace Prm.Api.Services;
 
 public class BrevoEmailNotificationService(
-    IOptions<BrevoOptions> options,
-    ILogger<BrevoEmailNotificationService> logger) : IEmailNotificationService
+    IOptions<BrevoOptions> _optionsAccessor,
+    ILogger<BrevoEmailNotificationService> _logger) : IEmailNotificationService
 {
-    private readonly BrevoOptions _options = options.Value;
+    private readonly BrevoOptions _options = _optionsAccessor.Value;
 
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
@@ -21,7 +21,7 @@ public class BrevoEmailNotificationService(
 
         if (!_options.Enabled)
         {
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Email notifications are disabled. Skipping send to {RecipientEmail} with subject {Subject}.",
                 message.ToEmail,
                 message.Subject);
@@ -42,14 +42,14 @@ public class BrevoEmailNotificationService(
             await smtpClient.SendAsync(mimeMessage, cancellationToken);
             await smtpClient.DisconnectAsync(true, cancellationToken);
 
-            logger.LogInformation(
+            _logger.LogInformation(
                 "Email sent via Brevo SMTP to {RecipientEmail} with subject {Subject}.",
                 message.ToEmail,
                 message.Subject);
         }
         catch (Exception ex)
         {
-            logger.LogError(
+            _logger.LogError(
                 ex,
                 "Brevo SMTP failed while sending email to {RecipientEmail}.",
                 message.ToEmail);

@@ -5,7 +5,7 @@ using Prm.Api.Services.Interfaces;
 
 namespace Prm.Api.Infrastructure;
 
-public class AiServiceClient(HttpClient httpClient) : IAiServiceClient
+public class AiServiceClient(HttpClient _httpClient) : IAiServiceClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -30,7 +30,7 @@ public class AiServiceClient(HttpClient httpClient) : IAiServiceClient
         TRequest request,
         CancellationToken cancellationToken)
     {
-        using var response = await httpClient.PostAsJsonAsync(
+        using var response = await _httpClient.PostAsJsonAsync(
             relativeUrl,
             request,
             JsonOptions,

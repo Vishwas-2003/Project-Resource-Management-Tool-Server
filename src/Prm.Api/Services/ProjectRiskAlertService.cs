@@ -8,21 +8,21 @@ using Prm.Data.Repositories.Interfaces;
 namespace Prm.Api.Services;
 
 public class ProjectRiskAlertService(
-    IProjectRepository projectRepository,
-    IProjectRiskFlagRepository projectRiskFlagRepository,
-    IEmailNotificationHistoryRepository emailNotificationHistoryRepository,
-    IAiServiceClient aiServiceClient,
-    IEmailNotificationService emailNotificationService,
-    ILogger<ProjectRiskAlertService> logger) : IProjectRiskAlertService
+    IProjectRepository _projectRepository,
+    IProjectRiskFlagRepository _projectRiskFlagRepository,
+    IEmailNotificationHistoryRepository _emailNotificationHistoryRepository,
+    IAiServiceClient _aiServiceClient,
+    IEmailNotificationService _emailNotificationService,
+    ILogger<ProjectRiskAlertService> _logger) : IProjectRiskAlertService
 {
     private const int MaxKeyMilestones = 5;
 
     public async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Project risk alert job started.");
+        _logger.LogInformation("Project risk alert job started.");
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var projects = await projectRepository.GetAllWithManager(cancellationToken);
+        var projects = await _projectRepository.GetAllWithManager(cancellationToken);
         var atRiskProjects = projects
             .Where(project => project.HealthStatus == ManagerConstants.HealthAtRisk)
             .ToList();
@@ -34,19 +34,19 @@ public class ProjectRiskAlertService(
         {
             if (!CanNotifyManager(project))
             {
-                logger.LogWarning(
+                _logger.LogWarning(
                     "Skipping risk alert for project {ProjectId} because the manager is inactive or has no email.",
                     project.Id);
                 continue;
             }
 
-            if (await emailNotificationHistoryRepository.ExistsForProjectRiskOnDateAsync(
+            if (await _emailNotificationHistoryRepository.ExistsForProjectRiskOnDateAsync(
                     project.Id,
                     today,
                     cancellationToken))
             {
                 skippedAlreadySent++;
-                logger.LogInformation(
+                _logger.LogInformation(
                     "Skipping risk alert for project {ProjectId} because an email was already sent on {SentOnDate}.",
                     project.Id,
                     today);
@@ -60,14 +60,14 @@ public class ProjectRiskAlertService(
             }
             catch (Exception ex)
             {
-                logger.LogError(
+                _logger.LogError(
                     ex,
                     "Failed to send project risk alert for project {ProjectId}.",
                     project.Id);
             }
         }
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "Project risk alert job completed. Sent {EmailsSent}, skipped {SkippedAlreadySent}, of {AtRiskCount} at-risk projects.",
             emailsSent,
             skippedAlreadySent,
@@ -79,7 +79,7 @@ public class ProjectRiskAlertService(
         DateOnly sentOnDate,
         CancellationToken cancellationToken)
     {
-        var riskFlags = await projectRiskFlagRepository.GetByProjectId(project.Id, cancellationToken);
+        var riskFlags = await _projectRiskFlagRepository.GetByProjectId(project.Id, cancellationToken);
         var keyMilestones = GetKeyMilestones(project.Milestones);
         var riskSummary = await GetRiskSummaryAsync(project.Id, cancellationToken);
         var teamSuggestions = await GetTeamSuggestionsAsync(project, riskFlags, cancellationToken);
@@ -90,10 +90,10 @@ public class ProjectRiskAlertService(
             riskSummary,
             teamSuggestions);
 
-        await emailNotificationService.SendAsync(email, cancellationToken);
+        await _emailNotificationService.SendAsync(email, cancellationToken);
 
         var sentAtUtc = DateTime.UtcNow;
-        await emailNotificationHistoryRepository.Add(
+        await _emailNotificationHistoryRepository.Add(
             new EmailNotificationHistory
             {
                 EmailTypeId = (int)EmailNotificationTypeEnum.ProjectRisk,
@@ -105,9 +105,9 @@ public class ProjectRiskAlertService(
                 Subject = email.Subject,
             },
             cancellationToken);
-        await emailNotificationHistoryRepository.SaveChanges(cancellationToken);
+        await _emailNotificationHistoryRepository.SaveChanges(cancellationToken);
 
-        logger.LogInformation(
+        _logger.LogInformation(
             "Logged project risk email history for project {ProjectId}, user {UserId}, sent on {SentOnDate}.",
             project.Id,
             project.ManagerUserId,
@@ -118,14 +118,14 @@ public class ProjectRiskAlertService(
     {
         try
         {
-            var response = await aiServiceClient.GetRiskSummaryAsync(projectId, cancellationToken);
+            var response = await _aiServiceClient.GetRiskSummaryAsync(projectId, cancellationToken);
             return string.IsNullOrWhiteSpace(response.Summary)
                 ? AppConstants.Email.AiRiskSummaryUnavailable
                 : response.Summary.Trim();
         }
         catch (Exception ex)
         {
-            logger.LogWarning(
+            _logger.LogWarning(
                 ex,
                 "AiService risk summary failed for project {ProjectId}.",
                 projectId);
@@ -141,11 +141,11 @@ public class ProjectRiskAlertService(
         try
         {
             var query = BuildTeamSuggestionQuery(project, riskFlags);
-            return await aiServiceClient.BuildTeamAsync(query, cancellationToken);
+            return await _aiServiceClient.BuildTeamAsync(query, cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(
+            _logger.LogWarning(
                 ex,
                 "AiService team suggestions failed for project {ProjectId}.",
                 project.Id);

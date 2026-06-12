@@ -8,7 +8,7 @@ namespace Prm.Api.Infrastructure;
 
 public sealed class PasswordChangeRequiredMiddleware(RequestDelegate _next)
 {
-    public async Task InvokeAsync(HttpContext context, IUserRepository userRepository)
+    public async Task InvokeAsync(HttpContext context, IUserRepository _userRepository)
     {
         if (context.User.Identity?.IsAuthenticated != true)
         {
@@ -36,7 +36,7 @@ public sealed class PasswordChangeRequiredMiddleware(RequestDelegate _next)
             return;
         }
 
-        var user = await userRepository.GetById(userId, context.RequestAborted);
+        var user = await _userRepository.GetById(userId, context.RequestAborted);
         if (user is not null && PasswordChangeRules.IsRequired(user.PasswordExpiryTime))
         {
             await PasswordChangeRequiredResponseWriter.WriteAsync(context.Response);
