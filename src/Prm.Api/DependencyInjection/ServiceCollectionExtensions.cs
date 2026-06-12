@@ -71,6 +71,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAllocationService, AllocationService>();
         services.AddScoped<ITimesheetService, TimesheetService>();
         services.AddScoped<IManagerService, ManagerService>();
+        services.AddEmailNotificationServices();
+        services.AddAiServiceClient();
         return services;
     }
 }

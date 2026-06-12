@@ -18,7 +18,9 @@ public class HangfireJobSchedulerTests
     private readonly HangfireOptions _hangfireOptions = new()
     {
         RecurringJobId = "prm-scheduler",
+        ProjectRiskAlertRecurringJobId = "prm-project-risk-alert",
         DefaultSchedulerIntervalMinutes = 60,
+        ProjectRiskAlertHourUtc = 8,
         DashboardUsername = "admin",
         DashboardPassword = "password",
     };
@@ -40,6 +42,13 @@ public class HangfireJobSchedulerTests
                 Cron.MinuteInterval(30),
                 It.IsAny<RecurringJobOptions>()),
             Times.Once);
+        _recurringJobManager.Verify(
+            x => x.AddOrUpdate(
+                _hangfireOptions.ProjectRiskAlertRecurringJobId,
+                It.IsAny<Job>(),
+                Cron.Daily(_hangfireOptions.ProjectRiskAlertHourUtc),
+                It.IsAny<RecurringJobOptions>()),
+            Times.Once);
     }
 
     [Fact]
@@ -57,6 +66,13 @@ public class HangfireJobSchedulerTests
                 _hangfireOptions.RecurringJobId,
                 It.IsAny<Job>(),
                 Cron.MinuteInterval(_hangfireOptions.DefaultSchedulerIntervalMinutes),
+                It.IsAny<RecurringJobOptions>()),
+            Times.Once);
+        _recurringJobManager.Verify(
+            x => x.AddOrUpdate(
+                _hangfireOptions.ProjectRiskAlertRecurringJobId,
+                It.IsAny<Job>(),
+                Cron.Daily(_hangfireOptions.ProjectRiskAlertHourUtc),
                 It.IsAny<RecurringJobOptions>()),
             Times.Once);
     }
