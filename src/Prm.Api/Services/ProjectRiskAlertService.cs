@@ -9,6 +9,7 @@ namespace Prm.Api.Services;
 public class ProjectRiskAlertService(
     IProjectRepository projectRepository,
     IProjectRiskFlagRepository projectRiskFlagRepository,
+    IProjectRiskEmailHistoryRepository projectRiskEmailHistoryRepository,
     IAiServiceClient aiServiceClient,
     IEmailNotificationService emailNotificationService,
     ILogger<ProjectRiskAlertService> logger) : IProjectRiskAlertService
@@ -19,12 +20,14 @@ public class ProjectRiskAlertService(
     {
         logger.LogInformation("Project risk alert job started.");
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var projects = await projectRepository.GetAllWithManager(cancellationToken);
         var atRiskProjects = projects
             .Where(project => project.HealthStatus == ManagerConstants.HealthAtRisk)
             .ToList();
 
         var emailsSent = 0;
+        var skippedAlreadySent = 0;
 
         foreach (var project in atRiskProjects)
         {
@@ -36,9 +39,22 @@ public class ProjectRiskAlertService(
                 continue;
             }
 
+            if (await projectRiskEmailHistoryRepository.ExistsForProjectOnDateAsync(
+                    project.Id,
+                    today,
+                    cancellationToken))
+            {
+                skippedAlreadySent++;
+                logger.LogInformation(
+                    "Skipping risk alert for project {ProjectId} because an email was already sent on {SentOnDate}.",
+                    project.Id,
+                    today);
+                continue;
+            }
+
             try
             {
-                await SendAlertAsync(project, cancellationToken);
+                await SendAlertAsync(project, today, cancellationToken);
                 emailsSent++;
             }
             catch (Exception ex)
@@ -51,12 +67,16 @@ public class ProjectRiskAlertService(
         }
 
         logger.LogInformation(
-            "Project risk alert job completed. Sent {EmailsSent} of {AtRiskCount} at-risk project alerts.",
+            "Project risk alert job completed. Sent {EmailsSent}, skipped {SkippedAlreadySent}, of {AtRiskCount} at-risk projects.",
             emailsSent,
+            skippedAlreadySent,
             atRiskProjects.Count);
     }
 
-    private async Task SendAlertAsync(Project project, CancellationToken cancellationToken)
+    private async Task SendAlertAsync(
+        Project project,
+        DateOnly sentOnDate,
+        CancellationToken cancellationToken)
     {
         var riskFlags = await projectRiskFlagRepository.GetByProjectId(project.Id, cancellationToken);
         var keyMilestones = GetKeyMilestones(project.Milestones);
@@ -70,6 +90,26 @@ public class ProjectRiskAlertService(
             teamSuggestions);
 
         await emailNotificationService.SendAsync(email, cancellationToken);
+
+        var sentAtUtc = DateTime.UtcNow;
+        await projectRiskEmailHistoryRepository.Add(
+            new ProjectRiskEmailHistory
+            {
+                ProjectId = project.Id,
+                ManagerUserId = project.ManagerUserId,
+                SentOnDate = sentOnDate,
+                SentAtUtc = sentAtUtc,
+                RecipientEmail = project.ManagerUser.Email,
+                Subject = email.Subject,
+            },
+            cancellationToken);
+        await projectRiskEmailHistoryRepository.SaveChanges(cancellationToken);
+
+        logger.LogInformation(
+            "Logged project risk email history for project {ProjectId}, manager {ManagerUserId}, sent on {SentOnDate}.",
+            project.Id,
+            project.ManagerUserId,
+            sentOnDate);
     }
 
     private async Task<string> GetRiskSummaryAsync(int projectId, CancellationToken cancellationToken)

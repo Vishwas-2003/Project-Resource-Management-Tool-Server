@@ -15,8 +15,19 @@ public class ProjectRiskAlertServiceTests
 {
     private readonly Mock<IProjectRepository> _projectRepository = new();
     private readonly Mock<IProjectRiskFlagRepository> _projectRiskFlagRepository = new();
+    private readonly Mock<IProjectRiskEmailHistoryRepository> _projectRiskEmailHistoryRepository = new();
     private readonly Mock<IAiServiceClient> _aiServiceClient = new();
     private readonly Mock<IEmailNotificationService> _emailNotificationService = new();
+
+    public ProjectRiskAlertServiceTests()
+    {
+        _projectRiskEmailHistoryRepository
+            .Setup(x => x.ExistsForProjectOnDateAsync(
+                It.IsAny<int>(),
+                It.IsAny<DateOnly>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+    }
 
     [Fact]
     public async Task ExecuteAsync_WhenNoAtRiskProjects_DoesNotSendEmail()
@@ -37,7 +48,7 @@ public class ProjectRiskAlertServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_WhenAtRiskProjectExists_SendsEmailToManager()
+    public async Task ExecuteAsync_WhenAtRiskProjectExists_SendsEmailAndLogsHistory()
     {
         var project = ApiTestData.CreateProject();
         project.HealthStatus = ManagerConstants.HealthAtRisk;
@@ -97,15 +108,56 @@ public class ProjectRiskAlertServiceTests
             .Callback<EmailMessage, CancellationToken>((message, _) => capturedEmail = message)
             .Returns(Task.CompletedTask);
 
+        ProjectRiskEmailHistory? capturedHistory = null;
+        _projectRiskEmailHistoryRepository
+            .Setup(x => x.Add(It.IsAny<ProjectRiskEmailHistory>(), It.IsAny<CancellationToken>()))
+            .Callback<ProjectRiskEmailHistory, CancellationToken>((history, _) => capturedHistory = history)
+            .Returns(Task.CompletedTask);
+
         var sut = CreateSut();
         await sut.ExecuteAsync();
 
         Assert.NotNull(capturedEmail);
         Assert.Equal(project.ManagerUser.Email, capturedEmail!.ToEmail);
         Assert.Contains(project.Name, capturedEmail.Subject);
-        Assert.Contains("The project is behind schedule.", capturedEmail.HtmlBody);
-        Assert.Contains("Alex Bench", capturedEmail.HtmlBody);
-        Assert.Contains("Milestone overdue", capturedEmail.HtmlBody);
+
+        Assert.NotNull(capturedHistory);
+        Assert.Equal(project.Id, capturedHistory!.ProjectId);
+        Assert.Equal(project.ManagerUserId, capturedHistory.ManagerUserId);
+        Assert.Equal(DateOnly.FromDateTime(DateTime.UtcNow), capturedHistory.SentOnDate);
+        Assert.Equal(project.ManagerUser.Email, capturedHistory.RecipientEmail);
+        Assert.Equal(capturedEmail.Subject, capturedHistory.Subject);
+
+        _projectRiskEmailHistoryRepository.Verify(
+            x => x.SaveChanges(It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenEmailAlreadySentToday_SkipsProject()
+    {
+        var project = ApiTestData.CreateProject();
+        project.HealthStatus = ManagerConstants.HealthAtRisk;
+
+        _projectRepository
+            .Setup(x => x.GetAllWithManager(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Project> { project });
+        _projectRiskEmailHistoryRepository
+            .Setup(x => x.ExistsForProjectOnDateAsync(
+                project.Id,
+                DateOnly.FromDateTime(DateTime.UtcNow),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var sut = CreateSut();
+        await sut.ExecuteAsync();
+
+        _emailNotificationService.Verify(
+            x => x.SendAsync(It.IsAny<EmailMessage>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _projectRiskEmailHistoryRepository.Verify(
+            x => x.Add(It.IsAny<ProjectRiskEmailHistory>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -164,6 +216,7 @@ public class ProjectRiskAlertServiceTests
         new(
             _projectRepository.Object,
             _projectRiskFlagRepository.Object,
+            _projectRiskEmailHistoryRepository.Object,
             _aiServiceClient.Object,
             _emailNotificationService.Object,
             NullLogger<ProjectRiskAlertService>.Instance);

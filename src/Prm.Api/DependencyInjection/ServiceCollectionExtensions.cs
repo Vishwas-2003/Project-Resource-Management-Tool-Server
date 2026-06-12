@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IProjectRiskFlagRepository, ProjectRiskFlagRepository>();
+        services.AddScoped<IProjectRiskEmailHistoryRepository, ProjectRiskEmailHistoryRepository>();
         services.AddScoped<IMilestoneRepository, MilestoneRepository>();
         services.AddScoped<ISystemConfigurationRepository, SystemConfigurationRepository>();
         services.AddScoped<IAllocationRepository, AllocationRepository>();

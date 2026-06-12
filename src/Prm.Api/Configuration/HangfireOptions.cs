@@ -9,7 +9,6 @@ public class HangfireOptions
     public string RecurringJobId { get; set; } = "prm-scheduler";
     public string ProjectRiskAlertRecurringJobId { get; set; } = "prm-project-risk-alert";
     public int DefaultSchedulerIntervalMinutes { get; set; } = 60;
-    public int ProjectRiskAlertHourUtc { get; set; } = 8;
     [Required]
     public string DashboardUsername { get; set; } = string.Empty;
     [Required]

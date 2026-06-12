@@ -34,7 +34,7 @@ public class HangfireJobScheduler(
         _recurringJobManager.AddOrUpdate<IProjectRiskAlertService>(
             _hangfireOptions.ProjectRiskAlertRecurringJobId,
             service => service.ExecuteAsync(CancellationToken.None),
-            Cron.Daily(_hangfireOptions.ProjectRiskAlertHourUtc));
+            Cron.Hourly());
     }
 
     private async Task<int> ResolveSchedulerIntervalMinutes(CancellationToken cancellationToken)
