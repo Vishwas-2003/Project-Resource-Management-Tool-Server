@@ -84,5 +84,6 @@ public static class ApiRoutes
         public const string MyAllocations = "my-allocations";
         public const string Team = "team";
         public const string TeamResourceDetail = "team/{resourceUserId:int}";
+        public const string AllowAccess = "team/{resourceUserId:int}/allow-access";
     }
 }

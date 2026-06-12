@@ -187,4 +187,16 @@ public class UserRepository(AppDbContext _dbContext)
             },
             cancellationToken);
     }
+
+    public async Task<User?> GetCurrentManagerForResourceUserId(
+        int resourceUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var history = await _dbContext.ResourceManagerHistories
+            .Include(x => x.ManagerUser)
+            .Where(x => x.UserId == resourceUserId && x.EffectiveToUtc == null)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return history?.ManagerUser;
+    }
 }

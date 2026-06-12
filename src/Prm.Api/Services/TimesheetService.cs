@@ -52,15 +52,15 @@ public partial class TimesheetService(
             return new MissingTimesheetReminder { HasMissing = false };
         }
 
-        var exists = await _timesheetRepository.ExistsForUserWeek(
+        var submitted = await _timesheetRepository.IsSubmittedForUserWeek(
             user.Id,
             lastCompletedWeekStart,
             cancellationToken);
 
         return new MissingTimesheetReminder
         {
-            HasMissing = !exists,
-            WeekStart = exists ? null : lastCompletedWeekStart,
+            HasMissing = !submitted,
+            WeekStart = submitted ? null : lastCompletedWeekStart,
         };
     }
 
@@ -72,6 +72,7 @@ public partial class TimesheetService(
         var user = await GetResourceUserOrThrow(userId, cancellationToken);
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
         UserAvailabilityHelper.EnsureWeekEligibleForUser(user, normalizedWeekStart);
+        await EnsureTimesheetAccessAllowed(user.Id, normalizedWeekStart, cancellationToken);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
         var maxWeeklyHours = await GetMaxWeeklyHours(cancellationToken);
 

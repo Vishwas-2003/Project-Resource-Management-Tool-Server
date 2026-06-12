@@ -43,6 +43,14 @@ public static class AppConstants
             "AI risk summary is temporarily unavailable. Please review the risk flags below.";
         public const string AiTeamSuggestionsUnavailable =
             "AI team suggestions are temporarily unavailable. Review bench resources in the system.";
+        public const string TimesheetReminderMondaySubject =
+            "PRM Reminder: Submit your timesheet for week starting {0:yyyy-MM-dd}";
+        public const string TimesheetReminderTuesdaySubject =
+            "PRM Urgent: Timesheet still missing for week starting {0:yyyy-MM-dd}";
+        public const string TimesheetBlockedResourceSubject =
+            "PRM Notice: Timesheet access blocked for week starting {0:yyyy-MM-dd}";
+        public const string TimesheetBlockedManagerSubject =
+            "PRM Notice: {0}'s timesheet access blocked for week starting {1:yyyy-MM-dd}";
     }
 
     public static class Auth
@@ -193,5 +201,11 @@ public static class AppConstants
         public const string NotFound = "Timesheet not found for the selected week.";
         public const string ResourceNotOnTeam = "This resource is not on your team.";
         public const string SubmittedSuccessfully = "Timesheet submitted successfully.";
+        public const string AccessBlocked =
+            "Timesheet access for this week is blocked. Contact your manager to restore access.";
+        public const string AccessAlreadyAllowed = "Timesheet access for this week is already allowed.";
+        public const string AccessRestoreInvalidState =
+            "Only blocked timesheets can be restored by a manager.";
+        public const string AccessRestoredSuccessfully = "Timesheet access restored successfully.";
     }
 }

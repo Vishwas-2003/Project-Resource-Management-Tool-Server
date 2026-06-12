@@ -43,4 +43,10 @@ public interface ITimesheetService
         int resourceUserId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
+
+    Task<RestoreTimesheetAccessResponse> AllowTimesheetAccess(
+        int managerUserId,
+        int resourceUserId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default);
 }

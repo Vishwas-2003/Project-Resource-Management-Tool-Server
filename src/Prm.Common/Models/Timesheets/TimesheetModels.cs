@@ -62,6 +62,7 @@ public class TimesheetWeekSummary
     public DateOnly WeekStart { get; set; }
     public int TotalHours { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Access { get; set; } = string.Empty;
 }
 
 public class SubmitTimesheetResponse
@@ -78,6 +79,7 @@ public class MyTimesheetRow
     public DateOnly WeekStart { get; set; }
     public int TotalHours { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Access { get; set; } = string.Empty;
 }
 
 public class MyTimesheetsResponse
@@ -97,6 +99,7 @@ public class TimesheetWeekDetailResponse
     public DateOnly WeekStart { get; set; }
     public string Status { get; set; } = string.Empty;
     public int TotalHours { get; set; }
+    public string Access { get; set; } = string.Empty;
     public IReadOnlyList<TimesheetEntryDetail> Entries { get; set; } = [];
 }
 
@@ -129,6 +132,7 @@ public class TeamTimesheetRow
     public string ProjectName { get; set; } = string.Empty;
     public int HoursWorked { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Access { get; set; } = string.Empty;
 }
 
 public class TeamTimesheetsResponse
@@ -144,5 +148,14 @@ public class ResourceTimesheetDetailResponse
     public DateOnly WeekStart { get; set; }
     public int TotalHours { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Access { get; set; } = string.Empty;
     public IReadOnlyList<TimesheetEntryDetail> Entries { get; set; } = [];
+}
+
+public class RestoreTimesheetAccessResponse
+{
+    public int ResourceUserId { get; set; }
+    public DateOnly WeekStart { get; set; }
+    public string Access { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
 }

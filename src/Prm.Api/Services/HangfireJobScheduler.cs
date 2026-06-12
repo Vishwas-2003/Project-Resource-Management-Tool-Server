@@ -19,6 +19,7 @@ public class HangfireJobScheduler(
         var intervalMinutes = await ResolveSchedulerIntervalMinutes(cancellationToken);
         RescheduleScheduler(intervalMinutes);
         RegisterProjectRiskAlertJob();
+        RegisterTimesheetReminderJob();
     }
 
     public void RescheduleScheduler(int intervalMinutes)
@@ -35,6 +36,14 @@ public class HangfireJobScheduler(
             _hangfireOptions.ProjectRiskAlertRecurringJobId,
             service => service.ExecuteAsync(CancellationToken.None),
             Cron.Hourly());
+    }
+
+    private void RegisterTimesheetReminderJob()
+    {
+        _recurringJobManager.AddOrUpdate<ITimesheetReminderService>(
+            _hangfireOptions.TimesheetReminderRecurringJobId,
+            service => service.ExecuteAsync(CancellationToken.None),
+            _hangfireOptions.TimesheetReminderCron);
     }
 
     private async Task<int> ResolveSchedulerIntervalMinutes(CancellationToken cancellationToken)

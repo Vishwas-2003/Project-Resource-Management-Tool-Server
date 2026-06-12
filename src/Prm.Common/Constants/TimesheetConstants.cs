@@ -5,6 +5,9 @@ public static class TimesheetConstants
     public const string StatusSubmitted = "SUBMITTED";
     public const string StatusMissed = "MISSED";
 
+    public const string AccessAllowed = "ALLOWED";
+    public const string AccessBlocked = "BLOCKED";
+
     public const string AllocationStatusActive = "ACTIVE";
     public const string AllocationStatusEnded = "ENDED";
 

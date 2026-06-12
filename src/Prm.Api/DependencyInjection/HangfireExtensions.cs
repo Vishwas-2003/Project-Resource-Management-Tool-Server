@@ -45,8 +45,11 @@ public static class HangfireExtensions
 
         services.AddHangfireServer();
 
+        services.AddSingleton(TimeProvider.System);
+
         services.AddScoped<ISchedulerService, SchedulerService>();
         services.AddScoped<IProjectRiskAlertService, ProjectRiskAlertService>();
+        services.AddScoped<ITimesheetReminderService, TimesheetReminderService>();
         services.AddScoped<IBackgroundJobService, BackgroundJobService>();
         services.AddScoped<IHangfireJobScheduler, HangfireJobScheduler>();
 

@@ -64,6 +64,7 @@ public partial class TimesheetService
                 WeekStart = x.WeekStart,
                 TotalHours = x.TotalHours,
                 Status = x.Status,
+                Access = x.Access,
             })
             .ToDictionary(x => x.WeekStart);
     }
@@ -97,6 +98,7 @@ public partial class TimesheetService
                 WeekStart = weekStart,
                 TotalHours = 0,
                 Status = TimesheetConstants.StatusMissed,
+                Access = TimesheetConstants.AccessAllowed,
             };
         }
     }
@@ -117,6 +119,7 @@ public partial class TimesheetService
                     WeekStart = summary.WeekStart,
                     TotalHours = summary.TotalHours,
                     Status = summary.Status,
+                    Access = summary.Access,
                 })
                 .ToList(),
         };
@@ -145,6 +148,7 @@ public partial class TimesheetService
                 WeekStart = normalizedWeekStart,
                 Status = timesheet.Status,
                 TotalHours = timesheet.TotalHours,
+                Access = timesheet.Access,
                 Entries = MapEntryDetails(timesheet.Entries),
             };
         }
@@ -169,6 +173,7 @@ public partial class TimesheetService
             WeekStart = normalizedWeekStart,
             Status = TimesheetConstants.StatusMissed,
             TotalHours = 0,
+            Access = TimesheetConstants.AccessAllowed,
             Entries = [],
         };
     }

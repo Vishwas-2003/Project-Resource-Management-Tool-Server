@@ -115,4 +115,21 @@ public class TimesheetController(
                 cancellationToken);
             return Ok(result);
         });
+
+    [Authorize(Roles = nameof(RoleNameEnum.Manager))]
+    [HttpPut(ApiRoutes.Timesheets.AllowAccess)]
+    public Task<IActionResult> AllowTimesheetAccess(
+        int resourceUserId,
+        [FromQuery] DateOnly weekStart,
+        CancellationToken cancellationToken) =>
+        ExecuteResultAsync(async () =>
+        {
+            var managerUserId = await _managerAccess.GetCurrentManagerUserId(cancellationToken);
+            var result = await _timesheetService.AllowTimesheetAccess(
+                managerUserId,
+                resourceUserId,
+                weekStart,
+                cancellationToken);
+            return Ok(result);
+        });
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Prm.Common.Constants;
 using Prm.Common.Enums;
 using Prm.Data.Entities;
 using Prm.Data.Persistence;
@@ -84,6 +85,54 @@ public class TimesheetRepository(AppDbContext _dbContext)
         DateOnly weekStart,
         CancellationToken cancellationToken = default) =>
         DbSet.AnyAsync(x => x.UserId == userId && x.WeekStart == weekStart, cancellationToken);
+
+    public Task<bool> IsSubmittedForUserWeek(
+        int userId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default) =>
+        DbSet.AnyAsync(
+            x => x.UserId == userId
+                && x.WeekStart == weekStart
+                && x.Status == TimesheetConstants.StatusSubmitted,
+            cancellationToken);
+
+    public async Task<Timesheet> EnsureBlockedTimesheetAsync(
+        int userId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default)
+    {
+        var existing = await GetByUserAndWeek(userId, weekStart, cancellationToken);
+        if (existing is not null)
+        {
+            if (existing.Status == TimesheetConstants.StatusSubmitted)
+            {
+                return existing;
+            }
+
+            if (existing.Access == TimesheetConstants.AccessBlocked)
+            {
+                return existing;
+            }
+
+            existing.Access = TimesheetConstants.AccessBlocked;
+            existing.Status = TimesheetConstants.StatusMissed;
+            existing.TotalHours = 0;
+            Update(existing);
+            return existing;
+        }
+
+        var timesheet = new Timesheet
+        {
+            UserId = userId,
+            WeekStart = weekStart,
+            TotalHours = 0,
+            Status = TimesheetConstants.StatusMissed,
+            Access = TimesheetConstants.AccessBlocked,
+        };
+
+        await Add(timesheet, cancellationToken);
+        return timesheet;
+    }
 
     public async Task<IReadOnlyList<Timesheet>> GetByUserId(
         int userId,

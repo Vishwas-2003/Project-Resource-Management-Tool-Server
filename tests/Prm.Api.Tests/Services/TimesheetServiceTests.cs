@@ -108,9 +108,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: true);
 
         var sut = CreateSut();
         var request = new SubmitTimesheetRequest
@@ -184,9 +182,7 @@ public class TimesheetServiceTests
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
-        _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
 
         var sut = CreateSut();
         var request = new SubmitTimesheetRequest
@@ -215,6 +211,7 @@ public class TimesheetServiceTests
                 WeekStart = weekStart,
                 TotalHours = 32,
                 Status = TimesheetConstants.StatusSubmitted,
+                Access = TimesheetConstants.AccessAllowed,
             },
         };
 
@@ -283,7 +280,7 @@ public class TimesheetServiceTests
         SetupEmployeeByUserId(employee);
         SetupOverlappingAllocations(employee.Id, [allocation]);
         _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(employee.Id, lastCompletedWeekStart, It.IsAny<CancellationToken>()))
+            .Setup(x => x.IsSubmittedForUserWeek(employee.Id, lastCompletedWeekStart, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
 
         var sut = CreateSut();
@@ -307,7 +304,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
         _timesheetRepository
             .Setup(x => x.GetActivityTagsByIds(It.IsAny<IReadOnlyCollection<int>>(), It.IsAny<CancellationToken>()))
@@ -352,6 +349,7 @@ public class TimesheetServiceTests
             WeekStart = weekStart,
             TotalHours = 16,
             Status = TimesheetConstants.StatusSubmitted,
+            Access = TimesheetConstants.AccessAllowed,
             Entries =
             [
                 new TimesheetEntry
@@ -420,6 +418,7 @@ public class TimesheetServiceTests
             WeekStart = weekStart,
             TotalHours = 20,
             Status = TimesheetConstants.StatusSubmitted,
+            Access = TimesheetConstants.AccessAllowed,
             Entries =
             [
                 new TimesheetEntry
@@ -473,7 +472,7 @@ public class TimesheetServiceTests
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
 
         SetupEmployeeByUserId(employee);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
 
         var sut = CreateSut();
         var request = new SubmitTimesheetRequest
@@ -505,7 +504,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
 
         var sut = CreateSut();
@@ -537,7 +536,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
         _timesheetRepository
             .Setup(x => x.GetActivityTagsByIds(It.IsAny<IReadOnlyCollection<int>>(), It.IsAny<CancellationToken>()))
@@ -707,7 +706,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, Array.Empty<Allocation>());
 
         var sut = CreateSut();
@@ -738,7 +737,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
 
         var sut = CreateSut();
@@ -768,7 +767,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation1, allocation2]);
         _timesheetRepository
             .Setup(x => x.GetActivityTagsByIds(It.IsAny<IReadOnlyCollection<int>>(), It.IsAny<CancellationToken>()))
@@ -806,7 +805,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
         _timesheetRepository
             .Setup(x => x.FindOrCreateActivityTagByName("Custom Work", It.IsAny<CancellationToken>()))
@@ -856,7 +855,7 @@ public class TimesheetServiceTests
 
         SetupEmployeeByUserId(employee);
         SetupMaxWeeklyHours(40);
-        SetupSubmitWeek(employee.Id, weekStart, exists: false);
+        SetupSubmitWeek(employee.Id, weekStart, submitted: false);
         SetupOverlappingAllocations(employee.Id, [allocation]);
         _timesheetRepository
             .Setup(x => x.GetAllActivityTags(It.IsAny<CancellationToken>()))
@@ -934,6 +933,160 @@ public class TimesheetServiceTests
         Assert.Contains(result.Timesheets, row => row.Status == TimesheetConstants.StatusMissed);
     }
 
+    [Fact]
+    public async Task SubmitTimesheet_WhenAccessBlocked_ThrowsInvalidOperationException()
+    {
+        var employee = ApiTestData.CreateResourceUser();
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        SetupEmployeeByUserId(employee);
+        _timesheetRepository
+            .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Timesheet
+            {
+                Id = 50,
+                UserId = employee.Id,
+                WeekStart = weekStart,
+                TotalHours = 0,
+                Status = TimesheetConstants.StatusMissed,
+                Access = TimesheetConstants.AccessBlocked,
+            });
+
+        var sut = CreateSut();
+        var request = new SubmitTimesheetRequest
+        {
+            WeekStart = weekStart,
+            Entries =
+            [
+                new TimesheetEntryRequest { ProjectId = 1, HoursWorked = 8, ActivityTagIds = [1] },
+            ],
+        };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.SubmitTimesheet(employee.Id, request));
+
+        Assert.Equal(AppConstants.Timesheets.AccessBlocked, exception.Message);
+    }
+
+    [Fact]
+    public async Task GetWeekAllocations_WhenAccessBlocked_ThrowsInvalidOperationException()
+    {
+        var employee = ApiTestData.CreateResourceUser();
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+
+        SetupEmployeeByUserId(employee);
+        _timesheetRepository
+            .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Timesheet
+            {
+                Id = 51,
+                UserId = employee.Id,
+                WeekStart = weekStart,
+                TotalHours = 0,
+                Status = TimesheetConstants.StatusMissed,
+                Access = TimesheetConstants.AccessBlocked,
+            });
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.GetWeekAllocations(employee.Id, weekStart));
+
+        Assert.Equal(AppConstants.Timesheets.AccessBlocked, exception.Message);
+    }
+
+    [Fact]
+    public async Task AllowTimesheetAccess_WhenBlocked_RestoresAccess()
+    {
+        var managerUserId = 10;
+        var employee = ApiTestData.CreateResourceUser(managerUserId: managerUserId);
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+        var blockedTimesheet = new Timesheet
+        {
+            Id = 52,
+            UserId = employee.Id,
+            WeekStart = weekStart,
+            TotalHours = 0,
+            Status = TimesheetConstants.StatusMissed,
+            Access = TimesheetConstants.AccessBlocked,
+        };
+
+        _userRepository
+            .Setup(x => x.IsResourceManagedByManager(employee.Id, managerUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        _timesheetRepository
+            .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(blockedTimesheet);
+        _timesheetRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+        var result = await sut.AllowTimesheetAccess(managerUserId, employee.Id, weekStart);
+
+        Assert.Equal(TimesheetConstants.AccessAllowed, result.Access);
+        Assert.Equal(TimesheetConstants.AccessAllowed, blockedTimesheet.Access);
+        _timesheetRepository.Verify(x => x.Update(blockedTimesheet), Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmitTimesheet_WhenBlockedThenAllowed_UpdatesExistingTimesheet()
+    {
+        var employee = ApiTestData.CreateResourceUser();
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+        var allocation = ApiTestData.CreateAllocation(
+            projectId: 1,
+            utilizationPercent: 50,
+            fromDate: weekStart,
+            toDate: weekStart.AddDays(6));
+        var tags = ApiTestData.CreateStandardActivityTags();
+        var unlockedTimesheet = new Timesheet
+        {
+            Id = 53,
+            UserId = employee.Id,
+            WeekStart = weekStart,
+            TotalHours = 0,
+            Status = TimesheetConstants.StatusMissed,
+            Access = TimesheetConstants.AccessAllowed,
+            Entries = [],
+        };
+
+        SetupEmployeeByUserId(employee);
+        SetupMaxWeeklyHours(40);
+        SetupOverlappingAllocations(employee.Id, [allocation]);
+        _timesheetRepository
+            .Setup(x => x.IsSubmittedForUserWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _timesheetRepository
+            .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(unlockedTimesheet);
+        _timesheetRepository
+            .Setup(x => x.GetActivityTagsByIds(It.IsAny<IReadOnlyCollection<int>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((IReadOnlyCollection<int> ids, CancellationToken _) =>
+                tags.Where(tag => ids.Contains(tag.Id)).ToList());
+        _timesheetRepository
+            .Setup(x => x.SaveChanges(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var sut = CreateSut();
+        var result = await sut.SubmitTimesheet(
+            employee.Id,
+            new SubmitTimesheetRequest
+            {
+                WeekStart = weekStart,
+                Entries =
+                [
+                    new TimesheetEntryRequest { ProjectId = 1, HoursWorked = 8, ActivityTagIds = [tags[0].Id] },
+                ],
+            });
+
+        Assert.Equal(53, result.TimesheetId);
+        Assert.Equal(TimesheetConstants.StatusSubmitted, unlockedTimesheet.Status);
+        Assert.Equal(TimesheetConstants.AccessAllowed, unlockedTimesheet.Access);
+        _timesheetRepository.Verify(x => x.Update(unlockedTimesheet), Times.Once);
+        _timesheetRepository.Verify(x => x.Add(It.IsAny<Timesheet>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private TimesheetService CreateSut() =>
         new(
             _timesheetRepository.Object,
@@ -964,10 +1117,32 @@ public class TimesheetServiceTests
             .ReturnsAsync(allocations);
     }
 
-    private void SetupSubmitWeek(int resourceUserId, DateOnly weekStart, bool exists)
+    private void SetupSubmitWeek(int resourceUserId, DateOnly weekStart, bool submitted, Timesheet? existing = null)
     {
         _timesheetRepository
-            .Setup(x => x.ExistsForUserWeek(resourceUserId, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(exists);
+            .Setup(x => x.IsSubmittedForUserWeek(resourceUserId, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submitted);
+
+        if (existing is not null)
+        {
+            _timesheetRepository
+                .Setup(x => x.GetByUserAndWeek(resourceUserId, weekStart, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(existing);
+            return;
+        }
+
+        _timesheetRepository
+            .Setup(x => x.GetByUserAndWeek(resourceUserId, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(submitted
+                ? new Timesheet
+                {
+                    Id = 1,
+                    UserId = resourceUserId,
+                    WeekStart = weekStart,
+                    TotalHours = 8,
+                    Status = TimesheetConstants.StatusSubmitted,
+                    Access = TimesheetConstants.AccessAllowed,
+                }
+                : null);
     }
 }

@@ -58,9 +58,15 @@ public partial class TimesheetService
             throw new ArgumentException(AppConstants.Timesheets.FutureWeekNotAllowed);
         }
 
-        if (await _timesheetRepository.ExistsForUserWeek(userId, weekStart, cancellationToken))
+        var existing = await _timesheetRepository.GetByUserAndWeek(userId, weekStart, cancellationToken);
+        if (existing?.Status == TimesheetConstants.StatusSubmitted)
         {
             throw new InvalidOperationException(AppConstants.Timesheets.AlreadySubmitted);
+        }
+
+        if (existing?.Access == TimesheetConstants.AccessBlocked)
+        {
+            throw new InvalidOperationException(AppConstants.Timesheets.AccessBlocked);
         }
 
         if (request.Entries.Count == 0)
@@ -153,21 +159,47 @@ public partial class TimesheetService
         List<TimesheetEntry> entries,
         CancellationToken cancellationToken)
     {
-        var timesheet = new Timesheet
+        var existing = await _timesheetRepository.GetByUserAndWeek(userId, weekStart, cancellationToken);
+        if (existing is null)
         {
-            UserId = userId,
-            WeekStart = weekStart,
-            TotalHours = totalHours,
-            Status = TimesheetConstants.StatusSubmitted,
-            Entries = entries,
-        };
+            var timesheet = new Timesheet
+            {
+                UserId = userId,
+                WeekStart = weekStart,
+                TotalHours = totalHours,
+                Status = TimesheetConstants.StatusSubmitted,
+                Access = TimesheetConstants.AccessAllowed,
+                Entries = entries,
+            };
 
-        await _timesheetRepository.Add(timesheet, cancellationToken);
+            await _timesheetRepository.Add(timesheet, cancellationToken);
+            await _timesheetRepository.SaveChanges(cancellationToken);
+
+            return new SubmitTimesheetResponse
+            {
+                TimesheetId = timesheet.Id,
+                WeekStart = weekStart,
+                TotalHours = totalHours,
+                Status = TimesheetConstants.StatusSubmitted,
+            };
+        }
+
+        existing.Entries.Clear();
+        foreach (var entry in entries)
+        {
+            entry.TimesheetId = existing.Id;
+            existing.Entries.Add(entry);
+        }
+
+        existing.TotalHours = totalHours;
+        existing.Status = TimesheetConstants.StatusSubmitted;
+        existing.Access = TimesheetConstants.AccessAllowed;
+        _timesheetRepository.Update(existing);
         await _timesheetRepository.SaveChanges(cancellationToken);
 
         return new SubmitTimesheetResponse
         {
-            TimesheetId = timesheet.Id,
+            TimesheetId = existing.Id,
             WeekStart = weekStart,
             TotalHours = totalHours,
             Status = TimesheetConstants.StatusSubmitted,

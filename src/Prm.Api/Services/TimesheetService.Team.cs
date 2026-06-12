@@ -62,6 +62,7 @@ public partial class TimesheetService
             ProjectName = x.ProjectName,
             HoursWorked = x.Hours,
             Status = x.Status,
+            Access = TimesheetConstants.AccessAllowed,
         }).ToList();
     }
 
@@ -72,14 +73,10 @@ public partial class TimesheetService
         DateOnly weekEnd,
         CancellationToken cancellationToken)
     {
-        var submittedResourceUserIds = rows
-            .Select(x => x.ResourceUserId)
-            .ToHashSet();
-
         var teamUsers = await _userRepository.GetResourceUsersByManagerUserId(managerUserId, cancellationToken);
         foreach (var user in teamUsers)
         {
-            if (submittedResourceUserIds.Contains(user.Id)
+            if (await _timesheetRepository.IsSubmittedForUserWeek(user.Id, normalizedWeekStart, cancellationToken)
                 || !UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
             {
                 continue;
@@ -99,13 +96,19 @@ public partial class TimesheetService
                 continue;
             }
 
+            var timesheet = await _timesheetRepository.GetByUserAndWeek(
+                user.Id,
+                normalizedWeekStart,
+                cancellationToken);
+
             rows.Add(new TeamTimesheetRow
             {
                 ResourceUserId = user.Id,
                 ResourceName = user.FullName,
                 ProjectName = allocations[0].Project.Name,
                 HoursWorked = 0,
-                Status = TimesheetConstants.StatusMissed,
+                Status = timesheet?.Status ?? TimesheetConstants.StatusMissed,
+                Access = timesheet?.Access ?? TimesheetConstants.AccessAllowed,
             });
         }
     }
@@ -168,6 +171,7 @@ public partial class TimesheetService
             WeekStart = normalizedWeekStart,
             Status = TimesheetConstants.StatusMissed,
             TotalHours = 0,
+            Access = TimesheetConstants.AccessAllowed,
             Entries = [],
         };
     }
@@ -183,6 +187,7 @@ public partial class TimesheetService
             WeekStart = normalizedWeekStart,
             Status = timesheet.Status,
             TotalHours = timesheet.TotalHours,
+            Access = timesheet.Access,
             Entries = MapEntryDetails(timesheet.Entries),
         };
 }
