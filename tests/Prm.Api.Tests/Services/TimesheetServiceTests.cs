@@ -235,37 +235,48 @@ public class TimesheetServiceTests
     {
         const int managerUserId = 10;
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
-        var submittedRows = new List<TeamTimesheetEntryRow>
+        var project = ApiTestData.CreateProject();
+        var employee = ApiTestData.CreateResourceUser();
+        var timesheets = new List<Timesheet>
         {
             new()
             {
-                UserId = 1,
-                UserName = "Jane Doe",
-                ProjectName = "Alpha",
-                Hours = 32,
+                Id = 1,
+                UserId = employee.Id,
+                User = employee,
+                WeekStart = weekStart,
+                TotalHours = 32,
                 Status = TimesheetConstants.StatusSubmitted,
+                Access = TimesheetConstants.AccessAllowed,
+                Entries =
+                [
+                    new TimesheetEntry
+                    {
+                        ProjectId = project.Id,
+                        HoursWorked = 32,
+                        Project = project,
+                    },
+                ],
             },
         };
 
         _timesheetRepository
-            .Setup(x => x.GetEntriesForTeamByManagerAndWeek(
+            .Setup(x => x.GetTimesheetsForTeamByManagerAndWeek(
                 managerUserId,
                 weekStart,
                 It.IsAny<CancellationToken>()))
-            .ReturnsAsync(submittedRows);
-        _userRepository
-            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<User>());
+            .ReturnsAsync(timesheets);
 
         var sut = CreateSut();
         var result = await sut.GetTeamTimesheets(managerUserId, weekStart);
 
         Assert.Equal(weekStart, result.WeekStart);
         Assert.Single(result.Rows);
-        Assert.Equal("Jane Doe", result.Rows[0].ResourceName);
+        Assert.Equal(employee.FullName, result.Rows[0].ResourceName);
         Assert.Equal("Alpha", result.Rows[0].ProjectName);
         Assert.Equal(32, result.Rows[0].HoursWorked);
         Assert.Equal(TimesheetConstants.StatusSubmitted, result.Rows[0].Status);
+        Assert.Equal(TimesheetConstants.AccessAllowed, result.Rows[0].Access);
     }
 
     [Fact]
@@ -386,20 +397,25 @@ public class TimesheetServiceTests
     {
         var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
-        var allocation = ApiTestData.CreateAllocation(
-            fromDate: weekStart,
-            toDate: weekStart.AddDays(6));
 
         SetupEmployeeByUserId(employee);
         _timesheetRepository
             .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Timesheet?)null);
-        SetupOverlappingAllocations(employee.Id, [allocation]);
+            .ReturnsAsync(new Timesheet
+            {
+                Id = 5,
+                UserId = employee.Id,
+                WeekStart = weekStart,
+                TotalHours = 0,
+                Status = TimesheetConstants.StatusMissed,
+                Access = TimesheetConstants.AccessAllowed,
+            });
 
         var sut = CreateSut();
         var result = await sut.GetMyTimesheetDetail(employee.Id, weekStart);
 
         Assert.Equal(TimesheetConstants.StatusMissed, result.Status);
+        Assert.Equal(TimesheetConstants.AccessAllowed, result.Access);
         Assert.Equal(0, result.TotalHours);
         Assert.Empty(result.Entries);
     }
@@ -613,26 +629,27 @@ public class TimesheetServiceTests
         const int managerUserId = 10;
         var employee = ApiTestData.CreateResourceUser(managerUserId: managerUserId);
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
-        var allocation = ApiTestData.CreateAllocation(
-            fromDate: weekStart,
-            toDate: weekStart.AddDays(6));
 
         _userRepository
             .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
             .ReturnsAsync([employee]);
         _timesheetRepository
             .Setup(x => x.GetByUserAndWeek(employee.Id, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Timesheet?)null);
-        _allocationRepository
-            .Setup(x => x.GetOverlappingForUser(
-                It.Is<UserAllocationPeriodQuery>(query => query.UserId == employee.Id),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync([allocation]);
+            .ReturnsAsync(new Timesheet
+            {
+                Id = 6,
+                UserId = employee.Id,
+                WeekStart = weekStart,
+                TotalHours = 0,
+                Status = TimesheetConstants.StatusMissed,
+                Access = TimesheetConstants.AccessBlocked,
+            });
 
         var sut = CreateSut();
         var result = await sut.GetResourceTimesheetDetail(managerUserId, employee.Id, weekStart);
 
         Assert.Equal(TimesheetConstants.StatusMissed, result.Status);
+        Assert.Equal(TimesheetConstants.AccessBlocked, result.Access);
         Assert.Equal(0, result.TotalHours);
     }
 
@@ -676,11 +693,20 @@ public class TimesheetServiceTests
             toDate: weekEnd);
 
         _timesheetRepository
-            .Setup(x => x.GetEntriesForTeamByManagerAndWeek(managerUserId, weekStart, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<TeamTimesheetEntryRow>());
-        _userRepository
-            .Setup(x => x.GetResourceUsersByManagerUserId(managerUserId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync([employee]);
+            .Setup(x => x.GetTimesheetsForTeamByManagerAndWeek(managerUserId, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new Timesheet
+                {
+                    Id = 7,
+                    UserId = employee.Id,
+                    User = employee,
+                    WeekStart = weekStart,
+                    TotalHours = 0,
+                    Status = TimesheetConstants.StatusMissed,
+                    Access = TimesheetConstants.AccessBlocked,
+                },
+            ]);
         _allocationRepository
             .Setup(x => x.GetOverlappingForUser(
                 It.Is<UserAllocationPeriodQuery>(query =>
@@ -695,6 +721,7 @@ public class TimesheetServiceTests
 
         Assert.Single(result.Rows);
         Assert.Equal(TimesheetConstants.StatusMissed, result.Rows[0].Status);
+        Assert.Equal(TimesheetConstants.AccessBlocked, result.Rows[0].Access);
         Assert.Equal(employee.FullName, result.Rows[0].ResourceName);
     }
 
@@ -917,20 +944,45 @@ public class TimesheetServiceTests
     {
         var employee = ApiTestData.CreateResourceUser();
         var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
-        var allocation = ApiTestData.CreateAllocation(
-            fromDate: weekStart,
-            toDate: weekStart.AddDays(6));
+
+        SetupEmployeeByUserId(employee);
+        _timesheetRepository
+            .Setup(x => x.GetByUserId(employee.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new Timesheet
+                {
+                    Id = 8,
+                    UserId = employee.Id,
+                    WeekStart = weekStart,
+                    TotalHours = 0,
+                    Status = TimesheetConstants.StatusMissed,
+                    Access = TimesheetConstants.AccessAllowed,
+                },
+            ]);
+
+        var sut = CreateSut();
+        var result = await sut.GetMyTimesheets(employee.Id);
+
+        Assert.Single(result.Timesheets);
+        Assert.Equal(TimesheetConstants.StatusMissed, result.Timesheets[0].Status);
+        Assert.Equal(TimesheetConstants.AccessAllowed, result.Timesheets[0].Access);
+    }
+
+    [Fact]
+    public async Task GetMyTimesheets_WhenNoPersistedTimesheets_ReturnsEmptyList()
+    {
+        var employee = ApiTestData.CreateResourceUser();
 
         SetupEmployeeByUserId(employee);
         _timesheetRepository
             .Setup(x => x.GetByUserId(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<Timesheet>());
-        SetupOverlappingAllocations(employee.Id, [allocation]);
 
         var sut = CreateSut();
         var result = await sut.GetMyTimesheets(employee.Id);
 
-        Assert.Contains(result.Timesheets, row => row.Status == TimesheetConstants.StatusMissed);
+        Assert.Empty(result.Timesheets);
     }
 
     [Fact]

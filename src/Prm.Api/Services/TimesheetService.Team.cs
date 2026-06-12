@@ -14,8 +14,11 @@ public partial class TimesheetService
     {
         var normalizedWeekStart = TimesheetWeekHelper.GetWeekStart(weekStart);
         var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
-        var rows = await BuildSubmittedTeamRows(managerUserId, normalizedWeekStart, cancellationToken);
-        await AppendMissedTeamRows(rows, managerUserId, normalizedWeekStart, weekEnd, cancellationToken);
+        var timesheets = await _timesheetRepository.GetTimesheetsForTeamByManagerAndWeek(
+            managerUserId,
+            normalizedWeekStart,
+            cancellationToken);
+        var rows = await BuildTeamTimesheetRows(timesheets, normalizedWeekStart, weekEnd, cancellationToken);
 
         return new TeamTimesheetsResponse
         {
@@ -35,49 +38,39 @@ public partial class TimesheetService
         var timesheet = await _timesheetRepository.GetByUserAndWeek(
             user.Id,
             normalizedWeekStart,
-            cancellationToken);
+            cancellationToken)
+            ?? throw new KeyNotFoundException(AppConstants.Timesheets.NotFound);
 
-        if (timesheet is null)
-        {
-            return await BuildMissedResourceTimesheetDetail(user, normalizedWeekStart, cancellationToken);
-        }
-
-        return MapSubmittedResourceTimesheetDetail(user, normalizedWeekStart, timesheet);
+        return MapResourceTimesheetDetail(user, normalizedWeekStart, timesheet);
     }
 
-    private async Task<List<TeamTimesheetRow>> BuildSubmittedTeamRows(
-        int managerUserId,
-        DateOnly normalizedWeekStart,
-        CancellationToken cancellationToken)
-    {
-        var submittedRows = await _timesheetRepository.GetEntriesForTeamByManagerAndWeek(
-            managerUserId,
-            normalizedWeekStart,
-            cancellationToken);
-
-        return submittedRows.Select(x => new TeamTimesheetRow
-        {
-            ResourceUserId = x.UserId,
-            ResourceName = x.UserName,
-            ProjectName = x.ProjectName,
-            HoursWorked = x.Hours,
-            Status = x.Status,
-            Access = TimesheetConstants.AccessAllowed,
-        }).ToList();
-    }
-
-    private async Task AppendMissedTeamRows(
-        List<TeamTimesheetRow> rows,
-        int managerUserId,
+    private async Task<List<TeamTimesheetRow>> BuildTeamTimesheetRows(
+        IReadOnlyList<Timesheet> timesheets,
         DateOnly normalizedWeekStart,
         DateOnly weekEnd,
         CancellationToken cancellationToken)
     {
-        var teamUsers = await _userRepository.GetResourceUsersByManagerUserId(managerUserId, cancellationToken);
-        foreach (var user in teamUsers)
+        var rows = new List<TeamTimesheetRow>();
+
+        foreach (var timesheet in timesheets)
         {
-            if (await _timesheetRepository.IsSubmittedForUserWeek(user.Id, normalizedWeekStart, cancellationToken)
-                || !UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
+            if (timesheet.Status == TimesheetConstants.StatusSubmitted && timesheet.Entries.Count > 0)
+            {
+                rows.AddRange(timesheet.Entries
+                    .OrderBy(entry => entry.Project.Name)
+                    .Select(entry => new TeamTimesheetRow
+                    {
+                        ResourceUserId = timesheet.UserId,
+                        ResourceName = timesheet.User.FullName,
+                        ProjectName = entry.Project.Name,
+                        HoursWorked = entry.HoursWorked,
+                        Status = timesheet.Status,
+                        Access = timesheet.Access,
+                    }));
+                continue;
+            }
+
+            if (timesheet.Status != TimesheetConstants.StatusMissed)
             {
                 continue;
             }
@@ -85,32 +78,24 @@ public partial class TimesheetService
             var allocations = await _allocationRepository.GetOverlappingForUser(
                 new UserAllocationPeriodQuery
                 {
-                    UserId = user.Id,
+                    UserId = timesheet.UserId,
                     FromDate = normalizedWeekStart,
                     ToDate = weekEnd,
                 },
                 cancellationToken);
 
-            if (allocations.Count == 0)
-            {
-                continue;
-            }
-
-            var timesheet = await _timesheetRepository.GetByUserAndWeek(
-                user.Id,
-                normalizedWeekStart,
-                cancellationToken);
-
             rows.Add(new TeamTimesheetRow
             {
-                ResourceUserId = user.Id,
-                ResourceName = user.FullName,
-                ProjectName = allocations[0].Project.Name,
+                ResourceUserId = timesheet.UserId,
+                ResourceName = timesheet.User.FullName,
+                ProjectName = allocations.FirstOrDefault()?.Project?.Name ?? "-",
                 HoursWorked = 0,
-                Status = timesheet?.Status ?? TimesheetConstants.StatusMissed,
-                Access = timesheet?.Access ?? TimesheetConstants.AccessAllowed,
+                Status = timesheet.Status,
+                Access = timesheet.Access,
             });
         }
+
+        return rows;
     }
 
     private static List<TeamTimesheetRow> AssignTeamRowNumbers(List<TeamTimesheetRow> rows) =>
@@ -139,44 +124,7 @@ public partial class TimesheetService
         return user;
     }
 
-    private async Task<ResourceTimesheetDetailResponse> BuildMissedResourceTimesheetDetail(
-        User user,
-        DateOnly normalizedWeekStart,
-        CancellationToken cancellationToken)
-    {
-        if (!UserAvailabilityHelper.IsWeekEligibleForUser(user, normalizedWeekStart))
-        {
-            throw new KeyNotFoundException(AppConstants.Timesheets.NotFound);
-        }
-
-        var weekEnd = TimesheetWeekHelper.GetWeekEnd(normalizedWeekStart);
-        var allocations = await _allocationRepository.GetOverlappingForUser(
-            new UserAllocationPeriodQuery
-            {
-                UserId = user.Id,
-                FromDate = normalizedWeekStart,
-                ToDate = weekEnd,
-            },
-            cancellationToken);
-
-        if (allocations.Count == 0)
-        {
-            throw new KeyNotFoundException(AppConstants.Timesheets.NotFound);
-        }
-
-        return new ResourceTimesheetDetailResponse
-        {
-            ResourceUserId = user.Id,
-            ResourceName = user.FullName,
-            WeekStart = normalizedWeekStart,
-            Status = TimesheetConstants.StatusMissed,
-            TotalHours = 0,
-            Access = TimesheetConstants.AccessAllowed,
-            Entries = [],
-        };
-    }
-
-    private static ResourceTimesheetDetailResponse MapSubmittedResourceTimesheetDetail(
+    private static ResourceTimesheetDetailResponse MapResourceTimesheetDetail(
         User user,
         DateOnly normalizedWeekStart,
         Timesheet timesheet) =>

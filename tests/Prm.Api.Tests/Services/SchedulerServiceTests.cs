@@ -19,8 +19,18 @@ public class SchedulerServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IProjectRepository> _projectRepository = new();
     private readonly Mock<IProjectRiskFlagRepository> _projectRiskFlagRepository = new();
+    private readonly Mock<ITimesheetRepository> _timesheetRepository = new();
     private readonly Mock<IProjectHealthService> _projectHealthService = new();
     private readonly Mock<ILogger<SchedulerService>> _logger = new();
+
+    public SchedulerServiceTests()
+    {
+        _allocationRepository
+            .Setup(x => x.GetOverlappingForUser(
+                It.IsAny<UserAllocationPeriodQuery>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<Allocation>());
+    }
 
     [Fact]
     public async Task Execute_WhenEmployeeHasNoUtilization_SetsStatusToBench()
@@ -104,6 +114,80 @@ public class SchedulerServiceTests
         _projectRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact]
+    public async Task Execute_WhenResourceMissedTimesheet_CreatesMissedRecord()
+    {
+        var user = ApiTestData.CreateResourceUser();
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+        var allocation = ApiTestData.CreateAllocation(fromDate: weekStart, toDate: weekStart.AddDays(6));
+
+        _userRepository
+            .Setup(x => x.GetResourceUsers(It.IsAny<ResourceFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
+        _allocationRepository
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(100);
+        _allocationRepository
+            .Setup(x => x.GetOverlappingForUser(
+                It.Is<UserAllocationPeriodQuery>(query => query.UserId == user.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Allocation> { allocation });
+        _timesheetRepository
+            .Setup(x => x.IsSubmittedForUserWeek(user.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+        _timesheetRepository
+            .Setup(x => x.TryEnsureMissedTimesheetAsync(user.Id, weekStart, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        SetupEmptyProjectHealth();
+
+        var sut = CreateSut();
+        await sut.Execute();
+
+        _timesheetRepository.Verify(
+            x => x.TryEnsureMissedTimesheetAsync(user.Id, weekStart, It.IsAny<CancellationToken>()),
+            Times.Once);
+        _timesheetRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Execute_WhenTimesheetAlreadySubmitted_DoesNotCreateMissedRecord()
+    {
+        var user = ApiTestData.CreateResourceUser();
+        var weekStart = TimesheetWeekHelper.GetLastCompletedWeekStart(DateOnly.FromDateTime(DateTime.UtcNow));
+        var allocation = ApiTestData.CreateAllocation(fromDate: weekStart, toDate: weekStart.AddDays(6));
+
+        _userRepository
+            .Setup(x => x.GetResourceUsers(It.IsAny<ResourceFilter>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { user });
+        _allocationRepository
+            .Setup(x => x.SumUtilizationForUserInPeriod(
+                It.IsAny<UserAllocationPeriodQuery>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(100);
+        _allocationRepository
+            .Setup(x => x.GetOverlappingForUser(
+                It.Is<UserAllocationPeriodQuery>(query => query.UserId == user.Id),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Allocation> { allocation });
+        _timesheetRepository
+            .Setup(x => x.IsSubmittedForUserWeek(
+                user.Id,
+                It.IsAny<DateOnly>(),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+        SetupEmptyProjectHealth();
+
+        var sut = CreateSut();
+        await sut.Execute();
+
+        _timesheetRepository.Verify(
+            x => x.TryEnsureMissedTimesheetAsync(It.IsAny<int>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _timesheetRepository.Verify(x => x.SaveChanges(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private void SetupEmptyProjectHealth()
     {
         _projectRepository
@@ -117,6 +201,7 @@ public class SchedulerServiceTests
             _userRepository.Object,
             _projectRepository.Object,
             _projectRiskFlagRepository.Object,
+            _timesheetRepository.Object,
             _projectHealthService.Object,
             _logger.Object);
 }

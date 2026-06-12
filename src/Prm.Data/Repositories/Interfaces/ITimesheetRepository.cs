@@ -1,5 +1,4 @@
 using Prm.Data.Entities;
-using Prm.Data.Repositories.Models;
 
 namespace Prm.Data.Repositories.Interfaces;
 
@@ -41,6 +40,11 @@ public interface ITimesheetRepository : ICrudBaseRepository<Timesheet, int>
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
+    Task<bool> TryEnsureMissedTimesheetAsync(
+        int userId,
+        DateOnly weekStart,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Timesheet>> GetByUserId(
         int userId,
         CancellationToken cancellationToken = default);
@@ -50,7 +54,7 @@ public interface ITimesheetRepository : ICrudBaseRepository<Timesheet, int>
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<TeamTimesheetEntryRow>> GetEntriesForTeamByManagerAndWeek(
+    Task<IReadOnlyList<Timesheet>> GetTimesheetsForTeamByManagerAndWeek(
         int managerUserId,
         DateOnly weekStart,
         CancellationToken cancellationToken = default);
