@@ -1,4 +1,3 @@
-using System.Net;
 using System.Text;
 using Prm.Api.Models.Ai;
 using Prm.Api.Models.Email;
@@ -18,8 +17,15 @@ internal static class ProjectRiskAlertEmailBuilder
     {
         var managerName = project.ManagerUser.FullName;
         var subject = string.Format(AppConstants.Email.RiskAlertSubject, project.Name);
-        var html = BuildHtml(project, riskFlags, keyMilestones, riskSummary, teamSuggestions);
-        var text = BuildText(project, riskFlags, keyMilestones, riskSummary, teamSuggestions);
+        var bodyHtml = BuildBodyHtml(project, riskFlags, keyMilestones, riskSummary, teamSuggestions);
+        var html = EmailLayoutBuilder.BuildHtml(
+            AppConstants.Email.RiskAlertTitle,
+            EmailLayoutBuilder.AccentDanger,
+            bodyHtml,
+            AppConstants.Email.AiDisclaimer);
+        var text = EmailLayoutBuilder.BuildText(
+            BuildBodyText(project, riskFlags, keyMilestones, riskSummary, teamSuggestions),
+            AppConstants.Email.AiDisclaimer);
 
         return new EmailMessage
         {
@@ -31,7 +37,7 @@ internal static class ProjectRiskAlertEmailBuilder
         };
     }
 
-    private static string BuildHtml(
+    private static string BuildBodyHtml(
         Project project,
         IReadOnlyList<ProjectRiskFlag> riskFlags,
         IReadOnlyList<Milestone> keyMilestones,
@@ -39,26 +45,24 @@ internal static class ProjectRiskAlertEmailBuilder
         TeamBuilderResponse? teamSuggestions)
     {
         var builder = new StringBuilder();
-        builder.Append("<html><body style=\"font-family:Segoe UI,Arial,sans-serif;color:#222;\">");
-        builder.Append("<h2>Project At Risk Alert</h2>");
-        builder.Append("<p>The following project under your management has been flagged as <strong>At Risk</strong>.</p>");
-
-        AppendSection(builder, "Project Details", BuildProjectDetailsHtml(project));
-        AppendSection(builder, "Health Status", $"<p><strong>{FormatHealthStatus(project.HealthStatus)}</strong></p>");
-        AppendSection(builder, "Key Milestones", BuildMilestonesHtml(keyMilestones));
-        AppendSection(builder, "Risk Flags", BuildRiskFlagsHtml(riskFlags));
-        AppendSection(builder, "AI Risk Summary", $"<p>{Encode(riskSummary)}</p>");
-        AppendSection(builder, "Suggested Help", BuildTeamSuggestionsHtml(teamSuggestions));
-
-        builder.Append("<p style=\"color:#666;font-size:12px;\">");
-        builder.Append("This is an automated notification from the PRM system. ");
-        builder.Append("AI-generated sections should be verified before making allocation decisions.");
-        builder.Append("</p>");
-        builder.Append("</body></html>");
+        builder.Append(EmailLayoutBuilder.Paragraph(AppConstants.Email.RiskAlertIntro));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionProjectDetails));
+        builder.Append(BuildProjectDetailsHtml(project));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionHealthStatus));
+        builder.Append(EmailLayoutBuilder.Paragraph(
+            $"<strong>{EmailLayoutBuilder.Encode(FormatHealthStatus(project.HealthStatus))}</strong>"));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionKeyMilestones));
+        builder.Append(BuildMilestonesHtml(keyMilestones));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionRiskFlags));
+        builder.Append(BuildRiskFlagsHtml(riskFlags));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionAiRiskSummary));
+        builder.Append(EmailLayoutBuilder.Paragraph(EmailLayoutBuilder.Encode(riskSummary)));
+        builder.Append(EmailLayoutBuilder.SectionHeading(AppConstants.Email.SectionSuggestedHelp));
+        builder.Append(BuildTeamSuggestionsHtml(teamSuggestions));
         return builder.ToString();
     }
 
-    private static string BuildText(
+    private static string BuildBodyText(
         Project project,
         IReadOnlyList<ProjectRiskFlag> riskFlags,
         IReadOnlyList<Milestone> keyMilestones,
@@ -66,45 +70,37 @@ internal static class ProjectRiskAlertEmailBuilder
         TeamBuilderResponse? teamSuggestions)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Project At Risk Alert");
+        builder.AppendLine(AppConstants.Email.RiskAlertTitle);
         builder.AppendLine();
-        builder.AppendLine("Project Details");
-        builder.AppendLine($"Name: {project.Name}");
-        builder.AppendLine($"Manager: {project.ManagerUser.FullName}");
-        builder.AppendLine($"Status: {project.Status}");
-        builder.AppendLine($"Period: {project.StartDate:yyyy-MM-dd} to {project.EndDate:yyyy-MM-dd}");
+        builder.AppendLine(AppConstants.Email.SectionProjectDetails);
+        builder.AppendLine($"{AppConstants.Email.LabelName}: {project.Name}");
+        builder.AppendLine($"{AppConstants.Email.LabelManager}: {project.ManagerUser.FullName}");
+        builder.AppendLine($"{AppConstants.Email.LabelStatus}: {project.Status}");
+        builder.AppendLine($"{AppConstants.Email.LabelPeriod}: {project.StartDate:yyyy-MM-dd} to {project.EndDate:yyyy-MM-dd}");
         builder.AppendLine();
-        builder.AppendLine($"Health Status: {FormatHealthStatus(project.HealthStatus)}");
+        builder.AppendLine($"{AppConstants.Email.SectionHealthStatus}: {FormatHealthStatus(project.HealthStatus)}");
         builder.AppendLine();
-        builder.AppendLine("Key Milestones");
+        builder.AppendLine(AppConstants.Email.SectionKeyMilestones);
         builder.AppendLine(BuildMilestonesText(keyMilestones));
         builder.AppendLine();
-        builder.AppendLine("Risk Flags");
+        builder.AppendLine(AppConstants.Email.SectionRiskFlags);
         builder.AppendLine(BuildRiskFlagsText(riskFlags));
         builder.AppendLine();
-        builder.AppendLine("AI Risk Summary");
+        builder.AppendLine(AppConstants.Email.SectionAiRiskSummary);
         builder.AppendLine(riskSummary);
         builder.AppendLine();
-        builder.AppendLine("Suggested Help");
+        builder.AppendLine(AppConstants.Email.SectionSuggestedHelp);
         builder.AppendLine(BuildTeamSuggestionsText(teamSuggestions));
-        return builder.ToString();
-    }
-
-    private static void AppendSection(StringBuilder builder, string title, string content)
-    {
-        builder.Append("<h3 style=\"margin-top:24px;\">");
-        builder.Append(Encode(title));
-        builder.Append("</h3>");
-        builder.Append(content);
+        return builder.ToString().TrimEnd();
     }
 
     private static string BuildProjectDetailsHtml(Project project) =>
         $"""
-        <ul>
-          <li><strong>Name:</strong> {Encode(project.Name)}</li>
-          <li><strong>Manager:</strong> {Encode(project.ManagerUser.FullName)}</li>
-          <li><strong>Status:</strong> {Encode(project.Status)}</li>
-          <li><strong>Period:</strong> {project.StartDate:yyyy-MM-dd} to {project.EndDate:yyyy-MM-dd}</li>
+        <ul style="margin:0 0 16px;padding-left:20px;">
+          <li><strong>{AppConstants.Email.LabelName}:</strong> {EmailLayoutBuilder.Encode(project.Name)}</li>
+          <li><strong>{AppConstants.Email.LabelManager}:</strong> {EmailLayoutBuilder.Encode(project.ManagerUser.FullName)}</li>
+          <li><strong>{AppConstants.Email.LabelStatus}:</strong> {EmailLayoutBuilder.Encode(project.Status)}</li>
+          <li><strong>{AppConstants.Email.LabelPeriod}:</strong> {project.StartDate:yyyy-MM-dd} to {project.EndDate:yyyy-MM-dd}</li>
         </ul>
         """;
 
@@ -112,7 +108,7 @@ internal static class ProjectRiskAlertEmailBuilder
     {
         if (milestones.Count == 0)
         {
-            return "<p>No open milestones found.</p>";
+            return EmailLayoutBuilder.Paragraph(AppConstants.Email.NoOpenMilestones);
         }
 
         var items = milestones
@@ -120,18 +116,18 @@ internal static class ProjectRiskAlertEmailBuilder
             {
                 var overdue = milestone.DueDate < DateOnly.FromDateTime(DateTime.UtcNow)
                     && milestone.Status != MilestoneConstants.StatusDone;
-                var suffix = overdue ? " (overdue)" : string.Empty;
-                return $"<li>{Encode(milestone.Title)} — due {milestone.DueDate:yyyy-MM-dd}, {Encode(milestone.Status)}{suffix}</li>";
+                var suffix = overdue ? AppConstants.Email.MilestoneOverdueSuffix : string.Empty;
+                return $"<li>{EmailLayoutBuilder.Encode(milestone.Title)} — due {milestone.DueDate:yyyy-MM-dd}, {EmailLayoutBuilder.Encode(milestone.Status)}{suffix}</li>";
             });
 
-        return $"<ul>{string.Join(string.Empty, items)}</ul>";
+        return $"<ul style=\"margin:0 0 16px;padding-left:20px;\">{string.Join(string.Empty, items)}</ul>";
     }
 
     private static string BuildMilestonesText(IReadOnlyList<Milestone> milestones)
     {
         if (milestones.Count == 0)
         {
-            return "No open milestones found.";
+            return AppConstants.Email.NoOpenMilestones;
         }
 
         return string.Join(
@@ -140,7 +136,7 @@ internal static class ProjectRiskAlertEmailBuilder
             {
                 var overdue = milestone.DueDate < DateOnly.FromDateTime(DateTime.UtcNow)
                     && milestone.Status != MilestoneConstants.StatusDone;
-                var suffix = overdue ? " (overdue)" : string.Empty;
+                var suffix = overdue ? AppConstants.Email.MilestoneOverdueSuffix : string.Empty;
                 return $"- {milestone.Title} — due {milestone.DueDate:yyyy-MM-dd}, {milestone.Status}{suffix}";
             }));
     }
@@ -149,21 +145,22 @@ internal static class ProjectRiskAlertEmailBuilder
     {
         if (riskFlags.Count == 0)
         {
-            return "<p>No risk flags recorded.</p>";
+            return EmailLayoutBuilder.Paragraph(AppConstants.Email.NoRiskFlags);
         }
 
         var items = riskFlags
             .OrderBy(flag => flag.SortOrder)
-            .Select(flag => $"<li><strong>{Encode(flag.Outcome)}:</strong> {Encode(flag.Message)}</li>");
+            .Select(flag =>
+                $"<li><strong>{EmailLayoutBuilder.Encode(flag.Outcome)}:</strong> {EmailLayoutBuilder.Encode(flag.Message)}</li>");
 
-        return $"<ul>{string.Join(string.Empty, items)}</ul>";
+        return $"<ul style=\"margin:0 0 16px;padding-left:20px;\">{string.Join(string.Empty, items)}</ul>";
     }
 
     private static string BuildRiskFlagsText(IReadOnlyList<ProjectRiskFlag> riskFlags)
     {
         if (riskFlags.Count == 0)
         {
-            return "No risk flags recorded.";
+            return AppConstants.Email.NoRiskFlags;
         }
 
         return string.Join(
@@ -177,28 +174,30 @@ internal static class ProjectRiskAlertEmailBuilder
     {
         if (teamSuggestions is null)
         {
-            return $"<p>{Encode(AppConstants.Email.AiTeamSuggestionsUnavailable)}</p>";
+            return EmailLayoutBuilder.Paragraph(EmailLayoutBuilder.Encode(AppConstants.Email.AiTeamSuggestionsUnavailable));
         }
 
         var builder = new StringBuilder();
 
         if (!string.IsNullOrWhiteSpace(teamSuggestions.Summary))
         {
-            builder.Append($"<p>{Encode(teamSuggestions.Summary)}</p>");
+            builder.Append(EmailLayoutBuilder.Paragraph(EmailLayoutBuilder.Encode(teamSuggestions.Summary)));
         }
         else if (!string.IsNullOrWhiteSpace(teamSuggestions.Message))
         {
-            builder.Append($"<p>{Encode(teamSuggestions.Message)}</p>");
+            builder.Append(EmailLayoutBuilder.Paragraph(EmailLayoutBuilder.Encode(teamSuggestions.Message)));
         }
 
         if (teamSuggestions.Team.Count > 0)
         {
-            builder.Append("<p><strong>Recommended bench allocations:</strong></p><ul>");
+            builder.Append(EmailLayoutBuilder.Paragraph(
+                $"<strong>{AppConstants.Email.RecommendedBenchAllocations}</strong>"));
+            builder.Append("<ul style=\"margin:0 0 16px;padding-left:20px;\">");
             foreach (var member in teamSuggestions.Team)
             {
                 builder.Append("<li>");
-                builder.Append($"<strong>{Encode(member.Name)}</strong> as {Encode(member.Role)} — ");
-                builder.Append($"{Encode(member.SkillsMatch)}. {Encode(member.Reason)}");
+                builder.Append($"<strong>{EmailLayoutBuilder.Encode(member.Name)}</strong> as {EmailLayoutBuilder.Encode(member.Role)} — ");
+                builder.Append($"{EmailLayoutBuilder.Encode(member.SkillsMatch)}. {EmailLayoutBuilder.Encode(member.Reason)}");
                 builder.Append("</li>");
             }
 
@@ -206,7 +205,7 @@ internal static class ProjectRiskAlertEmailBuilder
         }
         else
         {
-            builder.Append("<p>No bench resources were suggested for this project.</p>");
+            builder.Append(EmailLayoutBuilder.Paragraph(AppConstants.Email.NoBenchResourcesSuggested));
         }
 
         return builder.ToString();
@@ -232,8 +231,8 @@ internal static class ProjectRiskAlertEmailBuilder
 
         if (teamSuggestions.Team.Count == 0)
         {
-            builder.AppendLine("No bench resources were suggested for this project.");
-            return builder.ToString();
+            builder.AppendLine(AppConstants.Email.NoBenchResourcesSuggested);
+            return builder.ToString().TrimEnd();
         }
 
         foreach (var member in teamSuggestions.Team)
@@ -242,17 +241,15 @@ internal static class ProjectRiskAlertEmailBuilder
                 $"- {member.Name} as {member.Role}: {member.SkillsMatch}. {member.Reason}");
         }
 
-        return builder.ToString();
+        return builder.ToString().TrimEnd();
     }
 
     private static string FormatHealthStatus(string healthStatus) =>
         healthStatus switch
         {
-            ManagerConstants.HealthAtRisk => "At Risk",
-            ManagerConstants.HealthAttention => "Needs Attention",
-            ManagerConstants.HealthOnTrack => "On Track",
+            ManagerConstants.HealthAtRisk => AppConstants.Email.HealthStatusAtRisk,
+            ManagerConstants.HealthAttention => AppConstants.Email.HealthStatusNeedsAttention,
+            ManagerConstants.HealthOnTrack => AppConstants.Email.HealthStatusOnTrack,
             _ => healthStatus,
         };
-
-    private static string Encode(string value) => WebUtility.HtmlEncode(value);
 }

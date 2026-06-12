@@ -37,12 +37,44 @@ public static class AppConstants
 
     public static class Email
     {
+        public const string BrandName = "PRM";
+        public const string FooterSignature = "PRM Admin";
+        public const string FooterAutomatedNotice =
+            "This is an automated notification from the Project & Resource Management system.";
+        public const string AiDisclaimer =
+            "AI-generated sections should be verified before making allocation decisions.";
+
         public const string SendFailed = "Failed to send email notification.";
+        public const string Greeting = "Hi {0},";
+        public const string WeekRange = "{0:yyyy-MM-dd} to {1:yyyy-MM-dd}";
+
         public const string RiskAlertSubject = "PRM Alert: Project \"{0}\" is At Risk";
+        public const string RiskAlertTitle = "Project At Risk Alert";
+        public const string RiskAlertIntro =
+            "The following project under your management has been flagged as <strong>At Risk</strong>.";
+        public const string SectionProjectDetails = "Project Details";
+        public const string SectionHealthStatus = "Health Status";
+        public const string SectionKeyMilestones = "Key Milestones";
+        public const string SectionRiskFlags = "Risk Flags";
+        public const string SectionAiRiskSummary = "AI Risk Summary";
+        public const string SectionSuggestedHelp = "Suggested Help";
+        public const string LabelName = "Name";
+        public const string LabelManager = "Manager";
+        public const string LabelStatus = "Status";
+        public const string LabelPeriod = "Period";
+        public const string NoOpenMilestones = "No open milestones found.";
+        public const string NoRiskFlags = "No risk flags recorded.";
+        public const string RecommendedBenchAllocations = "Recommended bench allocations:";
+        public const string NoBenchResourcesSuggested = "No bench resources were suggested for this project.";
         public const string AiRiskSummaryUnavailable =
             "AI risk summary is temporarily unavailable. Please review the risk flags below.";
         public const string AiTeamSuggestionsUnavailable =
             "AI team suggestions are temporarily unavailable. Review bench resources in the system.";
+        public const string HealthStatusAtRisk = "At Risk";
+        public const string HealthStatusNeedsAttention = "Needs Attention";
+        public const string HealthStatusOnTrack = "On Track";
+        public const string MilestoneOverdueSuffix = " (overdue)";
+
         public const string TimesheetReminderMondaySubject =
             "PRM Reminder: Submit your timesheet for week starting {0:yyyy-MM-dd}";
         public const string TimesheetReminderTuesdaySubject =
@@ -51,6 +83,45 @@ public static class AppConstants
             "PRM Notice: Timesheet access blocked for week starting {0:yyyy-MM-dd}";
         public const string TimesheetBlockedManagerSubject =
             "PRM Notice: {0}'s timesheet access blocked for week starting {1:yyyy-MM-dd}";
+        public const string TimesheetMondayTitle = "Timesheet Reminder";
+        public const string TimesheetTuesdayTitle = "Timesheet Reminder — Action Required";
+        public const string TimesheetBlockedResourceTitle = "Timesheet Access Blocked";
+        public const string TimesheetBlockedManagerTitle = "Employee Timesheet Access Blocked";
+        public const string TimesheetMondayBody =
+            "Our records show that your timesheet for the week <strong>{0}</strong> has not been submitted yet.";
+        public const string TimesheetMondayCallToAction =
+            "Please log in to PRM and submit your timesheet as soon as possible.";
+        public const string TimesheetTuesdayBody =
+            "Your timesheet for the week <strong>{0}</strong> is still missing.";
+        public const string TimesheetTuesdayWarning =
+            "<strong>Important:</strong> If it is not submitted by end of day Tuesday, your timesheet access for this week will be blocked on Wednesday.";
+        public const string TimesheetTuesdayCallToAction =
+            "Please submit your timesheet in PRM immediately to avoid access restrictions.";
+        public const string TimesheetBlockedResourceBody =
+            "Your timesheet for the week <strong>{0}</strong> was not submitted by the deadline.";
+        public const string TimesheetBlockedResourceNotice =
+            "<strong>Your timesheet access for this week is now blocked.</strong>";
+        public const string TimesheetBlockedResourceReason =
+            "Reason: Missing timesheet submission after Monday and Tuesday reminders.";
+        public const string TimesheetBlockedResourceAction =
+            "Contact your manager to restore access. Once access is allowed, you may submit the timesheet for that week.";
+        public const string TimesheetBlockedManagerBody =
+            "<strong>{0}</strong> did not submit a timesheet for the week <strong>{1}</strong>.";
+        public const string TimesheetBlockedManagerNotice =
+            "<strong>The employee's timesheet access for that week is now blocked.</strong>";
+        public const string TimesheetBlockedManagerReason =
+            "Reason: Missing timesheet submission after automated Monday and Tuesday reminders.";
+        public const string TimesheetBlockedManagerAction =
+            "You can restore access in PRM when the employee is ready to submit the overdue timesheet.";
+
+        public const string TimesheetMondayTextBody =
+            "Your timesheet for {0} is still missing. Please submit it in PRM as soon as possible.";
+        public const string TimesheetTuesdayTextBody =
+            "Your timesheet for {0} is still missing. If it is not submitted by end of day Tuesday, your timesheet access for this week will be blocked on Wednesday.";
+        public const string TimesheetBlockedResourceTextBody =
+            "Your timesheet access for {0} is blocked because the timesheet was not submitted. Contact your manager to restore access.";
+        public const string TimesheetBlockedManagerTextBody =
+            "{0} did not submit a timesheet for {1}. Their timesheet access for that week is blocked. Restore access in PRM when appropriate.";
     }
 
     public static class Auth
