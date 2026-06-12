@@ -98,6 +98,7 @@ public static class AppConstants
         public const string NameExists = "Project name is already in use.";
         public const string InvalidStatus = "Status must be Planned (1), Active (2), or On Hold (3).";
         public const string InvalidDateRange = "End date must be on or after start date.";
+        public const string PastDateNotAllowed = "Project dates cannot be in the past.";
         public const string ManagerNotFound = "Manager not found or is not an active manager.";
     }
 
@@ -155,6 +156,7 @@ public static class AppConstants
             "Allocation dates must be within the project start and end dates.";
         public const string AllocationDatesBeforeResourceCreated =
             "Allocation dates cannot be before the employee account was created.";
+        public const string PastDateNotAllowed = "Allocation dates cannot be in the past.";
         public const string CreatedSuccessfully = "Allocation created successfully.";
         public const string EndedSuccessfully = "Allocation ended successfully.";
     }

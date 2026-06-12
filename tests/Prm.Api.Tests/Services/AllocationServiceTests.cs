@@ -16,8 +16,8 @@ public class AllocationServiceTests
     private readonly Mock<IUserRepository> _userRepository = new();
     private readonly Mock<IProjectRepository> _projectRepository = new();
 
-    private static readonly DateOnly From = new(2026, 3, 1);
-    private static readonly DateOnly To = new(2026, 6, 30);
+    private static DateOnly From => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7);
+    private static DateOnly To => From.AddMonths(3);
     private const int ManagerUserId = 10;
 
     [Fact]
@@ -98,6 +98,22 @@ public class AllocationServiceTests
             sut.GetActiveAllocations("unknown"));
 
         Assert.Equal(AppConstants.Allocations.InvalidFilter, exception.Message);
+    }
+
+    [Fact]
+    public async Task Create_WhenPastFromDate_ThrowsArgumentException()
+    {
+        SetupValidProject();
+        SetupValidEmployee();
+
+        var sut = CreateSut();
+        var pastFrom = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7);
+        var futureTo = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(1);
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.Create(CreateValidRequest(from: pastFrom, to: futureTo), ManagerUserId));
+
+        Assert.Equal(AppConstants.Allocations.PastDateNotAllowed, exception.Message);
     }
 
     [Fact]
@@ -201,9 +217,11 @@ public class AllocationServiceTests
     [Fact]
     public async Task Create_WhenDatesBeforeEmployeeCreated_ThrowsArgumentException()
     {
-        var project = ApiTestData.CreateProject();
+        var project = ApiTestData.CreateProject(
+            start: DateOnly.FromDateTime(DateTime.UtcNow),
+            end: DateOnly.FromDateTime(DateTime.UtcNow).AddYears(1));
         var employee = ApiTestData.CreateResourceUser();
-        employee.CreatedAtUtc = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
+        employee.CreatedAtUtc = DateTime.UtcNow.AddDays(14);
 
         _projectRepository
             .Setup(x => x.GetByIdWithManager(project.Id, It.IsAny<CancellationToken>()))
@@ -214,14 +232,16 @@ public class AllocationServiceTests
         SetupResourceUnderManager(employee.Id, ManagerUserId);
 
         var sut = CreateSut();
+        var fromDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(7);
+        var toDate = fromDate.AddMonths(1);
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
             sut.Create(
                 CreateValidRequest(
                     projectId: project.Id,
                     resourceUserId: employee.Id,
-                    from: new DateOnly(2026, 6, 1),
-                    to: new DateOnly(2026, 6, 30)),
+                    from: fromDate,
+                    to: toDate),
                 ManagerUserId));
 
         Assert.Equal(AppConstants.Allocations.AllocationDatesBeforeResourceCreated, exception.Message);

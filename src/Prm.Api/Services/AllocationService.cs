@@ -68,6 +68,7 @@ public class AllocationService(
         CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.FromDate, request.ToDate);
+        EnsureAllocationDatesNotInPast(request.FromDate, request.ToDate);
         ValidateUtilizationPercent(request.UtilizationPercent);
 
         var project = await GetOwnedProjectOrThrow(request.ProjectId, managerUserId, cancellationToken);
@@ -250,6 +251,12 @@ public class AllocationService(
         {
             throw new ArgumentException(AppConstants.Allocations.InvalidDateRange);
         }
+    }
+
+    private static void EnsureAllocationDatesNotInPast(DateOnly fromDate, DateOnly toDate)
+    {
+        DateValidationHelper.EnsureNotBeforeToday(fromDate, AppConstants.Allocations.PastDateNotAllowed);
+        DateValidationHelper.EnsureNotBeforeToday(toDate, AppConstants.Allocations.PastDateNotAllowed);
     }
 
     private static void ValidateUtilizationPercent(int utilizationPercent)

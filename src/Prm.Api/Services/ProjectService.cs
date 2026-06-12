@@ -18,6 +18,7 @@ public class ProjectService(
     public async Task<int> Add(CreateProjectRequest request, CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.StartDate, request.EndDate);
+        EnsureProjectDatesNotInPast(request.StartDate, request.EndDate);
         await ValidateManager(request.ManagerUserId, cancellationToken);
 
         var name = request.Name.Trim();
@@ -70,6 +71,7 @@ public class ProjectService(
         CancellationToken cancellationToken = default)
     {
         ValidateDateRange(request.StartDate, request.EndDate);
+        EnsureProjectDatesNotInPast(request.StartDate, request.EndDate);
         await ValidateManager(request.ManagerUserId, cancellationToken);
 
         var project = await GetProjectOrThrow(projectId, cancellationToken);
@@ -215,6 +217,12 @@ public class ProjectService(
         {
             throw new ArgumentException(AppConstants.Projects.InvalidDateRange);
         }
+    }
+
+    private static void EnsureProjectDatesNotInPast(DateOnly startDate, DateOnly endDate)
+    {
+        DateValidationHelper.EnsureNotBeforeToday(startDate, AppConstants.Projects.PastDateNotAllowed);
+        DateValidationHelper.EnsureNotBeforeToday(endDate, AppConstants.Projects.PastDateNotAllowed);
     }
 
     private static string MapProjectStatus(int status)

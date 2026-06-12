@@ -19,8 +19,28 @@ public class ProjectServiceTests
 
     private const int ManagerUserId = 10;
 
-    private static readonly DateOnly Start = new(2026, 1, 1);
-    private static readonly DateOnly End = new(2026, 12, 31);
+    private static DateOnly Start => DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+    private static DateOnly End => Start.AddMonths(12);
+
+    [Fact]
+    public async Task Add_WhenPastStartDate_ThrowsArgumentException()
+    {
+        var sut = CreateSut();
+        var pastStart = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+
+        var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+            sut.Add(new CreateProjectRequest
+            {
+                Name = "Beta",
+                Description = "Desc",
+                StartDate = pastStart,
+                EndDate = End,
+                Status = (int)ProjectStatusEnum.Planned,
+                ManagerUserId = 10,
+            }));
+
+        Assert.Equal(AppConstants.Projects.PastDateNotAllowed, exception.Message);
+    }
 
     [Fact]
     public async Task Add_WhenEndDateBeforeStartDate_ThrowsArgumentException()
