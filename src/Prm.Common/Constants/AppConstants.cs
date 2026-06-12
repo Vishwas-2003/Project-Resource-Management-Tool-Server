@@ -133,6 +133,8 @@ public static class AppConstants
         public const string ProjectNotOwned = "You can only manage allocations on projects you own.";
         public const string ResourceNotFound = "Resource not found.";
         public const string ResourceNotEligible = "Only active employees can be allocated to projects.";
+        public const string ResourceNotUnderManager =
+            "You can only allocate resources assigned to you.";
     }
 
     public static class Allocations

@@ -75,6 +75,7 @@ public class AllocationService(
         EnsureAllocationDatesWithinProject(project, request.FromDate, request.ToDate);
 
         var user = await GetAllocatableUserOrThrow(request.ResourceUserId, cancellationToken);
+        await EnsureResourceUnderManager(request.ResourceUserId, managerUserId, cancellationToken);
         UserAvailabilityHelper.EnsureAllocationDatesEligibleForUser(user, request.FromDate, request.ToDate);
 
         await EnsureNoOverlappingAllocationOnSameProject(
@@ -189,6 +190,20 @@ public class AllocationService(
         }
 
         return user;
+    }
+
+    private async Task EnsureResourceUnderManager(
+        int resourceUserId,
+        int managerUserId,
+        CancellationToken cancellationToken)
+    {
+        if (!await _userRepository.IsResourceManagedByManager(
+                resourceUserId,
+                managerUserId,
+                cancellationToken))
+        {
+            throw new InvalidOperationException(AppConstants.Manager.ResourceNotUnderManager);
+        }
     }
 
     private async Task<Project> GetOwnedProjectOrThrow(

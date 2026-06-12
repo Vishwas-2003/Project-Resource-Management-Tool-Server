@@ -184,6 +184,21 @@ public class AllocationServiceTests
     }
 
     [Fact]
+    public async Task Create_WhenResourceNotUnderManager_ThrowsInvalidOperationException()
+    {
+        SetupValidProject();
+        SetupValidEmployee();
+        SetupResourceNotUnderManager();
+
+        var sut = CreateSut();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            sut.Create(CreateValidRequest(), ManagerUserId));
+
+        Assert.Equal(AppConstants.Manager.ResourceNotUnderManager, exception.Message);
+    }
+
+    [Fact]
     public async Task Create_WhenDatesBeforeEmployeeCreated_ThrowsArgumentException()
     {
         var project = ApiTestData.CreateProject();
@@ -196,6 +211,7 @@ public class AllocationServiceTests
         _userRepository
             .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
+        SetupResourceUnderManager(employee.Id, ManagerUserId);
 
         var sut = CreateSut();
 
@@ -263,6 +279,7 @@ public class AllocationServiceTests
         _userRepository
             .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
+        SetupResourceUnderManager(employee.Id, ManagerUserId);
         SetupNoOverlap();
         _allocationRepository
             .Setup(x => x.SumUtilizationForUserInPeriod(
@@ -469,6 +486,27 @@ public class AllocationServiceTests
         _userRepository
             .Setup(x => x.GetResourceUserDetailById(employee.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(employee);
+        SetupResourceUnderManager(employee.Id, ManagerUserId);
+    }
+
+    private void SetupResourceUnderManager(int resourceUserId, int managerUserId)
+    {
+        _userRepository
+            .Setup(x => x.IsResourceManagedByManager(
+                resourceUserId,
+                managerUserId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+    }
+
+    private void SetupResourceNotUnderManager(int resourceUserId = 1, int managerUserId = ManagerUserId)
+    {
+        _userRepository
+            .Setup(x => x.IsResourceManagedByManager(
+                resourceUserId,
+                managerUserId,
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
     }
 
     private void SetupNoOverlap()

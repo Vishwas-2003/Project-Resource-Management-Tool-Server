@@ -120,6 +120,17 @@ public class UserRepository(AppDbContext _dbContext)
                 .ThenInclude(x => x.Project)
             .FirstOrDefaultAsync(x => x.Id == userId && x.IsActive, cancellationToken);
 
+    public Task<bool> IsResourceManagedByManager(
+        int resourceUserId,
+        int managerUserId,
+        CancellationToken cancellationToken = default) =>
+        _dbContext.ResourceManagerHistories.AnyAsync(
+            history =>
+                history.UserId == resourceUserId
+                && history.ManagerUserId == managerUserId
+                && history.EffectiveToUtc == null,
+            cancellationToken);
+
     public async Task SetManager(int userId, int managerUserId, CancellationToken cancellationToken = default)
     {
         var utcNow = DateTime.UtcNow;
